@@ -21,5 +21,7 @@
 #Include %A_ScriptDir%\Overlay.Tests.ahk
 #Include %A_ScriptDir%\..\src\KeyWatch.ahk
 #Include %A_ScriptDir%\KeyWatch.Tests.ahk
+#Include %A_ScriptDir%\..\src\ChordMatch.ahk
+#Include %A_ScriptDir%\ChordMatch.Tests.ahk
 
 T.Finish()
