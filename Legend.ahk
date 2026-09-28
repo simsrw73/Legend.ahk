@@ -9,6 +9,7 @@
 #Include %A_LineFile%\..\src\Overlay.ahk
 #Include %A_LineFile%\..\src\KeyWatch.ahk
 #Include %A_LineFile%\..\src\ChordMatch.ahk
+#Include %A_LineFile%\..\src\Chord.ahk
 
 ; Legend: a contextual shortcut overlay. See README.md.
 class Legend {
