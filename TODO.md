@@ -6,6 +6,10 @@
   `keyStyle` stays the starting style). Needs: a `"Style"` navigator action that
   rebuilds the current level's rows, a Tab hotkey under `Legend.Visible`, and a
   footer hint.
+- **Density toggle (compact / comfortable).** Theme gets `density = compact |
+  comfortable` that scales `padding`, `rowSpacing` and the column gap (explicit
+  values still win). A key while the overlay is open flips density for the
+  session, next to the Tab notation toggle; both can share one footer hint.
 - **Chord mode** (second pass): see "Modes" in docs/specs/2026-09-28-legend-design.md.
 - Deferred review minors from v1: warn when a page's code `match` is set after
   its bindings; expose `Legend.Binder`; cap overlay width and compute the height
