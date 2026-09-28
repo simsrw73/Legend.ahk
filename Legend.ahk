@@ -158,7 +158,10 @@ class Legend {
         this.Visible := false
     }
 
-    static Handle(action) {
+    static Handle(action) => this.Serialized(() => this.HandleNow(action))
+
+    static HandleNow(action) {
+        ; serialized by Handle
         if !this.Visible
             return
         if action = "Style" || action = "Density"
@@ -213,7 +216,10 @@ class Legend {
 
     ; ---- Chord mode ----
 
-    static OpenChord(chord) {
+    static OpenChord(chord) => this.Serialized(() => this.OpenChordNow(chord))
+
+    static OpenChordNow(chord) {
+        ; serialized by OpenChord
         if this.ChordState
             return this.CloseChord()          ; trigger again closes
         if this.Visible
@@ -261,6 +267,7 @@ class Legend {
     }
 
     static ShowChord() {
+        Critical
         state := this.ChordState
         if !state || state.Shown
             return
@@ -269,6 +276,7 @@ class Legend {
     }
 
     static CheckChordFocus() {
+        Critical
         if this.ChordState && WinExist("A") != this.ActiveHwnd
             this.CloseChord()
     }
@@ -292,7 +300,11 @@ class Legend {
         SetTimer(() => Legend.ChordKey(key, name), -1)
     }
 
+    ; Critical: chord keys, the show timer and closing must not interrupt each other.
+    ; Otherwise a fast second key can close the chord (destroying the measurer) while
+    ; the first key is still building a submenu, or leave a half-built overlay behind.
     static ChordKey(key, name) {
+        Critical
         static overlayKeys := Map("PgDn", "Next", "Ctrl+N", "Next", "PgUp", "Prev", "Ctrl+P", "Prev",
             "Tab", "Style", "=", "Density")
         state := this.ChordState
@@ -321,6 +333,7 @@ class Legend {
             case "run":
                 item := this.Nav.RunItem
                 this.CloseChord()
+                Critical "Off"   ; the action may take a while (launching an app)
                 item.Run(name)
             default:
                 shown := key.Verbatim != "" ? key.Verbatim
@@ -338,7 +351,21 @@ class Legend {
         this.RestartChordTimeout()
     }
 
-    static CloseChord() {
+    ; Runs fn without being interrupted by Legend's other key and timer handlers, then
+    ; restores the caller's Critical setting (Critical applies to the whole thread).
+    static Serialized(fn) {
+        was := A_IsCritical
+        Critical
+        try
+            return fn()
+        finally
+            Critical(was ? was : "Off")
+    }
+
+    static CloseChord() => this.Serialized(() => this.CloseChordNow())
+
+    static CloseChordNow() {
+        ; serialized by CloseChord
         state := this.ChordState
         if !state
             return

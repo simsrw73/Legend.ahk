@@ -104,6 +104,8 @@ Save theme files as ASCII or UTF-16.
 ## Development
 
 `pwsh -File tests/Run-Tests.ps1` runs the unit tests and syntax checks.
+`tests/race/ChordRace.ahk` (run by hand) checks that fast chord keys never strand
+the overlay.
 `examples/example.ahk` is a runnable demo.
 
 ## License
