@@ -47,3 +47,12 @@ KeyWatch_Claimed() {
     T.Eq(w.Down(0xC0, "``"), "")
     T.Eq(w.Down(0x41, "a"), "letter")
 }
+
+T.Test("KeyWatch: claimed combos do not close", KeyWatch_ClaimedCombos)
+KeyWatch_ClaimedCombos() {
+    w := LegendKeyWatch(LegendKeyName.FromHotkey("!/").Id, ["``", "=", "Ctrl+N", "Ctrl+P", "Ctrl+G"])
+    w.Down(0xA2, "LControl")
+    T.Eq(w.Down(0x4E, "n"), "")
+    T.Eq(w.Down(0x47, "g"), "")
+    T.Eq(w.Down(0x53, "s"), "combo")
+}

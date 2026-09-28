@@ -8,7 +8,8 @@ class LegendKeyWatch {
         0xA3, "Ctrl", 0x12, "Alt", 0xA4, "Alt", 0xA5, "Alt", 0x5B, "Win", 0x5C, "Win")
     static IgnoredVks := Map(0xE8, 1, 0xFF, 1, 0x07, 1)  ; menu-mask and unassigned keys
 
-    ; claimed: single-character keys the overlay handles itself while open.
+    ; claimed: keys the overlay handles itself while open — single characters ("=")
+    ; or combo ids ("Ctrl+N").
     __New(helpId, claimed := ["``"]) {
         this.HelpId := helpId
         this.Held := Map()
@@ -39,8 +40,10 @@ class LegendKeyWatch {
             if held != "Shift"
                 combo := true
         }
-        if combo
-            return LegendKeyName.FromParts(mods, keyName).Id == this.HelpId ? "" : "combo"
+        if combo {
+            id := LegendKeyName.FromParts(mods, keyName).Id
+            return id == this.HelpId || this.Claimed.Has(id) ? "" : "combo"
+        }
         return StrLen(keyName) = 1 && !this.Claimed.Has(keyName) ? "letter" : ""
     }
 

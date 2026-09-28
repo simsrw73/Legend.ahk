@@ -22,21 +22,36 @@ class Legend {
     static BaseTheme := ""
     static StyleOverride := "", DensityOverride := ""   ; session-only display toggles
     static Styles := ["text", "symbols", "ahk"]
+    static DefaultOptions := {HelpKey: "!/", Pages: [], Themes: [], Theme: "auto",
+        ChordTimeout: 0, ChordOverlay: 400, ChordReference: true}
+    static ChordState := ""
 
     static Page(title, match := "", options := "") => this.Registry.Page(title, match, options)
     static Bind(path, hotkey, description, fn, options := "") => this.Registry.Bind(path, hotkey, description, fn, options)
     static Doc(path, keyText, description) => this.Registry.Doc(path, keyText, description)
+
+    static Run(key, label, action, options := "") => LegendChordItem(key, label, action, "", options)
+    static Menu(key, label, items) => LegendChordItem(key, label, "", items)
+    static Chord(hotkey, title, items, options := "") {
+        chord := LegendChord(hotkey, title, items, options)
+        return this.Registry.AddChord(chord, (*) => Legend.OpenChord(chord))
+    }
+
+    ; An option from Start, or its default when Start has not run.
+    static Opt(name) => IsObject(this.Options) ? this.Options.%name% : this.DefaultOptions.%name%
     static Warnings => this.Registry.Warnings
     static ClaimsLetters => this.Visible && this.Nav.ClaimsLetters
 
     ; options: HelpKey ("!/"), Pages ([] folders of *.md), Themes ([] folders searched
-    ; before the built-in themes), Theme ("auto" or a theme file name without .ini).
+    ; before the built-in themes), Theme ("auto" or a theme file name without .ini),
+    ; ChordTimeout (seconds, 0 = none), ChordOverlay ("always", "never" or a delay in
+    ; ms, default 400), ChordReference (false hides chords from the reference).
     static Start(options := {}) {
         if this.Options
             throw Error("Legend.Start was already called", -1)
-        get := (name, fallback) => options.HasOwnProp(name) ? options.%name% : fallback
-        this.Options := {HelpKey: get("HelpKey", "!/"), Pages: get("Pages", []),
-            Themes: get("Themes", []), Theme: get("Theme", "auto")}
+        this.Options := {}
+        for name, fallback in this.DefaultOptions.OwnProps()
+            this.Options.%name% := options.HasOwnProp(name) ? options.%name% : fallback
 
         for dir in this.Options.Pages {
             for result in LegendPageFile.LoadDir(dir) {
@@ -46,6 +61,7 @@ class Legend {
                     this.Registry.AddFile(result.Page)
             }
         }
+        this.Registry.EnableChordReference(this.Options.ChordReference)
 
         this.HelpId := LegendKeyName.FromHotkey(this.Options.HelpKey).Id
         HotIf()
@@ -57,6 +73,9 @@ class Legend {
         HotIf((*) => Legend.ClaimsLetters)
         for ch in StrSplit("abcdefghijklmnopqrstuvwxyz0123456789")
             Hotkey(ch, this.Handler(ch))
+        HotIf((*) => Legend.Visible && !Legend.Nav.Pinned)   ; pinned: they reach the app
+        for key, action in Map("^n", "Next", "^p", "Prev", "^g", "Close")
+            Hotkey(key, this.Handler(action))
         HotIf()
     }
 
@@ -65,9 +84,9 @@ class Legend {
     static Toggle() => this.Visible ? this.Close() : this.Open()
 
     static Open() {
-        loaded := LegendTheme.Load(this.Options.Theme, this.Options.Themes)
-        this.BaseTheme := loaded.Values
-        this.ThemeWarnings := loaded.Warnings
+        if this.ChordState
+            this.CloseChord()
+        this.LoadTheme()
         paginate := this.ApplyDisplay()
         theme := this.Theme
 
@@ -82,6 +101,12 @@ class Legend {
         this.Visible := true
         this.Draw()
         this.StartWatching()
+    }
+
+    static LoadTheme() {
+        loaded := LegendTheme.Load(this.Opt("Theme"), this.Opt("Themes"))
+        this.BaseTheme := loaded.Values
+        this.ThemeWarnings := loaded.Warnings
     }
 
     ; Resolves the theme with the session's display toggles, replaces the measurer, and
@@ -147,7 +172,7 @@ class Legend {
     ; A visible-mode InputHook sees keys without blocking them, so Ctrl/Alt/Win combos
     ; still reach the app while the overlay closes. A timer notices focus changes.
     static StartWatching() {
-        this.Keys := LegendKeyWatch(this.HelpId, ["``", "="])
+        this.Keys := LegendKeyWatch(this.HelpId, ["``", "=", "Ctrl+N", "Ctrl+P", "Ctrl+G"])
         held := []
         for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
             if GetKeyState(Format("vk{:X}", vk), "P")
@@ -184,5 +209,140 @@ class Legend {
         }
         if WinExist("A") != this.ActiveHwnd
             this.Handle("FocusLost")
+    }
+
+    ; ---- Chord mode ----
+
+    static OpenChord(chord) {
+        if this.ChordState
+            return this.CloseChord()          ; trigger again closes
+        if this.Visible
+            this.Close()
+        this.LoadTheme()
+        paginate := this.ApplyDisplay()
+        this.Nav := LegendNavigator([], paginate, this.Theme["keyStyle"])
+        this.Nav.OpenChord(chord)
+        held := []
+        for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
+            if GetKeyState(Format("vk{:X}", vk), "P")
+                held.Push(vk)
+        state := this.ChordState := {Chord: chord, Keys: LegendChordKeys(held), Shown: false,
+            TriggerId: LegendKeyName.FromHotkey(chord.Hotkey).Id, Timers: Map()}
+        ih := state.Hook := InputHook("L0")
+        ih.KeyOpt("{All}", "+SN")
+        ih.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
+        ih.OnKeyDown := (hook, vk, sc) => Legend.ChordKeyDown(vk, sc)
+        ih.OnKeyUp := (hook, vk, sc) => Legend.ChordKeyUp(vk)
+        ih.Start()
+        this.ActiveHwnd := WinExist("A")
+        this.ChordTimer("Focus", () => Legend.CheckChordFocus(), 150)
+        delay := this.Opt("ChordOverlay")
+        if delay = "always"
+            this.ShowChord()
+        else if IsNumber(delay)
+            this.ChordTimer("Show", () => Legend.ShowChord(), -Max(1, Integer(delay)))
+        this.RestartChordTimeout()
+    }
+
+    static ChordTimer(name, fn, period) {
+        timers := this.ChordState.Timers
+        if timers.Has(name)
+            SetTimer(timers[name], 0)
+        timers[name] := fn
+        SetTimer(fn, period)
+    }
+
+    static RestartChordTimeout() {
+        seconds := this.Opt("ChordTimeout")
+        if IsNumber(seconds) && seconds > 0
+            this.ChordTimer("Timeout", () => Legend.CloseChord(), -Integer(seconds * 1000))
+    }
+
+    static ShowChord() {
+        state := this.ChordState
+        if !state || state.Shown
+            return
+        state.Shown := true
+        this.Draw()
+    }
+
+    static CheckChordFocus() {
+        if this.ChordState && WinExist("A") != this.ActiveHwnd
+            this.CloseChord()
+    }
+
+    static ChordKeyUp(vk) {
+        if this.ChordState
+            this.ChordState.Keys.Up(vk)
+    }
+
+    ; Hook callback: track modifiers here, handle real keys on the script thread.
+    static ChordKeyDown(vk, sc) {
+        state := this.ChordState
+        if !state || LegendKeyWatch.IgnoredVks.Has(vk) || state.Keys.Down(vk)
+            return
+        name := GetKeyName(Format("vk{:X}sc{:X}", vk, sc))
+        key := state.Keys.Key(name)
+        SetTimer(() => Legend.ChordKey(key, name), -1)
+    }
+
+    static ChordKey(key, name) {
+        static overlayKeys := Map("PgDn", "Next", "Ctrl+N", "Next", "PgUp", "Prev", "Ctrl+P", "Prev",
+            "Tab", "Style", "=", "Density")
+        state := this.ChordState
+        if !state
+            return
+        id := key.Id
+        if id == "Esc" || id == "Ctrl+G" || id == state.TriggerId
+            return this.CloseChord()
+        if id == "Backspace" {
+            if this.Nav.Stack.Length = 1
+                return this.CloseChord()
+            this.Nav.Press("Backspace")
+            return this.AfterChordStep()
+        }
+        if state.Shown && overlayKeys.Has(id) && !LegendChords.Find(this.Nav.Level.ChordItems, key) {
+            action := overlayKeys[id]
+            if action = "Style" || action = "Density"
+                this.ChangeDisplay(action)
+            else if this.Nav.Press(action) = "redraw"
+                this.Draw()
+            return this.RestartChordTimeout()
+        }
+        switch this.Nav.PressChord(key) {
+            case "redraw":
+                this.AfterChordStep()
+            case "run":
+                item := this.Nav.RunItem
+                this.CloseChord()
+                item.Run(name)
+            default:
+                shown := key.Verbatim != "" ? key.Verbatim
+                    : !key.Mods.Length && StrLen(key.Name) = 1 ? StrLower(key.Name)
+                    : LegendKeyName.Format(key, this.Theme["keyStyle"])
+                this.CloseChord()
+                ToolTip("Nothing on " shown)
+                SetTimer(() => ToolTip(), -1000)
+        }
+    }
+
+    static AfterChordStep() {
+        if this.ChordState.Shown
+            this.Draw()
+        this.RestartChordTimeout()
+    }
+
+    static CloseChord() {
+        state := this.ChordState
+        if !state
+            return
+        this.ChordState := ""
+        state.Hook.Stop()
+        for name, fn in state.Timers
+            SetTimer(fn, 0)
+        if this.Gui
+            this.Gui.Destroy(), this.Gui := ""
+        if this.Measurer
+            this.Measurer.Destroy(), this.Measurer := ""
     }
 }

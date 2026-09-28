@@ -12,7 +12,8 @@ class LegendMeasurer {
         spacing := this.Theme["rowSpacing"]
         if row.Kind = "entry" {
             key := this.Size(row.Key, "key"), text := this.Size(row.Text, "body")
-            return {KeyW: key.W, TextW: text.W, H: Max(key.H, text.H) + spacing}
+            textW := text.W + (row.Status != "" ? this.Size("● ", "body").W : 0)
+            return {KeyW: key.W, TextW: textW, H: Max(key.H, text.H) + spacing}
         }
         size := this.Size(row.Text, row.Kind)
         return {KeyW: 0, TextW: size.W, H: size.H + spacing * (row.Kind = "heading" ? 2 : 1)}
@@ -77,7 +78,12 @@ class LegendOverlay {
                         ; center the key font's line on the description's
                         keyY := y + (measurer.Size(row.Text, "body").H - measurer.Size(row.Key, "key").H) // 2
                         this.AddText(g, theme, "key", keyColor, "x" x " y" keyY " w" col.KeyWidth, row.Key)
-                        this.AddText(g, theme, "body", theme["description"], "x" (x + col.KeyWidth + pad) " y" y, row.Text)
+                        textX := x + col.KeyWidth + pad
+                        if row.Status != "" {
+                            this.AddText(g, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" y, "●")
+                            textX += measurer.Size("● ", "body").W
+                        }
+                        this.AddText(g, theme, "body", theme["description"], "x" textX " y" y, row.Text)
                 }
                 y += size.H
             }

@@ -1,6 +1,7 @@
 # Backlog
 
-- **Chord mode** (in design): docs/specs/2026-09-28-chord-mode-design.md.
+- **Chord mode** shipped (docs/specs/2026-09-28-chord-mode-design.md); next:
+  migrate the dotfiles' Win+Space menu and drop KeyChord.
 - **Short local names vs host globals.** Legend uses locals like `w`, `h`, `x`,
   `y`, `p`, `c`, `g`, `out`; a host script with globals of the same names gets
   `#Warn` "local has the same name as a global" noise from Legend under

@@ -34,6 +34,25 @@ Legend.Start({Pages: [A_ScriptDir "\legend\pages"]})
 A row's optional 4th item `{Row: "Alt+H/J/K/L", Text: "focus ← ↓ ↑ →"}` merges
 entries into one line.
 
+## Chords
+
+```ahk
+Legend.Chord("#Space", "Launch", [
+    Legend.Run("z", "Zed", (*) => Run("zed"), {Status: () => WinExist("ahk_exe Zed.exe")}),
+    Legend.Menu("w", "Web", [Legend.Run("b", "Brave", (*) => Run("brave"))]),
+    Legend.Run("s", "Sign-off", "Regards,{Enter}Me"),                 ; sent as keys
+    Legend.Run("1-9", "Workspace", key => FocusWorkspace(key))         ; wildcard gets the key
+])
+```
+
+Press the trigger, then keys. The menu appears after `ChordOverlay` ms (default
+400; `"always"` / `"never"`); Esc or Ctrl+G cancels, Backspace goes up a level,
+PgDn/PgUp or Ctrl+N/Ctrl+P page. Options per item: `If` (condition; the first
+matching item whose `If` holds runs), `Status` (running dot), `Hint`. Keys may
+use modifiers (`^s`) and KeyChord wildcards (`?`, `F*`, `a-f`). `Start` options:
+`ChordTimeout` (seconds, 0 = none), `ChordOverlay`, `ChordReference` (chords
+appear as pages in Alt+/ unless `false`).
+
 ## Page files
 
 ```markdown

@@ -22,3 +22,14 @@ Overlay_Measure() {
     } finally
         m.Destroy()
 }
+
+T.Test("Overlay: a status dot widens the text column", Overlay_StatusWidth)
+Overlay_StatusWidth() {
+    m := LegendMeasurer(LegendTheme.Resolve(LegendTheme.Read("")))
+    try {
+        plain := m(LegendRows.Row("entry", "z", "Zed", "bound"))
+        dotted := m(LegendRows.Row("entry", "z", "Zed", "bound", [], true))
+        T.True(dotted.TextW > plain.TextW, dotted.TextW " vs " plain.TextW)
+    } finally
+        m.Destroy()
+}
