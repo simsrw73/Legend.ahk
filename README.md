@@ -5,6 +5,11 @@ shortcuts for the app you're in, or browse an index of every page. Your
 AutoHotkey bindings and hand-written Markdown pages of an app's native
 shortcuts are shown side by side; doc-only keys appear in a muted color.
 
+<p align="center">
+  <img src="docs/images/overlay-page.png" width="575"
+       alt="Legend showing a komorebi page: workspace, window and stack shortcuts in two columns">
+</p>
+
 ## Install
 
 Copy or submodule this repo next to your script and include it:
@@ -59,6 +64,11 @@ use modifiers (`^s`; Shift+; is `+;`, not `:`) and [KeyChord](#acknowledgments) 
 `ChordTimeout` (seconds, 0 = none), `ChordOverlay`, `ChordReference` (chords
 appear as pages in Alt+/ unless `false`).
 
+<p align="center">
+  <img src="docs/images/chord-menu.png" width="293"
+       alt="A Win+Space chord menu: one key per app, with dots for apps that are running, and › for submenus">
+</p>
+
 ## Page files
 
 ```markdown
@@ -92,6 +102,12 @@ for the active window; only a match given in code makes hotkeys app-specific.
 | `=` | switch between comfortable and compact spacing |
 | Esc | close |
 | any Ctrl/Alt/Win shortcut | closes the overlay and goes to the app |
+
+<p align="center">
+  <img src="docs/images/overlay-index.png" width="341" alt="The index of pages, each with its letter">
+  &nbsp;
+  <img src="docs/images/overlay-symbols.png" width="362" alt="The komorebi page with keys shown as symbols (Tab)">
+</p>
 
 ## Themes
 
