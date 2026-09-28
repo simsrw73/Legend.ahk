@@ -49,7 +49,8 @@ Press the trigger, then keys. The menu appears after `ChordOverlay` ms (default
 400; `"always"` / `"never"`); Esc or Ctrl+G cancels, Backspace goes up a level,
 PgDn/PgUp or Ctrl+N/Ctrl+P page. Options per item: `If` (condition; the first
 matching item whose `If` holds runs), `Status` (running dot), `Hint`. Keys may
-use modifiers (`^s`) and KeyChord wildcards (`?`, `F*`, `a-f`). `Start` options:
+use modifiers (`^s`; Shift+; is `+;`, not `:`) and KeyChord wildcards (`?`, `F*`,
+`a-f`). `Start` options:
 `ChordTimeout` (seconds, 0 = none), `ChordOverlay`, `ChordReference` (chords
 appear as pages in Alt+/ unless `false`).
 

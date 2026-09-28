@@ -55,3 +55,21 @@ Chord_HeldModifiers() {
     T.Eq(keys.Key("s").Id, "Ctrl+S")
     T.True(!keys.Down(0x41), "A is not a modifier")
 }
+
+T.Test("Chord: the held trigger key's auto-repeat is ignored until released", Chord_TriggerRepeat)
+Chord_TriggerRepeat() {
+    keys := LegendChordKeys([0x5B], "Space", true)
+    T.True(keys.IsTriggerRepeat("Space"), "held trigger key repeats")
+    T.True(!keys.IsTriggerRepeat("z"))
+    keys.Up(0x20, "Space")
+    T.True(!keys.IsTriggerRepeat("Space"), "after release Space is a normal key")
+    T.True(!LegendChordKeys([], "Space", false).IsTriggerRepeat("Space"), "trigger not held at open")
+}
+
+T.Test("Chord: Alt and Win steps need a menu mask", Chord_NeedsMask)
+Chord_NeedsMask() {
+    T.True(LegendChordKeys.NeedsMask(LegendKeyName.FromText("Win+X")))
+    T.True(LegendChordKeys.NeedsMask(LegendKeyName.FromText("Alt+S")))
+    T.True(!LegendChordKeys.NeedsMask(LegendKeyName.FromText("Ctrl+S")))
+    T.True(!LegendChordKeys.NeedsMask(LegendKeyName.FromText("z")))
+}

@@ -70,10 +70,12 @@ A chord key is an AHK key name, optionally with modifier prefixes (`z`,
 |---|---|
 | `?` | any single character key (`a`, `9`, `;`; not `F1`, `PgUp`) |
 | `F*`, `Num*`, `*PgUp` | key names matching the glob (`*` = any run of characters) |
-| `a-f`, `1-9`, `:-@` | any single character whose code point is in the inclusive range |
+| `a-f`, `1-9`, `,-/` | any single unshifted character key whose code point is in the inclusive range |
 | `^a-f` | the pattern with Ctrl held |
 
-Matching compares modifiers exactly (a plain `z` item does not match
+Keys are matched as the unshifted key plus modifiers, as KeyChord did: a
+single character means the key itself, so Shift+; is `+;` (not `:`), and
+Shift+A is `+a`. Matching compares modifiers exactly (a plain `z` item does not match
 Ctrl+Z). Unknown key names in items throw `ValueError` when `Legend.Chord`
 runs, like `Legend.Doc`.
 
@@ -97,7 +99,12 @@ action runs per key press.
   - No match → close and show a 1-second tooltip "Nothing on <key>" (key in
     the current notation), whether or not the menu was visible.
 - Reserved keys: **Esc** and **Ctrl+G** close; **Backspace** goes up one level
-  (closes at the top); the trigger hotkey closes.
+  (closes at the top); the full trigger pressed again (its modifier re-pressed)
+  closes. While the trigger's modifier is still held from opening, the trigger's
+  key is an ordinary chord key (Win held, Space → a `Space` item); the trigger
+  key's own auto-repeat, before it is first released, is ignored. Keys pressed
+  with Alt or Win held are followed by a masking key so releasing the modifier
+  does not open the Start menu or a menu bar.
 - Overlay keys, active only while the menu is visible and only when no item at
   the current level matches the key: **PgDn / Ctrl+N** next screen, **PgUp /
   Ctrl+P** previous screen, **Tab** cycle notation, **=** flip density. Chord

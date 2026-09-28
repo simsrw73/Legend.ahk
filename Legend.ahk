@@ -226,13 +226,15 @@ class Legend {
         for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
             if GetKeyState(Format("vk{:X}", vk), "P")
                 held.Push(vk)
-        state := this.ChordState := {Chord: chord, Keys: LegendChordKeys(held), Shown: false,
-            TriggerId: LegendKeyName.FromHotkey(chord.Hotkey).Id, Timers: Map()}
+        trigger := LegendKeyName.FromHotkey(chord.Hotkey)
+        triggerHeld := StrLen(trigger.Name) > 0 && GetKeyState(trigger.Name, "P")
+        state := this.ChordState := {Chord: chord, Keys: LegendChordKeys(held, trigger.Name, triggerHeld),
+            Shown: false, TriggerId: trigger.Id, Timers: Map()}
         ih := state.Hook := InputHook("L0")
         ih.KeyOpt("{All}", "+SN")
         ih.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
         ih.OnKeyDown := (hook, vk, sc) => Legend.ChordKeyDown(vk, sc)
-        ih.OnKeyUp := (hook, vk, sc) => Legend.ChordKeyUp(vk)
+        ih.OnKeyUp := (hook, vk, sc) => Legend.ChordKeyUp(vk, sc)
         ih.Start()
         this.ActiveHwnd := WinExist("A")
         this.ChordTimer("Focus", () => Legend.CheckChordFocus(), 150)
@@ -271,9 +273,9 @@ class Legend {
             this.CloseChord()
     }
 
-    static ChordKeyUp(vk) {
+    static ChordKeyUp(vk, sc) {
         if this.ChordState
-            this.ChordState.Keys.Up(vk)
+            this.ChordState.Keys.Up(vk, GetKeyName(Format("vk{:X}sc{:X}", vk, sc)))
     }
 
     ; Hook callback: track modifiers here, handle real keys on the script thread.
@@ -282,7 +284,11 @@ class Legend {
         if !state || LegendKeyWatch.IgnoredVks.Has(vk) || state.Keys.Down(vk)
             return
         name := GetKeyName(Format("vk{:X}sc{:X}", vk, sc))
+        if state.Keys.IsTriggerRepeat(name)
+            return
         key := state.Keys.Key(name)
+        if LegendChordKeys.NeedsMask(key)
+            SetTimer(() => Send("{Blind}{vkE8}"), -1)   ; keep a lone Alt/Win release from opening a menu
         SetTimer(() => Legend.ChordKey(key, name), -1)
     }
 

@@ -77,12 +77,27 @@ class LegendChords {
 
 ; Tracks modifiers during a chord. Modifiers already down when the chord opened
 ; (the trigger's) are ignored until released, so Win+Space then z is plain z.
+; The trigger's own key, if still held when the chord opened, is ignored until it
+; is released (so its auto-repeat doesn't count as a chord key).
 class LegendChordKeys {
-    __New(heldVks := []) {
+    __New(heldVks := [], triggerName := "", triggerHeld := false) {
         this.Held := Map(), this.Stale := Map()
         for vk in heldVks
             if LegendKeyWatch.ModVks.Has(vk)
                 this.Held[vk] := LegendKeyWatch.ModVks[vk], this.Stale[vk] := true
+        this.TriggerName := triggerName != "" ? LegendKeyName.NormalizeName(triggerName) : ""
+        this.TriggerHeld := triggerHeld && this.TriggerName != ""
+    }
+
+    IsTriggerRepeat(keyName) => this.TriggerHeld && LegendKeyName.NormalizeName(keyName) == this.TriggerName
+
+    ; Alt or Win held around a swallowed key: releasing it alone would open the
+    ; Start menu or a menu bar, so the controller sends a mask key first.
+    static NeedsMask(key) {
+        for m in key.Mods
+            if m = "Win" || m = "Alt"
+                return true
+        return false
     }
 
     ; Returns true when vk is a modifier (tracked here, never a chord key).
@@ -93,11 +108,13 @@ class LegendChordKeys {
         return true
     }
 
-    Up(vk) {
+    Up(vk, keyName := "") {
         if this.Held.Has(vk)
             this.Held.Delete(vk)
         if this.Stale.Has(vk)
             this.Stale.Delete(vk)
+        if keyName != "" && LegendKeyName.NormalizeName(keyName) == this.TriggerName
+            this.TriggerHeld := false
     }
 
     ; The pressed key with the modifiers pressed since the chord opened.
