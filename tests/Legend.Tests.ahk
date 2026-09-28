@@ -15,5 +15,7 @@
 #Include %A_ScriptDir%\Layout.Tests.ahk
 #Include %A_ScriptDir%\..\src\Navigator.ahk
 #Include %A_ScriptDir%\Navigator.Tests.ahk
+#Include %A_ScriptDir%\..\src\Theme.ahk
+#Include %A_ScriptDir%\Theme.Tests.ahk
 
 T.Finish()
