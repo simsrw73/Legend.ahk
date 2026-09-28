@@ -303,7 +303,65 @@ Bound, Row, Text}. `LegendOverlay` and `LegendLayout` read only this model.
   - `legend = top` with `symbols` and `ahk` styles.
   - A broken `.md` line shows the warning count; the host script still starts.
 
+## Modes
+
+Legend has two modes built on the same parts (data model, rows, layout,
+navigator, overlay, theme). v1 implements reference mode; chord mode is the
+second pass, and v1 must not make choices that block it.
+
+| | Reference (help key, v1) | Chord (its own hotkey, v2) |
+|---|---|---|
+| Purpose | show what keys exist | run an action by a key sequence |
+| Letters | open a page or category | run an item's action or open its submenu |
+| Keyboard | not claimed; combos reach the app | every key swallowed until the menu closes |
+| Closes | Esc, help key, combo, focus change | after an action runs, Esc, or a key with no item |
+| Extras | pin, paging | status indicator per item, optional timeout |
+
+### Chord mode (v2)
+
+Replaces the host's Win+Space which-key menu (currently `Chords.ahk` on the
+KeyChord library).
+
+```ahk
+Legend.Chord("#Space", "Launch", [
+    Legend.Run("z", "Zed", (*) => WindowLauncher.ActivateOrRun(Apps.Zed),
+        {Status: () => WindowLauncher.Find(Apps.Zed)}),
+    Legend.Menu("w", "Research", [
+        Legend.Run("b", "Brave", (*) => WindowLauncher.ActivateOrRun(Apps.Brave))
+    ]),
+    Legend.Run("Space", "Flow Launcher", (*) => Send("^``"))
+], {Timeout: 0})
+```
+
+- `Legend.Chord(hotkey, title, items, options?)` registers the hotkey that
+  opens the menu. `Legend.Run(key, label, fn, options?)` is an action item;
+  `Legend.Menu(key, label, items)` a submenu. Keys are fixed by the author
+  (any AHK key name, e.g. `Space`), never auto-assigned.
+- Options: `Timeout` in seconds (0 = wait for a key, the default); item
+  `Status`, a function returning true/false, drawn as a dot in the theme's
+  `indicatorOn` / `indicatorOff` colors (evaluated when the menu is drawn).
+- Controller `LegendChord`, separate from the reference controller: reads one
+  key at a time with a suppressing `InputHook` (modifiers pass through, so
+  releasing Win behaves normally), feeds it to a `LegendNavigator`, and on a
+  `run` result closes the overlay and calls the action. A key with no item
+  shows a brief "Nothing on <key>" and closes.
+- Navigator extension: a menu item has either `Target` (drill down, as in v1)
+  or `Action`; pressing an `Action` item returns `"run"` with the item.
+- Reference integration: each chord tree also becomes a page in the reference
+  index (title = chord title), with entries like `Win+Space → w → b` Brave,
+  generated from the tree so it cannot drift. `Legend.Start({ChordReference:
+  false})` omits all chord pages from the reference (default `true`).
+- Theme additions: `[colors] indicatorOn`, `indicatorOff`.
+
+### What v1 keeps open for chord mode
+
+- `LegendNavigator` knows nothing about hotkeys or `InputHook`; menu items are
+  plain objects, so adding `Action` needs no change to existing callers.
+- `LegendOverlay.Show` draws whatever rows it gets; a row gains an optional
+  `Status` field in v2 without changing v1 rows.
+- Letter assignment already honors fixed keys.
+
 ## Out of scope for v1
 
-Hotstrings, exporting code bindings to Markdown, search, running commands from
-the overlay, readers for other platforms.
+Chord mode (above), hotstrings, exporting code bindings to Markdown, search,
+readers for other platforms.
