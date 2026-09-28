@@ -138,6 +138,15 @@ Registry_CaseInsensitiveMerge() {
     T.Eq(Registry_AllEntries(r.Page("Zen")).Length, 2)
 }
 
+T.Test("Registry: the default binder registers real hotkeys", Registry_DefaultBinder)
+Registry_DefaultBinder() {
+    r := LegendRegistry()
+    r.Bind(["p", "c"], "^!+F24", "global", Noop)
+    r.Page("q", "ahk_exe legend-test-nothing.exe").Category("c", [["^!+F23", "conditional", Noop]])
+    T.Eq(Registry_AllEntries(r.Page("p")).Length, 1)
+    T.Eq(Registry_AllEntries(r.Page("q")).Length, 1)
+}
+
 T.Test("Registry: SortedPages skips empty pages", Registry_Sorted)
 Registry_Sorted() {
     r := Registry_New()

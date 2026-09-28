@@ -98,12 +98,13 @@ class LegendRegistry {
         this.Binder := ObjBindMethod(LegendRegistry, "DefaultBinder")
     }
 
-    ; Registers fn for hotkey, active only in windows matching match ("" = everywhere).
-    static DefaultBinder(hotkey, fn, match) {
+    ; Registers fn for keyName, active only in windows matching match ("" = everywhere).
+    ; (The parameter must not be called "hotkey": that would shadow Hotkey().)
+    static DefaultBinder(keyName, fn, match) {
         if match != ""
             HotIfWinActive(match)
         try
-            Hotkey(hotkey, fn)
+            Hotkey(keyName, fn)
         finally
             HotIfWinActive()
     }

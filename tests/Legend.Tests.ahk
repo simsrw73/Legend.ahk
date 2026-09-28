@@ -17,5 +17,7 @@
 #Include %A_ScriptDir%\Navigator.Tests.ahk
 #Include %A_ScriptDir%\..\src\Theme.ahk
 #Include %A_ScriptDir%\Theme.Tests.ahk
+#Include %A_ScriptDir%\..\src\Overlay.ahk
+#Include %A_ScriptDir%\Overlay.Tests.ahk
 
 T.Finish()
