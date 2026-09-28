@@ -156,6 +156,69 @@ Registry_GlobalIgnoresHostHotIf() {
     T.Eq(Hotkey("^!+F22", "Off"), "", "exists with no condition")
 }
 
+Registry_LaunchChord(options := "") => LegendChord("#Space", "Launch", [
+    LegendChordItem("z", "Zed", Noop),
+    LegendChordItem("w", "Research", "", [LegendChordItem("b", "Brave", Noop)]),
+    LegendChordItem("t", "Terminal", Noop, "", {If: () => false, Hint: "in Explorer"})
+], options)
+
+Registry_Keys(category) {
+    out := ""
+    for e in category.Groups[1].Entries
+        out .= LegendKeyName.Format(e.Key, "text") "=" e.Description ";"
+    return out
+}
+
+T.Test("Registry: chord reference pages follow the tree", Registry_ChordPage)
+Registry_ChordPage() {
+    r := Registry_New()
+    r.AddChord(Registry_LaunchChord({Match: "ahk_exe x.exe"}), Noop)
+    T.Eq(r.BindLog[1].Hotkey, "#Space")
+    T.Eq(r.BindLog[1].Match, "ahk_exe x.exe")
+    T.Eq(r.SortedPages().Length, 0, "no pages before enabling")
+    r.EnableChordReference(true)
+    page := r.Page("Launch")
+    T.Eq(page.Match, "ahk_exe x.exe")
+    T.Eq(page.Categories[1].Name, "Launch")
+    T.Eq(page.Categories[2].Name, "Launch › Research")
+    T.Eq(Registry_Keys(page.Categories[1]),
+        "Win+Space z=Zed;Win+Space w=Research ›;Win+Space t=Terminal (in Explorer);")
+    T.Eq(Registry_Keys(page.Categories[2]), "Win+Space w b=Brave;")
+    T.True(page.Categories[1].Groups[1].Entries[1].Bound)
+}
+
+T.Test("Registry: hidden chords make no pages", Registry_ChordHidden)
+Registry_ChordHidden() {
+    r := Registry_New()
+    r.AddChord(Registry_LaunchChord({Reference: false}), Noop)
+    r.EnableChordReference(true)
+    T.Eq(r.SortedPages().Length, 0)
+    r2 := Registry_New()
+    r2.AddChord(Registry_LaunchChord(), Noop)
+    r2.EnableChordReference(false)
+    T.Eq(r2.SortedPages().Length, 0)
+}
+
+T.Test("Registry: chord entries join an existing page", Registry_ChordMerge)
+Registry_ChordMerge() {
+    r := Registry_New()
+    r.Bind(["Launch", "Other"], "^q", "quit", Noop)
+    r.EnableChordReference(true)
+    r.AddChord(Registry_LaunchChord(), Noop)
+    T.Eq(r.Pages.Length, 1)
+    T.Eq(r.Page("Launch").Categories.Length, 3)
+}
+
+T.Test("Registry: chords added after enabling are paged once", Registry_ChordAfterEnable)
+Registry_ChordAfterEnable() {
+    r := Registry_New()
+    r.AddChord(Registry_LaunchChord(), Noop)
+    r.EnableChordReference(true)
+    r.AddChord(LegendChord("#j", "Other", [LegendChordItem("a", "A", Noop)]), Noop)
+    T.Eq(r.Page("Launch").Categories[1].Groups[1].Entries.Length, 3)
+    T.Eq(r.Page("Other").Categories[1].Groups[1].Entries.Length, 1)
+}
+
 T.Test("Registry: SortedPages skips empty pages", Registry_Sorted)
 Registry_Sorted() {
     r := Registry_New()

@@ -96,6 +96,8 @@ class LegendRegistry {
         this.Pages := []
         this.Warnings := []
         this.Binder := ObjBindMethod(LegendRegistry, "DefaultBinder")
+        this.Chords := []
+        this.ChordReference := ""   ; set by EnableChordReference (Legend.Start)
     }
 
     ; Registers fn for keyName, active only in windows matching match ("" = everywhere).
@@ -150,6 +152,51 @@ class LegendRegistry {
         this.CheckConflict(page)
         for e in doc.Entries
             this.AddEntry(page, e.Category, e.Group, e.Key, e.Description, false)
+    }
+
+    ; Registers a chord: binds its trigger to open (under its Match) and, once the
+    ; reference is enabled, adds its reference page.
+    AddChord(chord, open) {
+        binder := this.Binder
+        binder(chord.Hotkey, open, chord.Match)
+        this.Chords.Push(chord)
+        if this.ChordReference = true
+            this.AddChordPage(chord)
+        return chord
+    }
+
+    ; Legend.Start calls this once with its ChordReference option.
+    EnableChordReference(enabled) {
+        this.ChordReference := enabled ? true : false
+        if enabled
+            for chord in this.Chords
+                this.AddChordPage(chord)
+    }
+
+    AddChordPage(chord) {
+        if !chord.Reference
+            return
+        page := this.Page(chord.Title)
+        if chord.Match != "" && page.FileMatch = ""
+            page.FileMatch := chord.Match   ; decides which page opens; never conditions hotkeys
+        this.AddChordLevel(page, chord.Items, [LegendKeyName.FromHotkey(chord.Hotkey)], chord.Title)
+    }
+
+    ; One category per menu level: the level's items first, then each submenu.
+    AddChordLevel(page, items, steps, category) {
+        for item in items {
+            path := steps.Clone()
+            path.Push(item.Pattern)
+            label := item.Label (item.IsMenu ? " ›" : "") (item.Hint != "" ? " (" item.Hint ")" : "")
+            this.AddEntry(page, category, "", LegendKeyName.Sequence(path), label, true)
+        }
+        for item in items {
+            if !item.IsMenu
+                continue
+            path := steps.Clone()
+            path.Push(item.Pattern)
+            this.AddChordLevel(page, item.Items, path, category " › " item.Label)
+        }
     }
 
     AddBinding(page, category, group, hotkey, description, fn, options) {
