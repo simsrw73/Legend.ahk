@@ -9,5 +9,7 @@
 #Include %A_ScriptDir%\PageFile.Tests.ahk
 #Include %A_ScriptDir%\..\src\Registry.ahk
 #Include %A_ScriptDir%\Registry.Tests.ahk
+#Include %A_ScriptDir%\..\src\Rows.ahk
+#Include %A_ScriptDir%\Rows.Tests.ahk
 
 T.Finish()
