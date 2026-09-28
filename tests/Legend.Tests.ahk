@@ -5,5 +5,7 @@
 
 #Include %A_ScriptDir%\..\src\KeyName.ahk
 #Include %A_ScriptDir%\KeyName.Tests.ahk
+#Include %A_ScriptDir%\..\src\PageFile.ahk
+#Include %A_ScriptDir%\PageFile.Tests.ahk
 
 T.Finish()
