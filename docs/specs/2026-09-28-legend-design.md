@@ -327,6 +327,9 @@ second pass, and v1 must not make choices that block it.
 
 ### Chord mode (v2)
 
+Full design: `2026-09-28-chord-mode-design.md` (supersedes the sketch below where
+they differ: timeout and overlay are user-level `Start` options, not per chord).
+
 Replaces the host's Win+Space which-key menu (currently `Chords.ahk` on the
 KeyChord library).
 

@@ -1,6 +1,6 @@
 # Backlog
 
-- **Chord mode** (second pass): see "Modes" in docs/specs/2026-09-28-legend-design.md.
+- **Chord mode** (in design): docs/specs/2026-09-28-chord-mode-design.md.
 - **Short local names vs host globals.** Legend uses locals like `w`, `h`, `x`,
   `y`, `p`, `c`, `g`, `out`; a host script with globals of the same names gets
   `#Warn` "local has the same name as a global" noise from Legend under
