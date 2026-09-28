@@ -49,7 +49,7 @@ Press the trigger, then keys. The menu appears after `ChordOverlay` ms (default
 400; `"always"` / `"never"`); Esc or Ctrl+G cancels, Backspace goes up a level,
 PgDn/PgUp or Ctrl+N/Ctrl+P page. Options per item: `If` (condition; the first
 matching item whose `If` holds runs), `Status` (running dot), `Hint`. Keys may
-use modifiers (`^s`; Shift+; is `+;`, not `:`) and KeyChord wildcards (`?`, `F*`,
+use modifiers (`^s`; Shift+; is `+;`, not `:`) and [KeyChord](#acknowledgments) wildcards (`?`, `F*`,
 `a-f`). `Start` options:
 `ChordTimeout` (seconds, 0 = none), `ChordOverlay`, `ChordReference` (chords
 appear as pages in Alt+/ unless `false`).
@@ -107,6 +107,15 @@ Save theme files as ASCII or UTF-16.
 `tests/race/ChordRace.ahk` (run by hand) checks that fast chord keys never strand
 the overlay.
 `examples/example.ahk` is a runnable demo.
+
+## Acknowledgments
+
+Chord mode is built on ideas from [KeyChord](https://github.com/tylerjcw/KeyChord)
+by [tylerjcw](https://github.com/tylerjcw), which ran my own chord menus before
+Legend had any. Nested chords, conditions where the first match wins, modifier
+steps and the wildcard syntax all come from it, and the wildcards keep KeyChord's
+syntax on purpose. Many thanks to tylerjcw for building KeyChord and sharing it:
+it showed how good chords can feel in AutoHotkey.
 
 ## License
 
