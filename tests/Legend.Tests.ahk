@@ -11,5 +11,7 @@
 #Include %A_ScriptDir%\Registry.Tests.ahk
 #Include %A_ScriptDir%\..\src\Rows.ahk
 #Include %A_ScriptDir%\Rows.Tests.ahk
+#Include %A_ScriptDir%\..\src\Layout.ahk
+#Include %A_ScriptDir%\Layout.Tests.ahk
 
 T.Finish()
