@@ -1,7 +1,8 @@
 #Requires AutoHotkey v2.0
 
 ; Turns the page model into display rows for LegendLayout and LegendOverlay:
-;   {Kind: "heading" | "group" | "entry", Key, Text, Style: "bound" | "doc" | "menu", Mods}
+;   {Kind: "heading" | "group" | "entry", Key, Text, Style: "bound" | "doc" | "menu", Mods,
+;    Status: true | false | "" (chord items with a running indicator)}
 ; Empty categories and groups produce nothing.
 class LegendRows {
     static ForPage(page, style) {
@@ -64,6 +65,15 @@ class LegendRows {
         return rows
     }
 
-    static Row(kind, key, text, style := "", mods := "") =>
-        {Kind: kind, Key: key, Text: text, Style: style, Mods: IsObject(mods) ? mods : []}
+    ; Chord menu items (already filtered by LegendChords.Visible).
+    static ForChord(items, style) {
+        rows := []
+        for item in items
+            rows.Push(this.Row("entry", item.Pattern.Display(style), item.Label (item.IsMenu ? " ›" : ""),
+                "bound", item.Pattern.Mods, item.StatusNow()))
+        return rows
+    }
+
+    static Row(kind, key, text, style := "", mods := "", status := "") =>
+        {Kind: kind, Key: key, Text: text, Style: style, Mods: IsObject(mods) ? mods : [], Status: status}
 }

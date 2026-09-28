@@ -162,3 +162,54 @@ Navigator_FooterExtras() {
     f := nav.Footer("tab text", "= comfortable")
     T.True(InStr(f, "tab text") && InStr(f, "= comfortable"), f)
 }
+
+Navigator_Chord() => LegendChord("#Space", "Launch", [
+    LegendChordItem("z", "Zed", Noop),
+    LegendChordItem("w", "Research", "", [LegendChordItem("b", "Brave", Noop)]),
+    LegendChordItem("t", "Hidden", Noop, "", {If: () => false}),
+    LegendChordItem("t", "Shown", Noop)
+])
+
+Navigator_ChordNav() {
+    nav := LegendNavigator([], rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    nav.OpenChord(Navigator_Chord())
+    return nav
+}
+
+T.Test("Navigator: chord levels show visible items", Navigator_ChordLevel)
+Navigator_ChordLevel() {
+    nav := Navigator_ChordNav()
+    T.Eq(nav.Mode, "chord")
+    T.Eq(nav.View.Title, "Launch")
+    texts := ""
+    for row in nav.View.Columns[1].Rows
+        texts .= row.Key "=" row.Text ";"
+    T.Eq(texts, "z=Zed;w=Research ›;t=Shown;")
+    T.True(!nav.ClaimsLetters)
+}
+
+T.Test("Navigator: chord presses descend, run or miss", Navigator_ChordPress)
+Navigator_ChordPress() {
+    nav := Navigator_ChordNav()
+    T.Eq(nav.PressChord(LegendKeyName.FromText("x")), "miss")
+    T.Eq(nav.PressChord(LegendKeyName.FromText("w")), "redraw")
+    T.Eq(nav.View.Title, "Launch › Research")
+    T.Eq(nav.PressChord(LegendKeyName.FromText("b")), "run")
+    T.Eq(nav.RunItem.Label, "Brave")
+    T.Eq(nav.Press("Backspace"), "redraw")
+    T.Eq(nav.View.Title, "Launch")
+    T.Eq(nav.PressChord(LegendKeyName.FromText("t")), "run")
+    T.Eq(nav.RunItem.Label, "Shown")
+}
+
+T.Test("Navigator: chord footer and relayout", Navigator_ChordFooter)
+Navigator_ChordFooter() {
+    nav := Navigator_ChordNav()
+    nav.PressChord(LegendKeyName.FromText("w"))
+    f := nav.Footer("tab text")
+    T.True(InStr(f, "esc close") && InStr(f, "⌫ back") && InStr(f, "tab text"), f)
+    T.True(!InStr(f, "pin"), f)
+    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 1000, 1), "ahk")
+    T.Eq(nav.View.Title, "Launch › Research")
+    T.Eq(nav.Stack.Length, 2)
+}

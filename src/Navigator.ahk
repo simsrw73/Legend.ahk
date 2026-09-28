@@ -10,6 +10,8 @@ class LegendNavigator {
         this.Style := style
         this.Stack := []
         this.Pinned := false
+        this.Mode := "reference"
+        this.RunItem := ""
     }
 
     Level => this.Stack[this.Stack.Length]
@@ -31,6 +33,25 @@ class LegendNavigator {
             this.Stack.Push(this.PageLevel(matches[1]))
         else if matches.Length > 1
             this.Stack.Push(this.IndexLevel(matches, "Legend › this window"))
+    }
+
+    ; Chord mode: the chord's top level; keys go through PressChord.
+    OpenChord(chord) {
+        this.Mode := "chord"
+        this.Stack := [this.ChordLevel(chord.Items, chord.Title)]
+    }
+
+    ; "redraw" (entered a submenu), "run" (RunItem is set) or "miss".
+    PressChord(key) {
+        item := LegendChords.Find(this.Level.ChordItems, key)
+        if !item
+            return "miss"
+        if item.IsMenu {
+            this.Stack.Push(this.ChordLevel(item.Items, this.Level.Title " › " item.Label))
+            return "redraw"
+        }
+        this.RunItem := item
+        return "run"
     }
 
     ; Returns "redraw", "close", "pass" (key is not the overlay's) or "none".
@@ -88,19 +109,26 @@ class LegendNavigator {
         this.Stack := stack
     }
 
-    ; extras: display hints shown before "esc close".
+    ; extras: display hints (tab / =).
     Footer(extras*) {
         level := this.Level
         parts := []
-        if this.ClaimsLetters
-            parts.Push("a–z open")
-        if this.Stack.Length > 1
-            parts.Push("⌫ back")
-        if level.Screens.Length > 1
-            parts.Push("spc / pgup  " level.ScreenIndex "/" level.Screens.Length)
-        parts.Push(this.Pinned ? "`` unpin" : "`` pin")
-        parts.Push(extras*)
-        parts.Push("esc close")
+        if this.Mode = "chord" {
+            parts.Push("esc close", "⌫ back")
+            if level.Screens.Length > 1
+                parts.Push("pgdn/^n  pgup/^p  " level.ScreenIndex "/" level.Screens.Length)
+            parts.Push(extras*)
+        } else {
+            if this.ClaimsLetters
+                parts.Push("a–z open")
+            if this.Stack.Length > 1
+                parts.Push("⌫ back")
+            if level.Screens.Length > 1
+                parts.Push("spc/^n  pgup/^p  " level.ScreenIndex "/" level.Screens.Length)
+            parts.Push(this.Pinned ? "`` unpin" : "`` pin")
+            parts.Push(extras*)
+            parts.Push("esc close")
+        }
         out := ""
         for p in parts
             out .= (A_Index > 1 ? "   ·   " : "") p
@@ -133,6 +161,11 @@ class LegendNavigator {
             items.Push({Letter: letters[i], Label: nameOf(c), Target: c})
         return this.WithBuild(this.MenuLevel(page.Title, items, item => this.CategoryLevel(page, item.Target)),
             () => this.PageLevel(page))
+    }
+
+    ChordLevel(items, title) {
+        return this.WithBuild({Title: title, Screens: this.Paginate(LegendRows.ForChord(LegendChords.Visible(items), this.Style)),
+            ScreenIndex: 1, Items: [], ChordItems: items}, () => this.ChordLevel(items, title))
     }
 
     CategoryLevel(page, cat) {

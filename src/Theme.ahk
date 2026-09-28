@@ -17,6 +17,8 @@ class LegendTheme {
         ["colors", "footer", "color", "6C7086"],
         ["colors", "pinned", "color", "F9E2AF"],
         ["colors", "warning", "color", "FAB387"],
+        ["colors", "indicatorOn", "color", "A6E3A1"],
+        ["colors", "indicatorOff", "color", "45475A"],
         ["fonts", "uiFont", "font", "Segoe UI"],
         ["fonts", "keyFont", "font", "Consolas"],
         ["fonts", "titleSize", "int:6:48", 9],

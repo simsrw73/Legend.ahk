@@ -74,3 +74,17 @@ Rows_Menu() {
     T.Eq(rows[1].Text, "Zen ›")
     T.Eq(rows[1].Style, "menu")
 }
+
+T.Test("Rows: chord rows show key, label, submenu mark and status", Rows_Chord)
+Rows_Chord() {
+    items := [LegendChordItem("z", "Zed", Noop, "", {Status: () => true}),
+              LegendChordItem("w", "Research", "", []),
+              LegendChordItem("^s", "Save", Noop)]
+    rows := LegendRows.ForChord(items, "symbols")
+    T.Eq(rows[1].Key, "z")
+    T.Eq(rows[1].Status, true)
+    T.Eq(rows[2].Text, "Research ›")
+    T.Eq(rows[2].Status, "")
+    T.Eq(rows[3].Key, "⌃S")
+    T.Eq(rows[3].Style, "bound")
+}

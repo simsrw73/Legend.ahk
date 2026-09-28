@@ -82,3 +82,12 @@ Theme_LegendAuto() {
     T.Eq(LegendTheme.Resolve(base, "", "ahk")["legend"], "off", "explicit off stays off")
     T.Eq(base["keyStyle"], "text", "Resolve does not modify its input")
 }
+
+T.Test("Theme: running-indicator colors", Theme_Indicators)
+Theme_Indicators() {
+    T.Eq(LegendTheme.Read("")["indicatorOn"], "A6E3A1")
+    T.Eq(LegendTheme.Read("")["indicatorOff"], "45475A")
+    latte := LegendTheme.Load("catppuccin-latte").Values
+    T.Eq(latte["indicatorOn"], "40A02B")
+    T.Eq(latte["indicatorOff"], "BCC0CC")
+}
