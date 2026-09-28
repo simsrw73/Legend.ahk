@@ -70,8 +70,9 @@ Legend.Start({
 
 Bindings may be registered before or after `Start`; pages and bindings are
 merged when the overlay is drawn, so order does not matter. `Start` loads page
-files and the theme, and registers the help key and overlay hotkeys. Calling
-`Start` twice reloads pages and theme.
+files and registers the help key and overlay hotkeys; the theme is read each
+time the overlay opens. `Start` may be called once (a second call throws); to
+pick up edited page files, reload the host script.
 
 ## Page files
 
@@ -146,9 +147,11 @@ Legend.Bind(["komorebi", "Workspaces", "Focus"], "!" i, "focus " name, FocusWork
   so short chains work.
 - `Legend.Bind(path, key, description, fn, options?)`: `path` is
   `[page, category]` or `[page, category, group]`.
-- Binding a key on a page with `match` registers it under
-  `HotIfWinActive(match)`; global pages register with no condition. The
-  previous `HotIf` context is restored afterwards.
+- Binding a key on a page whose `match` was given in code registers it under
+  `HotIfWinActive(match)`; otherwise it registers with no condition. A `match`
+  that comes only from a page file affects which page opens, never hotkeys.
+  The `HotIf` context is reset to none afterwards (AHK cannot read the
+  current one).
 - `Legend.Doc(path, key, description)` adds a documentation-only entry from
   code (same as a Markdown line).
 - Hotkeys are registered through `Legend.Binder`, a replaceable function
@@ -226,8 +229,9 @@ Screen parts: title, optional legend, headings and entries, footer (level
 hints, `n/m` screen count, 📌 when pinned, warning count when page files had
 problems).
 
-Theme files are INI (`<name>.ini`), searched in the host's `Themes` folders and
-then Legend's `themes/`:
+Theme files are INI (`<name>.ini`, ASCII or UTF-16, since Windows' INI API
+does not read UTF-8), searched in the host's `Themes` folders and then
+Legend's `themes/`:
 
 | Section | Settings |
 |---|---|
@@ -257,6 +261,7 @@ collisions with host scripts. `Legend` itself is the only public entry point.
 | `src/KeyName.ahk` | `LegendKeyName` | parse AHK and written notation to canonical form; format per `keyStyle`; legend symbols | yes |
 | `src/PageFile.ahk` | `LegendPageFile` | Markdown text → page model + warnings | yes |
 | `src/Registry.ahk` | `LegendRegistry`, `LegendPage`, `LegendCategory` | pages, `Page`/`Category`/`Bind`/`Doc`, merge with page files, bound/doc-only marking, `Binder` | yes |
+| `src/Rows.ahk` | `LegendRows` | page/category/menu model → display rows (headings, groups, entries, merged rows, key formatting) | yes |
 | `src/Navigator.ahk` | `LegendNavigator` | state (level, selection, screen, pinned); key → new state + action (`redraw` / `close` / `pass` / `none`); opening page resolution; index letters | yes |
 | `src/Layout.ahk` | `LegendLayout` | screen content + measure function → columns and screens | yes (fake measurer) |
 | `src/Theme.ahk` | `LegendTheme` | defaults, INI loading with fallback, `auto` light/dark | yes (INI part) |
