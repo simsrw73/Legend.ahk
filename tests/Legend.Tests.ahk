@@ -13,5 +13,7 @@
 #Include %A_ScriptDir%\Rows.Tests.ahk
 #Include %A_ScriptDir%\..\src\Layout.ahk
 #Include %A_ScriptDir%\Layout.Tests.ahk
+#Include %A_ScriptDir%\..\src\Navigator.ahk
+#Include %A_ScriptDir%\Navigator.Tests.ahk
 
 T.Finish()
