@@ -12,6 +12,8 @@ class LegendKey {
 
     ; Written notation for parsed keys ("Ctrl+Shift+T"), "=" + text for verbatim ones.
     Id => this.Verbatim != "" ? "=" this.Verbatim : LegendKeyName.Format(this, "text")
+
+    Display(style := "text") => LegendKeyName.Format(this, style)
 }
 
 ; Converts between AHK hotkey syntax, written notation and display styles.
@@ -109,23 +111,43 @@ class LegendKeyName {
     }
 
     static Format(key, style := "text") {
+        if key.HasOwnProp("Steps") {
+            out := ""
+            for step in key.Steps
+                out .= (A_Index > 1 ? " " : "") step.Display(style)
+            return out
+        }
         if key.Verbatim != ""
             return key.Verbatim
+        name := key.Name
+        if style = "symbols" && this.KeySymbols.Has(name)
+            name := this.KeySymbols[name]
+        else if style = "ahk" && StrLen(name) = 1
+            name := StrLower(name)
+        return this.FormatMods(key.Mods, style) name
+    }
+
+    ; "Ctrl+Shift+" / "⌃⇧" / "^+" for mods in the given style.
+    static FormatMods(mods, style := "text") {
         out := ""
-        switch style {
-            case "symbols":
-                for m in key.Mods
-                    out .= this.Symbols[m]
-                return out (this.KeySymbols.Has(key.Name) ? this.KeySymbols[key.Name] : key.Name)
-            case "ahk":
-                for m in key.Mods
-                    out .= this.AhkSymbols[m]
-                return out (StrLen(key.Name) = 1 ? StrLower(key.Name) : key.Name)
-            default:
-                for m in key.Mods
-                    out .= m "+"
-                return out key.Name
-        }
+        for m in mods
+            out .= style = "symbols" ? this.Symbols[m] : style = "ahk" ? this.AhkSymbols[m] : m "+"
+        return out
+    }
+
+    ; A key sequence (e.g. a chord trigger plus steps). steps: objects with
+    ; Display(style) and Mods. Never merged with other keys (verbatim Id).
+    static Sequence(steps) {
+        modSet := Map()
+        for step in steps
+            for m in step.Mods
+                modSet[m] := true
+        text := ""
+        for step in steps
+            text .= (A_Index > 1 ? " " : "") step.Display("text")
+        key := LegendKey(this.Ordered(modSet), "", text)
+        key.Steps := steps
+        return key
     }
 
     ; "⊞ Win   ⌃ Ctrl" for the modifiers in mods (any order, duplicates fine);

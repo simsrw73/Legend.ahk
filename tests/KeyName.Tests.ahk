@@ -84,3 +84,21 @@ KeyName_LegendLine() {
     T.Eq(LegendKeyName.LegendLine(["Alt"], "text"), "")
     T.Eq(LegendKeyName.LegendLine([], "symbols"), "")
 }
+
+T.Test("KeyName: modifier prefixes per style", KeyName_FormatMods)
+KeyName_FormatMods() {
+    T.Eq(LegendKeyName.FormatMods(["Ctrl", "Shift"], "text"), "Ctrl+Shift+")
+    T.Eq(LegendKeyName.FormatMods(["Ctrl", "Shift"], "symbols"), "⌃⇧")
+    T.Eq(LegendKeyName.FormatMods(["Ctrl", "Shift"], "ahk"), "^+")
+    T.Eq(LegendKeyName.FormatMods([], "text"), "")
+}
+
+T.Test("KeyName: sequences format step by step", KeyName_Sequence)
+KeyName_Sequence() {
+    seq := LegendKeyName.Sequence([LegendKeyName.FromHotkey("#Space"), LegendKeyName.FromText("Ctrl+S")])
+    T.Eq(LegendKeyName.Format(seq, "text"), "Win+Space Ctrl+S")
+    T.Eq(LegendKeyName.Format(seq, "ahk"), "#Space ^s")
+    T.Eq(seq.Id, "=Win+Space Ctrl+S")
+    T.Eq(seq.Mods.Length, 2)
+    T.Eq(LegendKeyName.FromText("Alt+H").Display("symbols"), "⌥H")
+}
