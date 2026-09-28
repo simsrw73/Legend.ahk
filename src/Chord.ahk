@@ -17,16 +17,16 @@ class LegendChordItem {
     Enabled() {
         if !IsObject(this.If)
             return true
-        fn := this.If
-        return fn()
+        callback := this.If
+        return callback()
     }
 
     ; true / false for items with a Status function, otherwise "".
     StatusNow() {
         if !IsObject(this.Status)
             return ""
-        fn := this.Status
-        return fn() ? true : false
+        callback := this.Status
+        return callback() ? true : false
     }
 
     ; Strings are sent; functions get the pressed key if they take a parameter.
@@ -61,17 +61,17 @@ class LegendChords {
 
     ; Items to show: If holds, and only the first such item per key pattern.
     static Visible(items) {
-        seen := Map(), out := []
+        seen := Map(), result := []
         for item in items {
             if !item.Enabled()
                 continue
-            id := item.Pattern.Display("text")
-            if seen.Has(id)
+            patternId := item.Pattern.Display("text")
+            if seen.Has(patternId)
                 continue
-            seen[id] := true
-            out.Push(item)
+            seen[patternId] := true
+            result.Push(item)
         }
-        return out
+        return result
     }
 }
 
@@ -82,9 +82,9 @@ class LegendChords {
 class LegendChordKeys {
     __New(heldVks := [], triggerName := "", triggerHeld := false) {
         this.Held := Map(), this.Stale := Map()
-        for vk in heldVks
-            if LegendKeyWatch.ModVks.Has(vk)
-                this.Held[vk] := LegendKeyWatch.ModVks[vk], this.Stale[vk] := true
+        for heldVk in heldVks
+            if LegendKeyWatch.ModVks.Has(heldVk)
+                this.Held[heldVk] := LegendKeyWatch.ModVks[heldVk], this.Stale[heldVk] := true
         this.TriggerName := triggerName != "" ? LegendKeyName.NormalizeName(triggerName) : ""
         this.TriggerHeld := triggerHeld && this.TriggerName != ""
     }
@@ -94,8 +94,8 @@ class LegendChordKeys {
     ; Alt or Win held around a swallowed key: releasing it alone would open the
     ; Start menu or a menu bar, so the controller sends a mask key first.
     static NeedsMask(key) {
-        for m in key.Mods
-            if m = "Win" || m = "Alt"
+        for modName in key.Mods
+            if modName = "Win" || modName = "Alt"
                 return true
         return false
     }
@@ -120,8 +120,8 @@ class LegendChordKeys {
     ; The pressed key with the modifiers pressed since the chord opened.
     Key(keyName) {
         mods := []
-        for vk, name in this.Held
-            if !this.Stale.Has(vk)
+        for heldVk, name in this.Held
+            if !this.Stale.Has(heldVk)
                 mods.Push(name)
         return LegendKeyName.FromParts(mods, keyName)
     }

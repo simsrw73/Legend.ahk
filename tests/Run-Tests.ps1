@@ -27,4 +27,9 @@ foreach ($file in 'Legend.ahk', 'examples\example.ahk') {
     if ($LASTEXITCODE) { $failures += 1; Write-Host "validate $file FAILED`n$check" }
     else { Write-Host "validate $file ok" }
 }
+# A host with short-named globals: Legend's locals must not trigger #Warn
+$warnHost = Join-Path $PSScriptRoot 'fixtures\warn-host\WarnHost.ahk'
+$check = & $AutoHotkey /ErrorStdOut /Validate $warnHost 2>&1 | Out-String
+if ($LASTEXITCODE -or $check -match 'Warning') { $failures += 1; Write-Host "validate WarnHost FAILED`n$check" }
+else { Write-Host 'validate fixtures\warn-host\WarnHost.ahk ok' }
 exit $failures

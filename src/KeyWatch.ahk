@@ -20,9 +20,9 @@ class LegendKeyWatch {
 
     ; vks: modifier keys already down when watching starts.
     Seed(vks) {
-        for vk in vks
-            if LegendKeyWatch.ModVks.Has(vk)
-                this.Held[vk] := LegendKeyWatch.ModVks[vk]
+        for heldVk in vks
+            if LegendKeyWatch.ModVks.Has(heldVk)
+                this.Held[heldVk] := LegendKeyWatch.ModVks[heldVk]
     }
 
     ; Returns "combo" for a Ctrl/Alt/Win shortcut other than the help key, "letter" for a
@@ -41,8 +41,8 @@ class LegendKeyWatch {
                 combo := true
         }
         if combo {
-            id := LegendKeyName.FromParts(mods, keyName).Id
-            return id == this.HelpId || this.Claimed.Has(id) ? "" : "combo"
+            comboId := LegendKeyName.FromParts(mods, keyName).Id
+            return comboId == this.HelpId || this.Claimed.Has(comboId) ? "" : "combo"
         }
         return StrLen(keyName) = 1 && !this.Claimed.Has(keyName) ? "letter" : ""
     }

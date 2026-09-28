@@ -35,24 +35,24 @@ class LegendRows {
     ; of them are bound. Its text is the first Text set, else the first description.
     static ForGroup(group, style) {
         rows := [], merged := Map()
-        for e in group.Entries {
-            if e.Row = "" {
-                rows.Push(this.Row("entry", LegendKeyName.Format(e.Key, style), e.Description, e.Bound ? "bound" : "doc", e.Key.Mods))
+        for shortcut in group.Entries {
+            if shortcut.Row = "" {
+                rows.Push(this.Row("entry", LegendKeyName.Format(shortcut.Key, style), shortcut.Description, shortcut.Bound ? "bound" : "doc", shortcut.Key.Mods))
                 continue
             }
-            if !merged.Has(e.Row) {
-                row := this.Row("entry", e.Row, e.Text != "" ? e.Text : e.Description, e.Bound ? "bound" : "doc", e.Key.Mods.Clone())
-                row.TextSet := e.Text != ""
-                merged[e.Row] := row
+            if !merged.Has(shortcut.Row) {
+                row := this.Row("entry", shortcut.Row, shortcut.Text != "" ? shortcut.Text : shortcut.Description, shortcut.Bound ? "bound" : "doc", shortcut.Key.Mods.Clone())
+                row.TextSet := shortcut.Text != ""
+                merged[shortcut.Row] := row
                 rows.Push(row)
                 continue
             }
-            row := merged[e.Row]
-            if !e.Bound
+            row := merged[shortcut.Row]
+            if !shortcut.Bound
                 row.Style := "doc"
-            if !row.TextSet && e.Text != ""
-                row.Text := e.Text, row.TextSet := true
-            row.Mods.Push(e.Key.Mods*)
+            if !row.TextSet && shortcut.Text != ""
+                row.Text := shortcut.Text, row.TextSet := true
+            row.Mods.Push(shortcut.Key.Mods*)
         }
         return rows
     }

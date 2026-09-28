@@ -25,29 +25,29 @@ class LegendChordPattern {
 ;   a-f    single characters with code points in the range
 class LegendChordMatch {
     static Parse(text) {
-        modSet := Map(), i := 1
-        while i < StrLen(text) && LegendKeyName.AhkMods.Has(ch := SubStr(text, i, 1)) {
-            modSet[LegendKeyName.AhkMods[ch]] := true
-            i += 1
+        modSet := Map(), pos := 1
+        while pos < StrLen(text) && LegendKeyName.AhkMods.Has(modChar := SubStr(text, pos, 1)) {
+            modSet[LegendKeyName.AhkMods[modChar]] := true
+            pos += 1
         }
-        body := SubStr(text, i)
-        p := LegendChordPattern()
-        p.Text := text, p.Mods := LegendKeyName.Ordered(modSet), p.Body := body
-        p.Name := "", p.Lo := "", p.Hi := "", p.Regex := ""
+        body := SubStr(text, pos)
+        pattern := LegendChordPattern()
+        pattern.Text := text, pattern.Mods := LegendKeyName.Ordered(modSet), pattern.Body := body
+        pattern.Name := "", pattern.Lo := "", pattern.Hi := "", pattern.Regex := ""
         if body = "?" {
-            p.Kind := "any"
+            pattern.Kind := "any"
         } else if StrLen(body) = 3 && SubStr(body, 2, 1) = "-" && Ord(SubStr(body, 1, 1)) <= Ord(SubStr(body, 3, 1)) {
-            p.Kind := "range", p.Lo := StrLower(SubStr(body, 1, 1)), p.Hi := StrLower(SubStr(body, 3, 1))
+            pattern.Kind := "range", pattern.Lo := StrLower(SubStr(body, 1, 1)), pattern.Hi := StrLower(SubStr(body, 3, 1))
         } else if StrLen(body) > 1 && InStr(body, "*") {
-            p.Kind := "glob"
-            p.Regex := "i)^" StrReplace(RegExReplace(body, "[\\.^$|?+()\[\]{}]", "\$0"), "*", ".*") "$"
+            pattern.Kind := "glob"
+            pattern.Regex := "i)^" StrReplace(RegExReplace(body, "[\\.^$|?+()\[\]{}]", "\$0"), "*", ".*") "$"
         } else {
             name := LegendKeyName.NormalizeName(body)
             if name = ""
                 throw ValueError("unknown chord key '" text "'", -2)
-            p.Kind := "key", p.Name := name
+            pattern.Kind := "key", pattern.Name := name
         }
-        return p
+        return pattern
     }
 
     ; key: a LegendKey for the pressed key and the modifiers that count.
@@ -72,8 +72,8 @@ class LegendChordMatch {
     static SameMods(a, b) {
         if a.Length != b.Length
             return false
-        for i, m in a
-            if m != b[i]
+        for index, modName in a
+            if modName != b[index]
                 return false
         return true
     }

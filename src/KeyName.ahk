@@ -51,21 +51,21 @@ class LegendKeyName {
         lower := StrLower(name)
         if this.Named.Has(lower)
             return this.Named[lower]
-        if RegExMatch(lower, "^f([1-9]|1\d|2[0-4])$", &m)
-            return "F" m[1]
-        if RegExMatch(lower, "^numpad(\w+)$", &m)
-            return "Numpad" StrTitle(m[1])
+        if RegExMatch(lower, "^f([1-9]|1\d|2[0-4])$", &found)
+            return "F" found[1]
+        if RegExMatch(lower, "^numpad(\w+)$", &found)
+            return "Numpad" StrTitle(found[1])
         if StrLen(name) = 1
             return StrUpper(name)
         return ""
     }
 
     static Ordered(modSet) {
-        out := []
-        for m in this.ModOrder
-            if modSet.Has(m)
-                out.Push(m)
-        return out
+        sorted := []
+        for modName in this.ModOrder
+            if modSet.Has(modName)
+                sorted.Push(modName)
+        return sorted
     }
 
     ; AHK hotkey syntax ("!+h", "#Space"). Custom combos, "up" hotkeys and unknown key
@@ -74,13 +74,13 @@ class LegendKeyName {
         if InStr(hotkey, " & ") || RegExMatch(hotkey, "i) up$")
             return LegendKey([], "", hotkey)
         modSet := Map()
-        i := 1
-        while i < StrLen(hotkey) && InStr("^!+#<>*~$", c := SubStr(hotkey, i, 1)) {
-            if this.AhkMods.Has(c)
-                modSet[this.AhkMods[c]] := true
-            i += 1
+        pos := 1
+        while pos < StrLen(hotkey) && InStr("^!+#<>*~$", char := SubStr(hotkey, pos, 1)) {
+            if this.AhkMods.Has(char)
+                modSet[this.AhkMods[char]] := true
+            pos += 1
         }
-        name := this.NormalizeName(SubStr(hotkey, i))
+        name := this.NormalizeName(SubStr(hotkey, pos))
         return name = "" ? LegendKey([], "", hotkey) : LegendKey(this.Ordered(modSet), name)
     }
 
@@ -90,9 +90,9 @@ class LegendKeyName {
         text := Trim(text)
         modSet := Map()
         rest := text
-        while RegExMatch(rest, "i)^(ctrl|control|alt|shift|win|super|meta)\+(.+)$", &m) {
-            modSet[this.WrittenMods[StrLower(m[1])]] := true
-            rest := m[2]
+        while RegExMatch(rest, "i)^(ctrl|control|alt|shift|win|super|meta)\+(.+)$", &found) {
+            modSet[this.WrittenMods[StrLower(found[1])]] := true
+            rest := found[2]
         }
         if (name := this.NormalizeName(rest)) != ""
             return LegendKey(this.Ordered(modSet), name)
@@ -104,18 +104,18 @@ class LegendKeyName {
     ; Modifier names (any order) plus a key name as returned by GetKeyName.
     static FromParts(modList, keyName) {
         modSet := Map()
-        for m in modList
-            modSet[m] := true
+        for modName in modList
+            modSet[modName] := true
         name := this.NormalizeName(keyName)
         return name = "" ? LegendKey([], "", keyName) : LegendKey(this.Ordered(modSet), name)
     }
 
     static Format(key, style := "text") {
         if key.HasOwnProp("Steps") {
-            out := ""
+            joined := ""
             for step in key.Steps
-                out .= (A_Index > 1 ? " " : "") step.Display(style)
-            return out
+                joined .= (A_Index > 1 ? " " : "") step.Display(style)
+            return joined
         }
         if key.Verbatim != ""
             return key.Verbatim
@@ -129,10 +129,10 @@ class LegendKeyName {
 
     ; "Ctrl+Shift+" / "⌃⇧" / "^+" for mods in the given style.
     static FormatMods(mods, style := "text") {
-        out := ""
-        for m in mods
-            out .= style = "symbols" ? this.Symbols[m] : style = "ahk" ? this.AhkSymbols[m] : m "+"
-        return out
+        prefix := ""
+        for modName in mods
+            prefix .= style = "symbols" ? this.Symbols[modName] : style = "ahk" ? this.AhkSymbols[modName] : modName "+"
+        return prefix
     }
 
     ; A key sequence (e.g. a chord trigger plus steps). steps: objects with
@@ -140,8 +140,8 @@ class LegendKeyName {
     static Sequence(steps) {
         modSet := Map()
         for step in steps
-            for m in step.Mods
-                modSet[m] := true
+            for modName in step.Mods
+                modSet[modName] := true
         text := ""
         for step in steps
             text .= (A_Index > 1 ? " " : "") step.Display("text")
@@ -156,15 +156,15 @@ class LegendKeyName {
         if style != "symbols" && style != "ahk"
             return ""
         table := style = "symbols" ? this.Symbols : this.AhkSymbols
-        out := ""
-        for m in this.ModOrder {
+        line := ""
+        for modName in this.ModOrder {
             for used in mods {
-                if used = m {
-                    out .= (out != "" ? "   " : "") table[m] " " m
+                if used = modName {
+                    line .= (line != "" ? "   " : "") table[modName] " " modName
                     break
                 }
             }
         }
-        return out
+        return line
     }
 }

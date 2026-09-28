@@ -34,6 +34,11 @@ Legend.Start({Pages: [A_ScriptDir "\legend\pages"]})
 A row's optional 4th item `{Row: "Alt+H/J/K/L", Text: "focus ← ↓ ↑ →"}` merges
 entries into one line.
 
+Give a page its window `match` before binding keys on it: keys bound earlier were
+registered everywhere, and Legend warns. Hotkeys go through `Legend.Binder`, a
+function `(keyName, fn, match)` you can replace before binding (for example to
+record bindings in tests).
+
 ## Chords
 
 ```ahk
@@ -96,7 +101,7 @@ with Catppuccin Latte/Mocha. Settings: `[colors]` background, border, title,
 category, group, keyBound, keyDoc, description, footer, pinned, warning;
 `[fonts]` uiFont, keyFont, titleSize, headingSize, bodySize; `[layout]`
 density (comfortable/compact), padding, rowSpacing, maxColumns,
-maxHeightPercent, opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
+maxHeightPercent, maxWidthPercent, opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
 legend (auto/off/top/bottom). Leave padding and rowSpacing out to get them from
 density. Tab and `=` change keyStyle and density until the script reloads.
 Save theme files as ASCII or UTF-16.

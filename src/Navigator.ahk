@@ -129,17 +129,17 @@ class LegendNavigator {
             parts.Push(extras*)
             parts.Push("esc close")
         }
-        out := ""
-        for p in parts
-            out .= (A_Index > 1 ? "   ·   " : "") p
-        return out
+        text := ""
+        for part in parts
+            text .= (A_Index > 1 ? "   ·   " : "") part
+        return text
     }
 
     IndexLevel(pages, title) {
-        letters := LegendNavigator.AssignLetters(pages, p => p.Title, p => p.Letter)
+        letters := LegendNavigator.AssignLetters(pages, page => page.Title, page => page.Letter)
         items := []
-        for i, p in pages
-            items.Push({Letter: letters[i], Label: p.Title, Target: p})
+        for index, page in pages
+            items.Push({Letter: letters[index], Label: page.Title, Target: page})
         return this.WithBuild(this.MenuLevel(title, items, item => this.PageLevel(item.Target)),
             () => this.IndexLevel(pages, title))
     }
@@ -151,14 +151,14 @@ class LegendNavigator {
             return this.WithBuild({Title: page.Title, Screens: screens, ScreenIndex: 1, Items: []},
                 () => this.PageLevel(page))
         cats := []
-        for c in page.Categories
-            if LegendRows.ForCategory(c, this.Style).Length
-                cats.Push(c)
-        nameOf := c => c.Name != "" ? c.Name : "Other"
-        letters := LegendNavigator.AssignLetters(cats, nameOf, c => "")
+        for cat in page.Categories
+            if LegendRows.ForCategory(cat, this.Style).Length
+                cats.Push(cat)
+        nameOf := cat => cat.Name != "" ? cat.Name : "Other"
+        letters := LegendNavigator.AssignLetters(cats, nameOf, cat => "")
         items := []
-        for i, c in cats
-            items.Push({Letter: letters[i], Label: nameOf(c), Target: c})
+        for index, cat in cats
+            items.Push({Letter: letters[index], Label: nameOf(cat), Target: cat})
         return this.WithBuild(this.MenuLevel(page.Title, items, item => this.CategoryLevel(page, item.Target)),
             () => this.PageLevel(page))
     }
@@ -184,8 +184,8 @@ class LegendNavigator {
         {Title: title, Screens: this.Paginate(LegendRows.ForMenu(items)), ScreenIndex: 1, Items: items, OpenItem: open}
 
     Paginate(rows) {
-        fn := this.PaginateFn
-        return fn(rows)
+        paginateFn := this.PaginateFn
+        return paginateFn(rows)
     }
 
     ; One letter per item: its fixed letter if free, else the first free letter or
@@ -194,24 +194,24 @@ class LegendNavigator {
         static pool := "abcdefghijklmnopqrstuvwxyz0123456789"
         used := Map(), letters := []
         letters.Length := items.Length
-        for i, item in items {
-            f := StrLower(fixedOf(item))
-            if StrLen(f) = 1 && InStr(pool, f) && !used.Has(f)
-                used[f] := true, letters[i] := f
+        for index, item in items {
+            fixed := StrLower(fixedOf(item))
+            if StrLen(fixed) = 1 && InStr(pool, fixed) && !used.Has(fixed)
+                used[fixed] := true, letters[index] := fixed
         }
-        for i, item in items {
-            if letters.Has(i)
+        for index, item in items {
+            if letters.Has(index)
                 continue
             letter := ""
-            for ch in StrSplit(StrLower(nameOf(item)) pool) {
-                if InStr(pool, ch) && !used.Has(ch) {
-                    letter := ch
+            for char in StrSplit(StrLower(nameOf(item)) pool) {
+                if InStr(pool, char) && !used.Has(char) {
+                    letter := char
                     break
                 }
             }
             if letter != ""
                 used[letter] := true
-            letters[i] := letter
+            letters[index] := letter
         }
         return letters
     }

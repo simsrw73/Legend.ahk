@@ -27,11 +27,11 @@ class LegendCategory {
     }
 
     Group(name) {
-        for g in this.Groups
-            if g.Name = name
-                return g
-        this.Groups.Push(g := LegendGroup(name))
-        return g
+        for grp in this.Groups
+            if LegendRegistry.SameName(grp.Name, name)
+                return grp
+        this.Groups.Push(grp := LegendGroup(name))
+        return grp
     }
 
     ; Registers hotkey and lists it here. Returns this category for chaining.
@@ -48,6 +48,7 @@ class LegendPage {
         this.Categories := []
         this.CodeMatch := "", this.FileMatch := ""
         this.CodeLetter := "", this.FileLetter := ""
+        this.HasBindings := false   ; hotkeys registered from code (under CodeMatch)
     }
 
     Match => this.CodeMatch != "" ? this.CodeMatch : this.FileMatch
@@ -55,21 +56,21 @@ class LegendPage {
 
     IsEmpty {
         get {
-            for c in this.Categories
-                for g in c.Groups
-                    if g.Entries.Length
+            for cat in this.Categories
+                for grp in cat.Groups
+                    if grp.Entries.Length
                         return false
             return true
         }
     }
 
-    ; Returns the named category (case-insensitive), creating it. Each row is
+    ; Returns the named category (case-insensitive, any script), creating it. Each row is
     ; [hotkey, description, fn, options?] and is bound into group.
     Category(name, rows := "", group := "") {
         cat := ""
-        for c in this.Categories
-            if c.Name = name {
-                cat := c
+        for existing in this.Categories
+            if LegendRegistry.SameName(existing.Name, name) {
+                cat := existing
                 break
             }
         if !cat
@@ -81,11 +82,11 @@ class LegendPage {
     }
 
     FindEntry(id) {
-        for c in this.Categories
-            for g in c.Groups
-                for e in g.Entries
-                    if e.Key.Id == id
-                        return e
+        for cat in this.Categories
+            for grp in cat.Groups
+                for entry in grp.Entries
+                    if entry.Key.Id == id
+                        return entry
         return ""
     }
 }
@@ -113,10 +114,13 @@ class LegendRegistry {
             HotIfWinActive()
     }
 
+    ; Names match case-insensitively for every script, not just A-Z.
+    static SameName(a, b) => StrCompare(a, b, "Locale") = 0
+
     Get(title) {
-        for p in this.Pages
-            if p.Title = title
-                return p
+        for page in this.Pages
+            if LegendRegistry.SameName(page.Title, title)
+                return page
         return ""
     }
 
@@ -126,10 +130,18 @@ class LegendRegistry {
         page := this.Get(title)
         if !page
             this.Pages.Push(page := LegendPage(this, title))
-        if match != ""
+        if match != "" && match != page.CodeMatch {
+            if page.HasBindings
+                this.Warn("page '" page.Title "': match '" match "' was set after its bindings, which were registered without it")
             page.CodeMatch := match
-        if IsObject(options) && options.HasOwnProp("Key")
-            page.CodeLetter := StrLower(options.Key)
+        }
+        if IsObject(options) && options.HasOwnProp("Key") {
+            letter := StrLower(options.Key)
+            if RegExMatch(letter, "^[a-z0-9]$")
+                page.CodeLetter := letter
+            else
+                this.Warn("page '" page.Title "': key '" options.Key "' must be one letter or digit; ignored")
+        }
         this.CheckConflict(page)
         return page
     }
@@ -150,8 +162,8 @@ class LegendRegistry {
         page := this.Page(doc.Title)
         page.FileMatch := doc.Match, page.FileLetter := doc.Letter
         this.CheckConflict(page)
-        for e in doc.Entries
-            this.AddEntry(page, e.Category, e.Group, e.Key, e.Description, false)
+        for entry in doc.Entries
+            this.AddEntry(page, entry.Category, entry.Group, entry.Key, entry.Description, false)
     }
 
     ; Registers a chord: binds its trigger to open (under its Match) and, once the
@@ -202,6 +214,7 @@ class LegendRegistry {
     AddBinding(page, category, group, hotkey, description, fn, options) {
         binder := this.Binder
         binder(hotkey, fn, page.CodeMatch)
+        page.HasBindings := true
         this.AddEntry(page, category, group, LegendKeyName.FromHotkey(hotkey), description, true, options)
     }
 
@@ -230,16 +243,16 @@ class LegendRegistry {
     }
 
     SortedPages() {
-        out := []
-        for p in this.Pages {
-            if p.IsEmpty
+        sorted := []
+        for page in this.Pages {
+            if page.IsEmpty
                 continue
-            i := out.Length + 1
-            while i > 1 && StrCompare(out[i - 1].Title, p.Title) > 0
-                i -= 1
-            out.InsertAt(i, p)
+            pos := sorted.Length + 1
+            while pos > 1 && StrCompare(sorted[pos - 1].Title, page.Title) > 0
+                pos -= 1
+            sorted.InsertAt(pos, page)
         }
-        return out
+        return sorted
     }
 
     PathPage(path) {
@@ -256,8 +269,8 @@ class LegendRegistry {
     }
 
     Warn(message) {
-        for w in this.Warnings
-            if w == message
+        for known in this.Warnings
+            if known == message
                 return
         this.Warnings.Push(message)
     }

@@ -60,3 +60,15 @@ Layout_Empty() {
     T.Eq(screens.Length, 1)
     T.Eq(screens[1].Length, 0)
 }
+
+T.Test("Layout: columns that would pass maxWidth start a new screen", Layout_MaxWidth)
+Layout_MaxWidth() {
+    ; columns are 136, 156 and 156 wide (key + gap 16 + text; "Ctrl+10" is wider),
+    ; so two plus a 20 gap fit in 320 and the third starts a new screen
+    screens := LegendLayout.Paginate(Layout_Entries(12), FakeMeasure, 100, 3, 16, 320, 20)
+    T.Eq(screens.Length, 2)
+    T.Eq(Layout_Counts(screens[1]), "5,5")
+    T.Eq(Layout_Counts(screens[2]), "2")
+    ; a single column wider than maxWidth still gets a screen of its own
+    T.Eq(LegendLayout.Paginate(Layout_Entries(3), FakeMeasure, 100, 3, 16, 50, 20).Length, 1)
+}

@@ -230,3 +230,38 @@ Registry_Sorted() {
     T.Eq(pages[1].Title, "Alpha")
     T.Eq(pages[2].Title, "zeta")
 }
+
+T.Test("Registry: a code match set after bindings warns", Registry_LateMatch)
+Registry_LateMatch() {
+    r := Registry_New()
+    r.Page("Zen").Category("Tabs", [["#+o", "open in Chrome", Noop]])
+    r.Page("Zen", "ahk_exe zen.exe")
+    T.Eq(r.Warnings.Length, 1)
+    T.True(InStr(r.Warnings[1], "Zen") && InStr(r.Warnings[1], "ahk_exe zen.exe"), r.Warnings[1])
+    r.Page("Zen", "ahk_exe zen.exe")               ; same match again: nothing new
+    T.Eq(r.Warnings.Length, 1)
+    r2 := Registry_New()
+    r2.Page("Zen", "ahk_exe zen.exe").Category("Tabs", [["#+o", "open in Chrome", Noop]])
+    T.Eq(r2.Warnings.Length, 0, "match before bindings")
+}
+
+T.Test("Registry: an invalid code Key warns and is ignored", Registry_BadCodeKey)
+Registry_BadCodeKey() {
+    r := Registry_New()
+    p := r.Page("Zen", "", {Key: "zz"})
+    T.Eq(p.Letter, "")
+    T.Eq(r.Warnings.Length, 1)
+    T.True(InStr(r.Warnings[1], "zz"), r.Warnings[1])
+    T.Eq(r.Page("Zen", "", {Key: "Z"}).Letter, "z")
+}
+
+T.Test("Registry: pages, categories and groups merge case-insensitively beyond ASCII", Registry_UnicodeMerge)
+Registry_UnicodeMerge() {
+    r := Registry_New()
+    T.Eq(ObjPtr(r.Page("Ärger")), ObjPtr(r.Page("ärger")))
+    p := r.Page("Ärger")
+    T.Eq(ObjPtr(p.Category("Überblick")), ObjPtr(p.Category("überblick")))
+    c := p.Category("Überblick")
+    T.Eq(ObjPtr(c.Group("Éditer")), ObjPtr(c.Group("éditer")))
+    T.Eq(r.Pages.Length, 1)
+}

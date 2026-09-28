@@ -20,15 +20,15 @@ class LegendMeasurer {
     }
 
     Size(text, kind) {
-        id := kind "`n" text
-        if !this.Cache.Has(id) {
+        cacheId := kind "`n" text
+        if !this.Cache.Has(cacheId) {
             font := LegendOverlay.Font(this.Theme, kind)
             this.Gui.SetFont("norm " font[1], font[2])
             ctrl := this.Gui.AddText("+0x80", text = "" ? " " : text)
-            ctrl.GetPos(, , &w, &h)
-            this.Cache[id] := {W: w, H: h}
+            ctrl.GetPos(, , &width, &height)
+            this.Cache[cacheId] := {W: width, H: height}
         }
-        return this.Cache[id]
+        return this.Cache[cacheId]
     }
 
     Destroy() => this.Gui.Destroy()
@@ -48,68 +48,79 @@ class LegendOverlay {
     }
 
     static Show(view, theme, measurer, footer, legendLine, pinned, warningCount) {
-        pad := theme["padding"], spacing := theme["rowSpacing"]
+        gutter := theme["padding"], spacing := theme["rowSpacing"]
         ; WS_EX_NOACTIVATE; -DPIScale keeps coordinates in the measurer's physical pixels
-        g := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")
-        g.BackColor := theme["background"]
-        g.MarginX := pad, g.MarginY := pad
+        overlay := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")
+        overlay.BackColor := theme["background"]
+        overlay.MarginX := gutter, overlay.MarginY := gutter
 
-        title := this.AddText(g, theme, "title", theme["title"], "xm ym", StrUpper(view.Title))
-        title.GetPos(, &ty, , &th)
-        top := ty + th + spacing * 2
+        title := this.AddText(overlay, theme, "title", theme["title"], "xm ym", StrUpper(view.Title))
+        title.GetPos(, &titleY, , &titleHeight)
+        top := titleY + titleHeight + spacing * 2
         if legendLine != "" && theme["legend"] = "top" {
-            line := this.AddText(g, theme, "body", theme["footer"], "xm y" top, legendLine)
-            line.GetPos(, , , &lh)
-            top += lh + spacing * 2
+            line := this.AddText(overlay, theme, "body", theme["footer"], "xm y" top, legendLine)
+            line.GetPos(, , , &lineHeight)
+            top += lineHeight + spacing * 2
         }
 
-        x := pad, bottom := top
+        colX := gutter, bottom := top
         for col in view.Columns {
-            y := top
+            rowY := top
             for row in col.Rows {
                 size := measurer(row)
                 switch row.Kind {
                     case "heading":
-                        this.AddText(g, theme, "heading", theme["category"], "x" x " y" (y + spacing), row.Text)
+                        this.AddText(overlay, theme, "heading", theme["category"], "x" colX " y" (rowY + spacing), row.Text)
                     case "group":
-                        this.AddText(g, theme, "group", theme["group"], "x" x " y" y, row.Text)
+                        this.AddText(overlay, theme, "group", theme["group"], "x" colX " y" rowY, row.Text)
                     default:
                         keyColor := row.Style = "doc" ? theme["keyDoc"] : theme["keyBound"]
                         ; center the key font's line on the description's
-                        keyY := y + (measurer.Size(row.Text, "body").H - measurer.Size(row.Key, "key").H) // 2
-                        this.AddText(g, theme, "key", keyColor, "x" x " y" keyY " w" col.KeyWidth, row.Key)
-                        textX := x + col.KeyWidth + pad
+                        keyY := rowY + (measurer.Size(row.Text, "body").H - measurer.Size(row.Key, "key").H) // 2
+                        this.AddText(overlay, theme, "key", keyColor, "x" colX " y" keyY " w" col.KeyWidth, row.Key)
+                        textX := colX + col.KeyWidth + gutter
                         if row.Status != "" {
-                            this.AddText(g, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" y, "●")
+                            this.AddText(overlay, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" rowY, "●")
                             textX += measurer.Size("● ", "body").W
                         }
-                        this.AddText(g, theme, "body", theme["description"], "x" textX " y" y, row.Text)
+                        this.AddText(overlay, theme, "body", theme["description"], "x" textX " y" rowY, row.Text)
                 }
-                y += size.H
+                rowY += size.H
             }
-            bottom := Max(bottom, y)
-            x += col.Width + theme["columnGap"]
+            bottom := Max(bottom, rowY)
+            colX += col.Width + theme["columnGap"]
         }
 
-        y := bottom + spacing
+        rowY := bottom + spacing
         if legendLine != "" && theme["legend"] = "bottom" {
-            line := this.AddText(g, theme, "body", theme["footer"], "xm y" y, legendLine)
-            line.GetPos(, , , &lh)
-            y += lh + spacing
+            line := this.AddText(overlay, theme, "body", theme["footer"], "xm y" rowY, legendLine)
+            line.GetPos(, , , &lineHeight)
+            rowY += lineHeight + spacing
         }
-        this.AddText(g, theme, "footer", theme["footer"], "xm y" y, footer)
+        this.AddText(overlay, theme, "footer", theme["footer"], "xm y" rowY, footer)
         if pinned
-            this.AddText(g, theme, "footer", theme["pinned"], "x+24 yp", "📌 pinned")
+            this.AddText(overlay, theme, "footer", theme["pinned"], "x+24 yp", "📌 pinned")
         if warningCount
-            this.AddText(g, theme, "footer", theme["warning"], "x+24 yp", "⚠ " warningCount " warning" (warningCount = 1 ? "" : "s"))
+            this.AddText(overlay, theme, "footer", theme["warning"], "x+24 yp", "⚠ " warningCount " warning" (warningCount = 1 ? "" : "s"))
 
-        this.Round(g.Hwnd, theme)
-        g.Show("NA Hide AutoSize")
-        WinGetPos(, , &w, &h, g)
+        this.Round(overlay.Hwnd, theme)
+        overlay.Show("NA Hide AutoSize")
+        WinGetPos(, , &width, &height, overlay)
         area := this.WorkArea()
-        g.Show("NA x" (area.Left + (area.Right - area.Left - w) // 2) " y" (area.Top + (area.Bottom - area.Top - h) // 2))
-        WinSetTransparent(theme["opacity"], g)
-        return g
+        overlay.Show("NA x" (area.Left + (area.Right - area.Left - width) // 2) " y" (area.Top + (area.Bottom - area.Top - height) // 2))
+        WinSetTransparent(theme["opacity"], overlay)
+        return overlay
+    }
+
+    ; Height Show adds around the columns: padding, title, legend line (when the
+    ; theme shows one) and footer, measured with the theme's fonts.
+    static Chrome(theme, measurer) {
+        spacing := theme["rowSpacing"]
+        height := theme["padding"] * 2 + measurer.Size("X", "title").H + spacing * 2
+            + spacing + measurer.Size("X", "footer").H
+        if theme["legend"] != "off"
+            height += measurer.Size("X", "body").H + spacing * 2
+        return height
     }
 
     static AddText(g, theme, kind, color, options, text) {
@@ -121,11 +132,11 @@ class LegendOverlay {
     ; Work area of the monitor containing the active window's center (primary if none).
     static WorkArea() {
         try {
-            WinGetPos(&wx, &wy, &ww, &wh, "A")
-            cx := wx + ww // 2, cy := wy + wh // 2
+            WinGetPos(&winX, &winY, &winW, &winH, "A")
+            centerX := winX + winW // 2, centerY := winY + winH // 2
             loop MonitorGetCount() {
                 MonitorGetWorkArea(A_Index, &left, &top, &right, &bottom)
-                if cx >= left && cx < right && cy >= top && cy < bottom
+                if centerX >= left && centerX < right && centerY >= top && centerY < bottom
                     return {Left: left, Top: top, Right: right, Bottom: bottom}
             }
         }
@@ -137,8 +148,8 @@ class LegendOverlay {
         static DWMWA_WINDOW_CORNER_PREFERENCE := 33, DWMWA_BORDER_COLOR := 34
         preference := theme["rounded"] ? 2 : 1  ; DWMWCP_ROUND : DWMWCP_DONOTROUND
         DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_WINDOW_CORNER_PREFERENCE, "Int*", preference, "UInt", 4)
-        rgb := Integer("0x" theme["border"])
-        bgr := ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF)
-        DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_BORDER_COLOR, "UInt*", bgr, "UInt", 4)
+        colorRgb := Integer("0x" theme["border"])
+        colorBgr := ((colorRgb & 0xFF) << 16) | (colorRgb & 0xFF00) | ((colorRgb >> 16) & 0xFF)
+        DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_BORDER_COLOR, "UInt*", colorBgr, "UInt", 4)
     }
 }

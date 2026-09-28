@@ -239,7 +239,7 @@ Legend's `themes/`:
 |---|---|
 | `[colors]` | `background`, `border`, `title`, `category`, `group`, `keyBound`, `keyDoc`, `description`, `footer`, `pinned`, `warning` |
 | `[fonts]` | `uiFont`, `keyFont`, `titleSize`, `headingSize`, `bodySize` |
-| `[layout]` | `density` (`comfortable` / `compact`), `padding`, `rowSpacing`, `maxColumns`, `maxHeightPercent`, `opacity`, `rounded` |
+| `[layout]` | `density` (`comfortable` / `compact`), `padding`, `rowSpacing`, `maxColumns`, `maxHeightPercent`, `maxWidthPercent`, `opacity`, `rounded` |
 | `[keys]` | `keyStyle` (`text` / `symbols` / `ahk`), `legend` (`auto` / `off` / `top` / `bottom`) |
 
 Missing settings fall back to built-in defaults (Catppuccin Mocha, `keyDoc` a

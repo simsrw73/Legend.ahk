@@ -27,6 +27,13 @@ class Legend {
     static ChordState := ""
 
     static Page(title, match := "", options := "") => this.Registry.Page(title, match, options)
+
+    ; The function that registers hotkeys: binder(keyName, fn, match). Replace it
+    ; before binding keys to change how they're registered (e.g. to record them).
+    static Binder {
+        get => this.Registry.Binder
+        set => this.Registry.Binder := value
+    }
     static Bind(path, hotkey, description, fn, options := "") => this.Registry.Bind(path, hotkey, description, fn, options)
     static Doc(path, keyText, description) => this.Registry.Doc(path, keyText, description)
 
@@ -55,8 +62,8 @@ class Legend {
 
         for dir in this.Options.Pages {
             for result in LegendPageFile.LoadDir(dir) {
-                for w in result.Warnings
-                    this.Registry.Warnings.Push(w)
+                for warning in result.Warnings
+                    this.Registry.Warnings.Push(warning)
                 if result.Page
                     this.Registry.AddFile(result.Page)
             }
@@ -71,8 +78,8 @@ class Legend {
                 "PgDn", "Next", "PgUp", "Prev", "``", "Pin", "Tab", "Style", "=", "Density")
             Hotkey(key, this.Handler(action))
         HotIf((*) => Legend.ClaimsLetters)
-        for ch in StrSplit("abcdefghijklmnopqrstuvwxyz0123456789")
-            Hotkey(ch, this.Handler(ch))
+        for char in StrSplit("abcdefghijklmnopqrstuvwxyz0123456789")
+            Hotkey(char, this.Handler(char))
         HotIf((*) => Legend.Visible && !Legend.Nav.Pinned)   ; pinned: they reach the app
         for key, action in Map("^n", "Next", "^p", "Prev", "^g", "Close")
             Hotkey(key, this.Handler(action))
@@ -92,14 +99,19 @@ class Legend {
 
         pages := this.Registry.SortedPages()
         matches := []
-        for p in pages
-            if p.Match != "" && WinActive(p.Match)
-                matches.Push(p)
+        for page in pages
+            if page.Match != "" && WinActive(page.Match)
+                matches.Push(page)
         this.Nav := LegendNavigator(pages, paginate, theme["keyStyle"])
         this.Nav.Open(matches)
         this.ActiveHwnd := WinExist("A")
+        try
+            this.Draw()              ; only claim keys once there is an overlay to show
+        catch as err {
+            this.Close()
+            throw err
+        }
         this.Visible := true
-        this.Draw()
         this.StartWatching()
     }
 
@@ -117,16 +129,18 @@ class Legend {
             this.Measurer.Destroy()
         measurer := this.Measurer := LegendMeasurer(theme)
         area := LegendOverlay.WorkArea()
-        maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - 120
-        return rows => LegendLayout.Paginate(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"])
+        maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
+        maxWidth := (area.Right - area.Left) * theme["maxWidthPercent"] // 100 - theme["padding"] * 2
+        return rows => LegendLayout.Paginate(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"],
+            maxWidth, theme["columnGap"])
     }
 
     ; Tab cycles key notation, = flips density; both last until the script reloads.
     static ChangeDisplay(action) {
         if action = "Style" {
-            for i, style in this.Styles
+            for index, style in this.Styles
                 if style = this.Theme["keyStyle"]
-                    this.StyleOverride := this.Styles[Mod(i, this.Styles.Length) + 1]
+                    this.StyleOverride := this.Styles[Mod(index, this.Styles.Length) + 1]
         } else
             this.DensityOverride := this.Theme["density"] = "compact" ? "comfortable" : "compact"
         paginate := this.ApplyDisplay()
@@ -177,15 +191,15 @@ class Legend {
     static StartWatching() {
         this.Keys := LegendKeyWatch(this.HelpId, ["``", "=", "Ctrl+N", "Ctrl+P", "Ctrl+G"])
         held := []
-        for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
-            if GetKeyState(Format("vk{:X}", vk), "P")
-                held.Push(vk)
+        for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
+            if GetKeyState(Format("vk{:X}", modVk), "P")
+                held.Push(modVk)
         this.Keys.Seed(held)
-        ih := this.Watcher := InputHook("V L0")
-        ih.KeyOpt("{All}", "N")
-        ih.OnKeyDown := (hook, vk, sc) => Legend.OnKeyDown(vk)
-        ih.OnKeyUp := (hook, vk, sc) => Legend.Keys.Up(vk)
-        ih.Start()
+        keyHook := this.Watcher := InputHook("V L0")
+        keyHook.KeyOpt("{All}", "N")
+        keyHook.OnKeyDown := (hook, vk, sc) => Legend.OnKeyDown(vk)
+        keyHook.OnKeyUp := (hook, vk, sc) => Legend.Keys.Up(vk)
+        keyHook.Start()
         this.FocusTimer := () => Legend.CheckFocus()
         SetTimer(this.FocusTimer, 150)
     }
@@ -229,19 +243,19 @@ class Legend {
         this.Nav := LegendNavigator([], paginate, this.Theme["keyStyle"])
         this.Nav.OpenChord(chord)
         held := []
-        for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
-            if GetKeyState(Format("vk{:X}", vk), "P")
-                held.Push(vk)
+        for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
+            if GetKeyState(Format("vk{:X}", modVk), "P")
+                held.Push(modVk)
         trigger := LegendKeyName.FromHotkey(chord.Hotkey)
         triggerHeld := StrLen(trigger.Name) > 0 && GetKeyState(trigger.Name, "P")
         state := this.ChordState := {Chord: chord, Keys: LegendChordKeys(held, trigger.Name, triggerHeld),
             Shown: false, TriggerId: trigger.Id, Timers: Map()}
-        ih := state.Hook := InputHook("L0")
-        ih.KeyOpt("{All}", "+SN")
-        ih.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
-        ih.OnKeyDown := (hook, vk, sc) => Legend.ChordKeyDown(vk, sc)
-        ih.OnKeyUp := (hook, vk, sc) => Legend.ChordKeyUp(vk, sc)
-        ih.Start()
+        keyHook := state.Hook := InputHook("L0")
+        keyHook.KeyOpt("{All}", "+SN")
+        keyHook.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
+        keyHook.OnKeyDown := (hook, vk, sc) => Legend.ChordKeyDown(vk, sc)
+        keyHook.OnKeyUp := (hook, vk, sc) => Legend.ChordKeyUp(vk, sc)
+        keyHook.Start()
         this.ActiveHwnd := WinExist("A")
         this.ChordTimer("Focus", () => Legend.CheckChordFocus(), 150)
         delay := this.Opt("ChordOverlay")
@@ -310,17 +324,17 @@ class Legend {
         state := this.ChordState
         if !state
             return
-        id := key.Id
-        if id == "Esc" || id == "Ctrl+G" || id == state.TriggerId
+        keyId := key.Id
+        if keyId == "Esc" || keyId == "Ctrl+G" || keyId == state.TriggerId
             return this.CloseChord()
-        if id == "Backspace" {
+        if keyId == "Backspace" {
             if this.Nav.Stack.Length = 1
                 return this.CloseChord()
             this.Nav.Press("Backspace")
             return this.AfterChordStep()
         }
-        if state.Shown && overlayKeys.Has(id) && !LegendChords.Find(this.Nav.Level.ChordItems, key) {
-            action := overlayKeys[id]
+        if state.Shown && overlayKeys.Has(keyId) && !LegendChords.Find(this.Nav.Level.ChordItems, key) {
+            action := overlayKeys[keyId]
             if action = "Style" || action = "Density"
                 this.ChangeDisplay(action)
             else if this.Nav.Press(action) = "redraw"
@@ -371,8 +385,8 @@ class Legend {
             return
         this.ChordState := ""
         state.Hook.Stop()
-        for name, fn in state.Timers
-            SetTimer(fn, 0)
+        for name, timer in state.Timers
+            SetTimer(timer, 0)
         if this.Gui
             this.Gui.Destroy(), this.Gui := ""
         if this.Measurer

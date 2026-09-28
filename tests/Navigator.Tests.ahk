@@ -213,3 +213,13 @@ Navigator_ChordFooter() {
     T.Eq(nav.View.Title, "Launch › Research")
     T.Eq(nav.Stack.Length, 2)
 }
+
+T.Test("Navigator: titles with no letters or digits take letters from the pool", Navigator_NoLetterTitles)
+Navigator_NoLetterTitles() {
+    items := [{N: "→ ←"}, {N: "日本語"}, {N: "a"}, {N: ""}]
+    letters := LegendNavigator.AssignLetters(items, i => i.N, i => "")
+    T.Eq(letters[1], "a")
+    T.Eq(letters[2], "b")
+    T.Eq(letters[3], "c")   ; its own "a" is taken
+    T.Eq(letters[4], "d")
+}

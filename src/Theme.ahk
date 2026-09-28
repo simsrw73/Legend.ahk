@@ -29,6 +29,7 @@ class LegendTheme {
         ["layout", "rowSpacing", "int:0:40", ""],     ; "" = from density
         ["layout", "maxColumns", "int:1:8", 3],
         ["layout", "maxHeightPercent", "int:20:100", 80],
+        ["layout", "maxWidthPercent", "int:20:100", 90],
         ["layout", "opacity", "int:50:255", 245],
         ["layout", "rounded", "bool", true],
         ["keys", "keyStyle", "enum:text|symbols|ahk", "text"],
@@ -43,20 +44,20 @@ class LegendTheme {
     ; optional session overrides for density and keyStyle, and legend "auto" turned
     ; into "bottom" for symbol styles or "off" for text.
     static Resolve(values, density := "", style := "") {
-        out := values.Clone()
+        resolved := values.Clone()
         if density != ""
-            out["density"] := density
+            resolved["density"] := density
         if style != ""
-            out["keyStyle"] := style
-        preset := this.Densities[out["density"]]
-        if out["padding"] = ""
-            out["padding"] := preset.padding
-        if out["rowSpacing"] = ""
-            out["rowSpacing"] := preset.rowSpacing
-        out["columnGap"] := preset.columnGap
-        if out["legend"] = "auto"
-            out["legend"] := out["keyStyle"] = "text" ? "off" : "bottom"
-        return out
+            resolved["keyStyle"] := style
+        preset := this.Densities[resolved["density"]]
+        if resolved["padding"] = ""
+            resolved["padding"] := preset.padding
+        if resolved["rowSpacing"] = ""
+            resolved["rowSpacing"] := preset.rowSpacing
+        resolved["columnGap"] := preset.columnGap
+        if resolved["legend"] = "auto"
+            resolved["legend"] := resolved["keyStyle"] = "text" ? "off" : "bottom"
+        return resolved
     }
 
     ; Loads <name>.ini from the first of dirs that has it, else from the built-in
@@ -95,8 +96,8 @@ class LegendTheme {
         raw := Trim(raw)
         value := raw, ok := true
         if kind = "color" {
-            ok := RegExMatch(raw, "^#?([0-9A-Fa-f]{6})$", &m)
-            value := ok ? StrUpper(m[1]) : ""
+            ok := RegExMatch(raw, "^#?([0-9A-Fa-f]{6})$", &found)
+            value := ok ? StrUpper(found[1]) : ""
         } else if kind = "bool" {
             ok := RegExMatch(raw, "i)^(1|0|true|false|yes|no|on|off)$")
             value := RegExMatch(raw, "i)^(1|true|yes|on)$") ? true : false

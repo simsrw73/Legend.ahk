@@ -15,23 +15,23 @@ class LegendPageFile {
         if lines.Length && Trim(lines[1]) = "---" {
             closed := false
             loop lines.Length - 1 {
-                n := A_Index + 1
-                line := Trim(lines[n])
+                lineNo := A_Index + 1
+                line := Trim(lines[lineNo])
                 if line = "---" {
-                    closed := true, start := n + 1
+                    closed := true, start := lineNo + 1
                     break
                 }
-                if !RegExMatch(line, "^(\w+)\s*:\s*(.*)$", &m)
+                if !RegExMatch(line, "^(\w+)\s*:\s*(.*)$", &found)
                     continue
-                switch StrLower(m[1]) {
+                switch StrLower(found[1]) {
                     case "match":
-                        page.Match := Trim(m[2])
+                        page.Match := Trim(found[2])
                     case "key":
-                        letter := StrLower(Trim(m[2]))
+                        letter := StrLower(Trim(found[2]))
                         if RegExMatch(letter, "^[a-z0-9]$")
                             page.Letter := letter
                         else
-                            warnings.Push(source ":" n ": key must be one letter or digit")
+                            warnings.Push(source ":" lineNo ": key must be one letter or digit")
                 }
             }
             if !closed {
@@ -42,41 +42,41 @@ class LegendPageFile {
 
         category := "", group := "", inFence := false
         loop lines.Length - start + 1 {
-            n := start + A_Index - 1
-            line := lines[n]
+            lineNo := start + A_Index - 1
+            line := lines[lineNo]
             if RegExMatch(line, "^\s*(``{3,}|~{3,})") {
                 inFence := !inFence
                 continue
             }
             if inFence
                 continue
-            if RegExMatch(line, "^#\s+(.+?)(?:\s+#+)?\s*$", &m) {
+            if RegExMatch(line, "^#\s+(.+?)(?:\s+#+)?\s*$", &found) {
                 if page.Title = ""
-                    page.Title := m[1]
+                    page.Title := found[1]
                 continue
             }
-            if RegExMatch(line, "^##\s+(.+?)(?:\s+#+)?\s*$", &m) {
-                category := m[1], group := ""
+            if RegExMatch(line, "^##\s+(.+?)(?:\s+#+)?\s*$", &found) {
+                category := found[1], group := ""
                 continue
             }
-            if RegExMatch(line, "^###\s+(.+?)(?:\s+#+)?\s*$", &m) {
-                group := m[1]
+            if RegExMatch(line, "^###\s+(.+?)(?:\s+#+)?\s*$", &found) {
+                group := found[1]
                 continue
             }
-            if !RegExMatch(line, "^\s*[-*+]\s+(``+)(.*)$", &m)
+            if !RegExMatch(line, "^\s*[-*+]\s+(``+)(.*)$", &found)
                 continue
-            ticks := m[1], rest := m[2]
+            ticks := found[1], rest := found[2]
             closeAt := InStr(rest, ticks)
             if !closeAt {
-                warnings.Push(source ":" n ": unclosed backtick")
+                warnings.Push(source ":" lineNo ": unclosed backtick")
                 continue
             }
             keyText := Trim(SubStr(rest, 1, closeAt - 1))
             description := RegExReplace(Trim(SubStr(rest, closeAt + StrLen(ticks))), "^[—–:-]\s*")
             try
                 key := LegendKeyName.FromText(keyText)
-            catch ValueError as e {
-                warnings.Push(source ":" n ": " e.Message)
+            catch ValueError as err {
+                warnings.Push(source ":" lineNo ": " err.Message)
                 continue
             }
             page.Entries.Push({Category: category, Group: group, Key: key, Description: description})
@@ -93,8 +93,8 @@ class LegendPageFile {
         SplitPath(path, &name)
         try
             text := FileRead(path, "UTF-8")
-        catch OSError as e
-            return {Page: "", Warnings: [name ": cannot read file: " e.Message]}
+        catch OSError as err
+            return {Page: "", Warnings: [name ": cannot read file: " err.Message]}
         return this.Parse(text, name)
     }
 
