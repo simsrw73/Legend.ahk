@@ -103,6 +103,8 @@ class LegendRegistry {
     static DefaultBinder(keyName, fn, match) {
         if match != ""
             HotIfWinActive(match)
+        else
+            HotIfWinActive()   ; also clears any condition the host left set
         try
             Hotkey(keyName, fn)
         finally

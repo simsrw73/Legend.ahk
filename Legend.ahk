@@ -7,6 +7,7 @@
 #Include %A_LineFile%\..\src\Navigator.ahk
 #Include %A_LineFile%\..\src\Theme.ahk
 #Include %A_LineFile%\..\src\Overlay.ahk
+#Include %A_LineFile%\..\src\KeyWatch.ahk
 
 ; Legend: a contextual shortcut overlay. See README.md.
 class Legend {
@@ -15,7 +16,7 @@ class Legend {
     static Visible := false
     static Nav := "", Gui := "", Theme := "", Measurer := ""
     static ThemeWarnings := []
-    static Watcher := "", FocusTimer := "", ActiveHwnd := 0, HelpId := ""
+    static Watcher := "", FocusTimer := "", ActiveHwnd := 0, HelpId := "", Keys := ""
 
     static Page(title, match := "", options := "") => this.Registry.Page(title, match, options)
     static Bind(path, hotkey, description, fn, options := "") => this.Registry.Bind(path, hotkey, description, fn, options)
@@ -115,9 +116,16 @@ class Legend {
     ; A visible-mode InputHook sees keys without blocking them, so Ctrl/Alt/Win combos
     ; still reach the app while the overlay closes. A timer notices focus changes.
     static StartWatching() {
+        this.Keys := LegendKeyWatch(this.HelpId)
+        held := []
+        for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
+            if GetKeyState(Format("vk{:X}", vk), "P")
+                held.Push(vk)
+        this.Keys.Seed(held)
         ih := this.Watcher := InputHook("V L0")
         ih.KeyOpt("{All}", "N")
         ih.OnKeyDown := (hook, vk, sc) => Legend.OnKeyDown(vk)
+        ih.OnKeyUp := (hook, vk, sc) => Legend.Keys.Up(vk)
         ih.Start()
         this.FocusTimer := () => Legend.CheckFocus()
         SetTimer(this.FocusTimer, 150)
@@ -130,25 +138,12 @@ class Legend {
             SetTimer(this.FocusTimer, 0), this.FocusTimer := ""
     }
 
+    ; A shortcut closes the overlay (unless pinned), and so does a plain letter on a
+    ; screen that does not use letters; either way the key itself reaches the app.
     static OnKeyDown(vk) {
-        static modifierVks := Map(0x10, 1, 0x11, 1, 0x12, 1, 0x5B, 1, 0x5C, 1,
-            0xA0, 1, 0xA1, 1, 0xA2, 1, 0xA3, 1, 0xA4, 1, 0xA5, 1)
-        if modifierVks.Has(vk)
-            return
-        mods := []
-        if GetKeyState("Ctrl")
-            mods.Push("Ctrl")
-        if GetKeyState("Alt")
-            mods.Push("Alt")
-        if GetKeyState("LWin") || GetKeyState("RWin")
-            mods.Push("Win")
-        if !mods.Length
-            return
-        if GetKeyState("Shift")
-            mods.Push("Shift")
-        if LegendKeyName.FromParts(mods, GetKeyName(Format("vk{:X}", vk))).Id == this.HelpId
-            return   ; the help key's own hotkey toggles the overlay
-        SetTimer(() => Legend.Handle("Combo"), -1)
+        kind := this.Keys.Down(vk, GetKeyName(Format("vk{:X}", vk)))
+        if kind = "combo" || (kind = "letter" && this.Visible && !this.Nav.ClaimsLetters)
+            SetTimer(() => Legend.Handle("Combo"), -1)
     }
 
     static CheckFocus() {

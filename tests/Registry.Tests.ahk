@@ -147,6 +147,15 @@ Registry_DefaultBinder() {
     T.Eq(Registry_AllEntries(r.Page("q")).Length, 1)
 }
 
+T.Test("Registry: a global binding ignores the host's HotIf context", Registry_GlobalIgnoresHostHotIf)
+Registry_GlobalIgnoresHostHotIf() {
+    r := LegendRegistry()
+    HotIfWinActive("ahk_exe legend-host-context.exe")
+    r.Bind(["p", "c"], "^!+F22", "global", Noop)
+    HotIfWinActive()
+    T.Eq(Hotkey("^!+F22", "Off"), "", "exists with no condition")
+}
+
 T.Test("Registry: SortedPages skips empty pages", Registry_Sorted)
 Registry_Sorted() {
     r := Registry_New()
