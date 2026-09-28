@@ -63,6 +63,8 @@ for the active window; only a match given in code makes hotkeys app-specific.
 | Backspace | back |
 | Space / PgDn, PgUp | next / previous screen |
 | `` ` `` | pin: stay open while you use shortcuts |
+| Tab | show keys as text, symbols (`⌃⇧T`) or AHK (`^+t`) |
+| `=` | switch between comfortable and compact spacing |
 | Esc | close |
 | any Ctrl/Alt/Win shortcut | closes the overlay and goes to the app |
 
@@ -73,9 +75,11 @@ folders or Legend's `themes/`; `"auto"` (default) follows Windows light/dark
 with Catppuccin Latte/Mocha. Settings: `[colors]` background, border, title,
 category, group, keyBound, keyDoc, description, footer, pinned, warning;
 `[fonts]` uiFont, keyFont, titleSize, headingSize, bodySize; `[layout]`
-padding, rowSpacing, maxColumns, maxHeightPercent, opacity, rounded; `[keys]`
-keyStyle (text/symbols/ahk), legend (off/top/bottom). Save theme files as
-ASCII or UTF-16.
+density (comfortable/compact), padding, rowSpacing, maxColumns,
+maxHeightPercent, opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
+legend (auto/off/top/bottom). Leave padding and rowSpacing out to get them from
+density. Tab and `=` change keyStyle and density until the script reloads.
+Save theme files as ASCII or UTF-16.
 
 ## Development
 

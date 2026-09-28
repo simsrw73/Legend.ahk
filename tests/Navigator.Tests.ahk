@@ -135,3 +135,30 @@ Navigator_Footer() {
     nav.Press("Pin")
     T.True(InStr(nav.Footer(), "`` unpin"))
 }
+
+T.Test("Navigator: relayout keeps the level and clamps the screen", Navigator_Relayout)
+Navigator_Relayout() {
+    nav := Navigator_New()
+    nav.Open([])
+    nav.Press("k"), nav.Press("l"), nav.Press("Next")
+    T.Eq(nav.View.ScreenIndex, 2)
+    nav.Press("Pin")
+    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "symbols")
+    T.Eq(nav.Stack.Length, 3)
+    T.Eq(nav.View.Title, "komorebi › Long")
+    T.Eq(nav.View.ScreenCount, 1)
+    T.Eq(nav.View.ScreenIndex, 1)
+    T.True(nav.Pinned, "pin kept")
+    T.Eq(nav.View.Columns[1].Rows[1].Key, "⌃⌥1", "new style applied")
+    nav.Press("Backspace")
+    T.Eq(nav.View.Title, "komorebi")
+    T.True(!nav.ClaimsLetters, "page now fits and is shown flat")
+}
+
+T.Test("Navigator: footer includes display hints", Navigator_FooterExtras)
+Navigator_FooterExtras() {
+    nav := Navigator_New()
+    nav.Open([])
+    f := nav.Footer("tab text", "= comfortable")
+    T.True(InStr(f, "tab text") && InStr(f, "= comfortable"), f)
+}

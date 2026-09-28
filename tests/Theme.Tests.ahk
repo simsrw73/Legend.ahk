@@ -43,3 +43,42 @@ Theme_Auto() {
     r := LegendTheme.Load("auto")
     T.Eq(r.Warnings.Length, 0)
 }
+
+T.Test("Theme: comfortable density is the default", Theme_DensityDefault)
+Theme_DensityDefault() {
+    v := LegendTheme.Resolve(LegendTheme.Read(""))
+    T.Eq(v["density"], "comfortable")
+    T.Eq(v["padding"], 28)
+    T.Eq(v["rowSpacing"], 12)
+    T.Eq(v["columnGap"], 56)
+}
+
+T.Test("Theme: compact density restores the original spacing", Theme_DensityCompact)
+Theme_DensityCompact() {
+    v := LegendTheme.Resolve(LegendTheme.Read(""), "compact")
+    T.Eq(v["density"], "compact")
+    T.Eq(v["padding"], 20)
+    T.Eq(v["rowSpacing"], 6)
+    T.Eq(v["columnGap"], 40)
+}
+
+T.Test("Theme: explicit spacing beats the density preset", Theme_ExplicitSpacing)
+Theme_ExplicitSpacing() {
+    base := LegendTheme.Read(A_ScriptDir "\fixtures\themes\spaced.ini")
+    T.Eq(LegendTheme.Resolve(base, "compact")["padding"], 10)
+    T.Eq(LegendTheme.Resolve(base, "comfortable")["padding"], 10)
+    T.Eq(LegendTheme.Resolve(base, "compact")["rowSpacing"], 6)
+}
+
+T.Test("Theme: legend auto shows only for symbol styles", Theme_LegendAuto)
+Theme_LegendAuto() {
+    base := LegendTheme.Read("")
+    T.Eq(base["legend"], "auto")
+    T.Eq(LegendTheme.Resolve(base)["legend"], "off", "text style")
+    r := LegendTheme.Resolve(base, "", "symbols")
+    T.Eq(r["keyStyle"], "symbols")
+    T.Eq(r["legend"], "bottom")
+    base["legend"] := "off"
+    T.Eq(LegendTheme.Resolve(base, "", "ahk")["legend"], "off", "explicit off stays off")
+    T.Eq(base["keyStyle"], "text", "Resolve does not modify its input")
+}

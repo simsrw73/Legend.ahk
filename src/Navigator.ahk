@@ -72,7 +72,24 @@ class LegendNavigator {
         return "none"
     }
 
-    Footer() {
+    ; Rebuilds every level on the stack with a new paginate function and key style
+    ; (both change sizes), keeping the path, the pin, and each level's screen number
+    ; where it still exists.
+    Relayout(paginate, style) {
+        this.PaginateFn := paginate
+        this.Style := style
+        stack := []
+        for level in this.Stack {
+            build := level.Build
+            fresh := build()
+            fresh.ScreenIndex := Min(level.ScreenIndex, fresh.Screens.Length)
+            stack.Push(fresh)
+        }
+        this.Stack := stack
+    }
+
+    ; extras: display hints shown before "esc close".
+    Footer(extras*) {
         level := this.Level
         parts := []
         if this.ClaimsLetters
@@ -82,6 +99,7 @@ class LegendNavigator {
         if level.Screens.Length > 1
             parts.Push("spc / pgup  " level.ScreenIndex "/" level.Screens.Length)
         parts.Push(this.Pinned ? "`` unpin" : "`` pin")
+        parts.Push(extras*)
         parts.Push("esc close")
         out := ""
         for p in parts
@@ -94,14 +112,16 @@ class LegendNavigator {
         items := []
         for i, p in pages
             items.Push({Letter: letters[i], Label: p.Title, Target: p})
-        return this.MenuLevel(title, items, item => this.PageLevel(item.Target))
+        return this.WithBuild(this.MenuLevel(title, items, item => this.PageLevel(item.Target)),
+            () => this.IndexLevel(pages, title))
     }
 
     ; A page that fits one screen is shown whole; otherwise its categories are listed.
     PageLevel(page) {
         screens := this.Paginate(LegendRows.ForPage(page, this.Style))
         if screens.Length = 1
-            return {Title: page.Title, Screens: screens, ScreenIndex: 1, Items: []}
+            return this.WithBuild({Title: page.Title, Screens: screens, ScreenIndex: 1, Items: []},
+                () => this.PageLevel(page))
         cats := []
         for c in page.Categories
             if LegendRows.ForCategory(c, this.Style).Length
@@ -111,13 +131,20 @@ class LegendNavigator {
         items := []
         for i, c in cats
             items.Push({Letter: letters[i], Label: nameOf(c), Target: c})
-        return this.MenuLevel(page.Title, items, item => this.CategoryLevel(page, item.Target))
+        return this.WithBuild(this.MenuLevel(page.Title, items, item => this.CategoryLevel(page, item.Target)),
+            () => this.PageLevel(page))
     }
 
     CategoryLevel(page, cat) {
         name := cat.Name != "" ? cat.Name : "Other"
-        return {Title: page.Title " › " name, Screens: this.Paginate(LegendRows.ForCategory(cat, this.Style)),
-            ScreenIndex: 1, Items: []}
+        return this.WithBuild({Title: page.Title " › " name, Screens: this.Paginate(LegendRows.ForCategory(cat, this.Style)),
+            ScreenIndex: 1, Items: []}, () => this.CategoryLevel(page, cat))
+    }
+
+    ; Records how to rebuild a level, for Relayout.
+    WithBuild(level, build) {
+        level.Build := build
+        return level
     }
 
     MenuLevel(title, items, open) =>

@@ -17,6 +17,9 @@ class Legend {
     static Nav := "", Gui := "", Theme := "", Measurer := ""
     static ThemeWarnings := []
     static Watcher := "", FocusTimer := "", ActiveHwnd := 0, HelpId := "", Keys := ""
+    static BaseTheme := ""
+    static StyleOverride := "", DensityOverride := ""   ; session-only display toggles
+    static Styles := ["text", "symbols", "ahk"]
 
     static Page(title, match := "", options := "") => this.Registry.Page(title, match, options)
     static Bind(path, hotkey, description, fn, options := "") => this.Registry.Bind(path, hotkey, description, fn, options)
@@ -47,7 +50,7 @@ class Legend {
         Hotkey(this.Options.HelpKey, (*) => Legend.Toggle())
         HotIf((*) => Legend.Visible)
         for key, action in Map("Esc", "Close", "Backspace", "Backspace", "Space", "Next",
-                "PgDn", "Next", "PgUp", "Prev", "``", "Pin")
+                "PgDn", "Next", "PgUp", "Prev", "``", "Pin", "Tab", "Style", "=", "Density")
             Hotkey(key, this.Handler(action))
         HotIf((*) => Legend.ClaimsLetters)
         for ch in StrSplit("abcdefghijklmnopqrstuvwxyz0123456789")
@@ -61,12 +64,10 @@ class Legend {
 
     static Open() {
         loaded := LegendTheme.Load(this.Options.Theme, this.Options.Themes)
-        theme := this.Theme := loaded.Values
+        this.BaseTheme := loaded.Values
         this.ThemeWarnings := loaded.Warnings
-        measurer := this.Measurer := LegendMeasurer(theme)
-        area := LegendOverlay.WorkArea()
-        maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - 120
-        paginate := rows => LegendLayout.Paginate(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"])
+        paginate := this.ApplyDisplay()
+        theme := this.Theme
 
         pages := this.Registry.SortedPages()
         matches := []
@@ -81,6 +82,31 @@ class Legend {
         this.StartWatching()
     }
 
+    ; Resolves the theme with the session's display toggles, replaces the measurer, and
+    ; returns the matching paginate function.
+    static ApplyDisplay() {
+        theme := this.Theme := LegendTheme.Resolve(this.BaseTheme, this.DensityOverride, this.StyleOverride)
+        if this.Measurer
+            this.Measurer.Destroy()
+        measurer := this.Measurer := LegendMeasurer(theme)
+        area := LegendOverlay.WorkArea()
+        maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - 120
+        return rows => LegendLayout.Paginate(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"])
+    }
+
+    ; Tab cycles key notation, = flips density; both last until the script reloads.
+    static ChangeDisplay(action) {
+        if action = "Style" {
+            for i, style in this.Styles
+                if style = this.Theme["keyStyle"]
+                    this.StyleOverride := this.Styles[Mod(i, this.Styles.Length) + 1]
+        } else
+            this.DensityOverride := this.Theme["density"] = "compact" ? "comfortable" : "compact"
+        paginate := this.ApplyDisplay()
+        this.Nav.Relayout(paginate, this.Theme["keyStyle"])
+        this.Draw()
+    }
+
     static Draw() {
         view := this.Nav.View
         mods := []
@@ -89,7 +115,8 @@ class Legend {
                 mods.Push(row.Mods*)
         legendLine := this.Theme["legend"] = "off" ? "" : LegendKeyName.LegendLine(mods, this.Theme["keyStyle"])
         old := this.Gui
-        this.Gui := LegendOverlay.Show(view, this.Theme, this.Measurer, this.Nav.Footer(), legendLine,
+        footer := this.Nav.Footer("tab " this.Theme["keyStyle"], "= " this.Theme["density"])
+        this.Gui := LegendOverlay.Show(view, this.Theme, this.Measurer, footer, legendLine,
             this.Nav.Pinned, this.Registry.Warnings.Length + this.ThemeWarnings.Length)
         if old
             old.Destroy()
@@ -107,6 +134,8 @@ class Legend {
     static Handle(action) {
         if !this.Visible
             return
+        if action = "Style" || action = "Density"
+            return this.ChangeDisplay(action)
         switch this.Nav.Press(action) {
             case "redraw": this.Draw()
             case "close": this.Close()
@@ -116,7 +145,7 @@ class Legend {
     ; A visible-mode InputHook sees keys without blocking them, so Ctrl/Alt/Win combos
     ; still reach the app while the overlay closes. A timer notices focus changes.
     static StartWatching() {
-        this.Keys := LegendKeyWatch(this.HelpId)
+        this.Keys := LegendKeyWatch(this.HelpId, ["``", "="])
         held := []
         for vk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
             if GetKeyState(Format("vk{:X}", vk), "P")

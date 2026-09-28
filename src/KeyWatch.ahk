@@ -8,9 +8,13 @@ class LegendKeyWatch {
         0xA3, "Ctrl", 0x12, "Alt", 0xA4, "Alt", 0xA5, "Alt", 0x5B, "Win", 0x5C, "Win")
     static IgnoredVks := Map(0xE8, 1, 0xFF, 1, 0x07, 1)  ; menu-mask and unassigned keys
 
-    __New(helpId) {
+    ; claimed: single-character keys the overlay handles itself while open.
+    __New(helpId, claimed := ["``"]) {
         this.HelpId := helpId
         this.Held := Map()
+        this.Claimed := Map()
+        for key in claimed
+            this.Claimed[key] := true
     }
 
     ; vks: modifier keys already down when watching starts.
@@ -37,7 +41,7 @@ class LegendKeyWatch {
         }
         if combo
             return LegendKeyName.FromParts(mods, keyName).Id == this.HelpId ? "" : "combo"
-        return StrLen(keyName) = 1 && keyName != "``" ? "letter" : ""
+        return StrLen(keyName) = 1 && !this.Claimed.Has(keyName) ? "letter" : ""
     }
 
     Up(vk) {

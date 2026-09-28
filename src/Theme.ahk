@@ -22,15 +22,40 @@ class LegendTheme {
         ["fonts", "titleSize", "int:6:48", 9],
         ["fonts", "headingSize", "int:6:48", 10],
         ["fonts", "bodySize", "int:6:48", 11],
-        ["layout", "padding", "int:0:100", 20],
-        ["layout", "rowSpacing", "int:0:40", 6],
+        ["layout", "density", "enum:comfortable|compact", "comfortable"],
+        ["layout", "padding", "int:0:100", ""],       ; "" = from density
+        ["layout", "rowSpacing", "int:0:40", ""],     ; "" = from density
         ["layout", "maxColumns", "int:1:8", 3],
         ["layout", "maxHeightPercent", "int:20:100", 80],
         ["layout", "opacity", "int:50:255", 245],
         ["layout", "rounded", "bool", true],
         ["keys", "keyStyle", "enum:text|symbols|ahk", "text"],
-        ["keys", "legend", "enum:off|top|bottom", "off"]
+        ["keys", "legend", "enum:auto|off|top|bottom", "auto"]
     ]
+
+    ; Spacing each density gives settings the theme leaves empty.
+    static Densities := Map("compact", {padding: 20, rowSpacing: 6, columnGap: 40},
+        "comfortable", {padding: 28, rowSpacing: 12, columnGap: 56})
+
+    ; Effective settings for drawing: a copy of values with density spacing filled in,
+    ; optional session overrides for density and keyStyle, and legend "auto" turned
+    ; into "bottom" for symbol styles or "off" for text.
+    static Resolve(values, density := "", style := "") {
+        out := values.Clone()
+        if density != ""
+            out["density"] := density
+        if style != ""
+            out["keyStyle"] := style
+        preset := this.Densities[out["density"]]
+        if out["padding"] = ""
+            out["padding"] := preset.padding
+        if out["rowSpacing"] = ""
+            out["rowSpacing"] := preset.rowSpacing
+        out["columnGap"] := preset.columnGap
+        if out["legend"] = "auto"
+            out["legend"] := out["keyStyle"] = "text" ? "off" : "bottom"
+        return out
+    }
 
     ; Loads <name>.ini from the first of dirs that has it, else from the built-in
     ; themes folder. "auto" picks catppuccin-latte or catppuccin-mocha from the

@@ -39,3 +39,11 @@ KeyWatch_Seed() {
     w.Seed([0xA4])
     T.Eq(w.Down(0x48, "h"), "combo")
 }
+
+T.Test("KeyWatch: claimed overlay keys never count as letters", KeyWatch_Claimed)
+KeyWatch_Claimed() {
+    w := LegendKeyWatch(LegendKeyName.FromHotkey("!/").Id, ["``", "="])
+    T.Eq(w.Down(0xBB, "="), "")
+    T.Eq(w.Down(0xC0, "``"), "")
+    T.Eq(w.Down(0x41, "a"), "letter")
+}

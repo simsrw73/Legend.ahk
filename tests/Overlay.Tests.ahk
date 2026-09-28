@@ -2,7 +2,7 @@
 
 T.Test("Overlay: & is measured as a literal character", Overlay_AmpersandIsLiteral)
 Overlay_AmpersandIsLiteral() {
-    m := LegendMeasurer(LegendTheme.Read(""))
+    m := LegendMeasurer(LegendTheme.Resolve(LegendTheme.Read("")))
     try {
         with := m.Size("Open & close", "body").W
         without := m.Size("Open  close", "body").W
@@ -13,7 +13,7 @@ Overlay_AmpersandIsLiteral() {
 
 T.Test("Overlay: measurer sizes entries and headings", Overlay_Measure)
 Overlay_Measure() {
-    m := LegendMeasurer(LegendTheme.Read(""))
+    m := LegendMeasurer(LegendTheme.Resolve(LegendTheme.Read("")))
     try {
         entry := m(LegendRows.Row("entry", "Ctrl+Shift+T", "Reopen", "bound"))
         T.True(entry.KeyW > 0 && entry.TextW > 0 && entry.H > 6)

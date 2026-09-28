@@ -1,16 +1,10 @@
 # Backlog
 
-- **Toggle key notation while the overlay is open.** Tab cycles key display
-  text → symbols → ahk (`Ctrl+Shift+T` → `⌃⇧T` → `^+t`); the legend line shows
-  automatically for symbols/ahk. The choice lasts until the script reloads (theme
-  `keyStyle` stays the starting style). Needs: a `"Style"` navigator action that
-  rebuilds the current level's rows, a Tab hotkey under `Legend.Visible`, and a
-  footer hint.
-- **Density toggle (compact / comfortable).** Theme gets `density = compact |
-  comfortable` that scales `padding`, `rowSpacing` and the column gap (explicit
-  values still win). A key while the overlay is open flips density for the
-  session, next to the Tab notation toggle; both can share one footer hint.
 - **Chord mode** (second pass): see "Modes" in docs/specs/2026-09-28-legend-design.md.
+- **Short local names vs host globals.** Legend uses locals like `w`, `h`, `x`,
+  `y`, `p`, `c`, `g`, `out`; a host script with globals of the same names gets
+  `#Warn` "local has the same name as a global" noise from Legend under
+  `#Warn All`. Rename to longer, Legend-ish names (or declare them `local`).
 - Deferred review minors from v1: warn when a page's code `match` is set after
   its bindings; expose `Legend.Binder`; cap overlay width and compute the height
   reserve from real title/legend/footer sizes; warn on invalid code `Key`; set

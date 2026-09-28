@@ -207,6 +207,8 @@ Keys while open are claimed by hotkeys under `#HotIf Legend.Visible`
 | Backspace | up one level; from an app page up to the full index |
 | Space / PgDn, PgUp | next / previous screen |
 | `` ` `` | toggle pin |
+| Tab | cycle key notation text → symbols → ahk (until the script reloads) |
+| `=` | flip density comfortable ↔ compact (until the script reloads) |
 | Esc, help key | close |
 | plain letter on a key-list screen | close, key passes through (not claimed) |
 | any Ctrl/Alt/Win combo | close (unless pinned), key passes through |
@@ -237,11 +239,11 @@ Legend's `themes/`:
 |---|---|
 | `[colors]` | `background`, `border`, `title`, `category`, `group`, `keyBound`, `keyDoc`, `description`, `footer`, `pinned`, `warning` |
 | `[fonts]` | `uiFont`, `keyFont`, `titleSize`, `headingSize`, `bodySize` |
-| `[layout]` | `padding`, `rowSpacing`, `maxColumns`, `maxHeightPercent`, `opacity`, `rounded` |
-| `[keys]` | `keyStyle` (`text` / `symbols` / `ahk`), `legend` (`off` / `top` / `bottom`) |
+| `[layout]` | `density` (`comfortable` / `compact`), `padding`, `rowSpacing`, `maxColumns`, `maxHeightPercent`, `opacity`, `rounded` |
+| `[keys]` | `keyStyle` (`text` / `symbols` / `ahk`), `legend` (`auto` / `off` / `top` / `bottom`) |
 
 Missing settings fall back to built-in defaults (Catppuccin Mocha, `keyDoc` a
-muted lavender, `keyStyle = text`, `legend = off`, fonts Segoe UI and
+muted lavender, `keyStyle = text`, `legend = auto`, `density = comfortable`, fonts Segoe UI and
 Consolas so nothing extra needs installing). Invalid values fall back to the
 default and add a warning. `Theme: "auto"` picks `catppuccin-latte` or
 `catppuccin-mocha` from Windows' `AppsUseLightTheme` each time the overlay
@@ -249,7 +251,13 @@ opens.
 
 The legend line lists only the notation used on the current screen (e.g.
 `⌃ Ctrl  ⌥ Alt  ⇧ Shift  ⊞ Win`, or `^ Ctrl  ! Alt  + Shift  # Win` for
-`ahk`). With `keyStyle = text` it is not shown.
+`ahk`). `legend = auto` shows it at the bottom for symbol styles and hides it for
+`text`.
+
+`density` supplies `padding`, `rowSpacing` and the column gap when the theme
+leaves them empty: compact 20 / 6 / 40, comfortable 28 / 12 / 56. Explicit
+`padding` or `rowSpacing` always win. Tab and `=` override `keyStyle` and
+`density` for the rest of the session; the footer shows the current values.
 
 ## Modules
 

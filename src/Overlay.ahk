@@ -82,7 +82,7 @@ class LegendOverlay {
                 y += size.H
             }
             bottom := Max(bottom, y)
-            x += col.Width + pad * 2
+            x += col.Width + theme["columnGap"]
         }
 
         y := bottom + spacing
