@@ -80,14 +80,25 @@ class LegendWindows {
         return {X: winX, Y: winY, W: winW, H: winH}
     }
 
-    ; Where a minimized window will be restored (WINDOWPLACEMENT.rcNormalPosition).
+    ; Where a minimized window will be restored, in screen coordinates.
+    ; WINDOWPLACEMENT.rcNormalPosition is in workspace coordinates.
     static NormalBounds(hwnd) {
         placement := Buffer(44, 0)
         NumPut("UInt", 44, placement)
         DllCall("GetWindowPlacement", "Ptr", hwnd, "Ptr", placement)
         left := NumGet(placement, 28, "Int"), top := NumGet(placement, 32, "Int")
-        return {X: left, Y: top, W: NumGet(placement, 36, "Int") - left, H: NumGet(placement, 40, "Int") - top}
+        bounds := {X: left, Y: top, W: NumGet(placement, 36, "Int") - left, H: NumGet(placement, 40, "Int") - top}
+        primaryIndex := MonitorGetPrimary()
+        MonitorGet(primaryIndex, &monLeft, &monTop, &monRight, &monBottom)
+        MonitorGetWorkArea(primaryIndex, &workLeft, &workTop, &workRight, &workBottom)
+        return this.WorkspaceToScreen(bounds, {Left: monLeft, Top: monTop, Right: monRight, Bottom: monBottom},
+            {Left: workLeft, Top: workTop, Right: workRight, Bottom: workBottom})
     }
+
+    ; Workspace coordinates are relative to the primary monitor's work area, so a
+    ; taskbar on the top or left shifts them.
+    static WorkspaceToScreen(bounds, primary, primaryWork) =>
+        {X: bounds.X + primaryWork.Left - primary.Left, Y: bounds.Y + primaryWork.Top - primary.Top, W: bounds.W, H: bounds.H}
 
     static IsCloaked(hwnd) {
         static DWMWA_CLOAKED := 14

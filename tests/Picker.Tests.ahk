@@ -303,3 +303,37 @@ Picker_LayoutKey() {
     q.Key(Picker_Key("l"))
     T.True(q.LayoutKey != first, "scope")
 }
+
+T.Test("Picker: LayoutKey changes on every load, even to the same array", Picker_LayoutKeyReload)
+Picker_LayoutKeyReload() {
+    items := Picker_Items(3)
+    p := LegendPicker("!s", "Test", (*) => items, {OnPick: Noop, Scopes: ["x", "y"]})
+    p.Open()
+    first := p.LayoutKey
+    p.Key(Picker_Key("l")), p.Key(Picker_Key("h"))   ; same scope, same array object
+    T.True(p.LayoutKey != first, "a reload must force a rebuild")
+}
+
+T.Test("Picker: Esc from a filter with no match returns to the row selected before /", Picker_FilterEscNoMatch)
+Picker_FilterEscNoMatch() {
+    p := Picker_New(5, {Start: 2})
+    p.Key(Picker_Key("/"))
+    Picker_Type(p, "nothing")
+    T.Eq(p.Selected, "")
+    p.Key(Picker_Key("Esc"))
+    T.Eq(p.Selected.Text, "item 2")
+}
+
+T.Test("Picker: CharOf uses the typed character when the controller provides it", Picker_CharOfTyped)
+Picker_CharOfTyped() {
+    shifted := Picker_Key("Shift+1"), shifted.Char := "!"
+    T.Eq(LegendPicker.CharOf(shifted), "!")
+    altGr := Picker_Key("Ctrl+Alt+Q"), altGr.Char := "@"
+    T.Eq(LegendPicker.CharOf(altGr), "@", "AltGr arrives as Ctrl+Alt")
+    control := Picker_Key("Ctrl+A"), control.Char := Chr(1)
+    T.Eq(LegendPicker.CharOf(control), "", "control characters never type")
+    p := Picker_New(3)
+    p.Key(Picker_Key("/"))
+    p.Key(altGr)
+    T.Eq(p.Query, "@")
+}

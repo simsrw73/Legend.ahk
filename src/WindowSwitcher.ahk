@@ -13,11 +13,12 @@ class LegendWindowSwitcher {
         labels := []
         for name in opt("Scopes", ["all", "desktop", "monitor"])
             labels.Push(LegendWindowSwitcher.LabelOf(name))
+        this.StartOption := opt("Start", 2)
         this.Picker := LegendPicker(hotkey, "Windows", label => this.Source(label), {
             OnPick: item => this.Pick(item),
-            OnHighlight: item => this.Peek.Show(item.Data),
+            OnHighlight: item => IsObject(item) ? this.Peek.Show(item.Data) : this.Peek.Clear(true),
             OnCancel: () => this.Cancel(),
-            Start: opt("Start", 2), Scopes: labels, Scope: LegendWindowSwitcher.LabelOf(opt("Scope", "all")),
+            Start: this.StartOption, Scopes: labels, Scope: LegendWindowSwitcher.LabelOf(opt("Scope", "all")),
             Density: opt("Density", ""), Match: opt("Match", ""), Reference: opt("Reference", true),
             EmptyText: "No windows"})
     }
@@ -27,6 +28,10 @@ class LegendWindowSwitcher {
             throw ValueError("window switcher scope must be all, desktop or monitor; got '" scope "'", -3)
         return this.ScopeLabels[scope]
     }
+
+    ; The row to preselect: Start counts the active window as row 1, so when it isn't
+    ; listed (the desktop, a tool window) the most recent window is one row earlier.
+    static StartFor(start, activeListed) => activeListed ? start : Max(1, start - 1)
 
     static ScopeOf(label) {
         for scope, text in this.ScopeLabels
@@ -47,7 +52,7 @@ class LegendWindowSwitcher {
         if !activeMonitor && active
             activeMonitor := LegendWindows.InPhysicalPixels(() => LegendWindows.MonitorAt(LegendWindows.Monitors(),
                 LegendWindows.Bounds(active).X, LegendWindows.Bounds(active).Y))
-        items := []
+        items := [], activeListed := false
         for win in windows {
             if scope != "all" && !win.OnCurrentDesktop
                 continue
@@ -55,10 +60,11 @@ class LegendWindowSwitcher {
                 continue
             item := {Text: win.Title, Detail: this.DetailOf(win), Icon: this.IconOf(win.Hwnd), Data: win}
             if win.Hwnd = active
-                items.InsertAt(1, item)
+                items.InsertAt(1, item), activeListed := true
             else
                 items.Push(item)
         }
+        this.Picker.Start := LegendWindowSwitcher.StartFor(this.StartOption, activeListed)
         return items
     }
 
@@ -134,17 +140,17 @@ class LegendPeek {
     }
 
     Show(win) {
-        static GW_HWNDPREV := 3, GWL_EXSTYLE := -20, WS_EX_TOPMOST := 0x8
+        static GW_HWNDPREV := 3
         static SWP_QUIET := 0x13   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
         this.Clear(true)
         if !IsObject(win) || win.Minimized || win.Cloaked || !DllCall("IsWindow", "Ptr", win.Hwnd)
             return
-        ; the nearest non-topmost window above it: restoring behind a topmost window
-        ; would make it topmost
+        ; the nearest visible, non-topmost window above it: restoring behind a topmost
+        ; window would make it topmost, and an invisible one may be gone by then
         above := win.Hwnd
         loop {
             above := DllCall("GetWindow", "Ptr", above, "UInt", GW_HWNDPREV, "Ptr")
-            if !above || !(DllCall("GetWindowLongPtrW", "Ptr", above, "Int", GWL_EXSTYLE, "Ptr") & WS_EX_TOPMOST)
+            if !above || LegendPeek.IsAnchor(above)
                 break
         }
         this.Raised := win.Hwnd, this.Above := above
@@ -161,6 +167,13 @@ class LegendPeek {
         if LegendPeek.ShouldRestore(restore, this.Raised, this.Above, WinExist("A")) && DllCall("IsWindow", "Ptr", this.Raised)
             DllCall("SetWindowPos", "Ptr", this.Raised, "Ptr", this.Above, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", SWP_QUIET)
         this.Raised := 0, this.Above := 0
+    }
+
+    ; A window the peeked one can be put back behind.
+    static IsAnchor(hwnd) {
+        static GWL_EXSTYLE := -20, WS_EX_TOPMOST := 0x8
+        return DllCall("IsWindowVisible", "Ptr", hwnd)
+            && !(DllCall("GetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr") & WS_EX_TOPMOST)
     }
 
     ; Put the raised window back only when asked, when there is an anchor, and when the

@@ -82,7 +82,7 @@ A picker opens a list: j/k, ↓/↑ or Ctrl+N/Ctrl+P move (the trigger again mov
 down, Shift+trigger up), a letter or Enter picks, `/` filters (every word must
 match), h/l change scope, `=` switches density, Esc cancels. Items are
 `{Text, Detail?, Icon?, Letter?, Data?}`. Options: `OnPick` (required),
-`OnHighlight`, `OnCancel`, `Start` (row selected at open), `Scopes`, `Scope`,
+`OnHighlight` (gets `""` when a filter leaves nothing selected), `OnCancel`, `Start` (row selected at open), `Scopes`, `Scope`,
 `Density`, `Match`, `Reference` (pickers are listed on a "Pickers" page in
 Alt+/). Letters are assigned home row first and never use h/j/k/l or the
 trigger's key.
@@ -152,7 +152,7 @@ category, group, keyBound, keyDoc, description, footer, pinned, warning,
 selection, selectionText, outline (pickers; default border, description, category);
 `[fonts]` uiFont, keyFont, titleSize, headingSize, bodySize; `[layout]`
 density (comfortable/compact), padding, rowSpacing, maxColumns,
-maxHeightPercent, maxWidthPercent, opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
+maxHeightPercent, maxWidthPercent, pickerWidthPercent (60), opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
 legend (auto/off/top/bottom). Leave padding and rowSpacing out to get them from
 density. Tab and `=` change keyStyle and density until the script reloads.
 Save theme files as ASCII or UTF-16.

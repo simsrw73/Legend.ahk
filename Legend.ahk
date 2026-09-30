@@ -422,6 +422,7 @@ class Legend {
         ; serialized by OpenPicker
         if this.PickerState
             return
+        this.RunDeferred()   ; the last picker's OnPick / OnCancel before this one's source
         if this.Visible
             this.Close()
         if this.ChordState
@@ -460,6 +461,28 @@ class Legend {
             this.DrainPickerKeys()
     }
 
+    ; OnPick / OnCancel run after the overlay is gone, outside Critical, on a timer;
+    ; a picker opened before that timer fires runs it first.
+    static Deferred := ""
+
+    static Defer(callback) {
+        this.RunDeferred()
+        this.Deferred := callback
+        SetTimer(() => Legend.RunDeferred(), -1)
+    }
+
+    static RunDeferred() {
+        if !IsObject(callback := this.Deferred)
+            return
+        this.Deferred := ""
+        was := A_IsCritical
+        Critical("Off")
+        try
+            callback()
+        finally
+            Critical(was ? was : "Off")
+    }
+
     static HeldModifiers() {
         held := []
         for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
@@ -472,7 +495,9 @@ class Legend {
     static PickerTheme() {
         picker := this.PickerState.Picker
         density := this.DensityOverride != "" ? this.DensityOverride : picker.Density
-        return this.Theme := LegendTheme.Resolve(this.BaseTheme, density, "")
+        theme := LegendTheme.Resolve(this.BaseTheme, density, "")
+        theme["legend"] := "off"   ; pickers have no modifier legend line to make room for
+        return this.Theme := theme
     }
 
     static DrawPicker() {
@@ -487,7 +512,7 @@ class Legend {
         measurer := this.Measurer
         area := LegendOverlay.WorkArea()
         maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
-        maxWidth := (area.Right - area.Left) * theme["maxWidthPercent"] // 100 - theme["padding"] * 2
+        maxWidth := (area.Right - area.Left) * Min(theme["pickerWidthPercent"], theme["maxWidthPercent"]) // 100 - theme["padding"] * 2
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
         layout := picker.LayoutKey "|" theme["density"]
         if this.Gui && state.DrawnLayout == layout {   ; only the cursor moved: no rebuild
@@ -502,16 +527,35 @@ class Legend {
             old.Destroy()
     }
 
-    ; Calls OnHighlight when the selected item changed.
+    ; Calls OnHighlight when the selected item changed; with "" when nothing is
+    ; selected any more (a filter with no match).
     static Highlight() {
         state := this.PickerState
         item := state.Picker.Selected
-        if IsObject(item) && IsObject(state.Highlighted) && item == state.Highlighted
+        if IsObject(item) ? IsObject(state.Highlighted) && item == state.Highlighted : !IsObject(state.Highlighted)
             return
         state.Highlighted := item
         onHighlight := state.Picker.OnHighlight
-        if IsObject(onHighlight) && IsObject(item)
+        if IsObject(onHighlight)
             onHighlight(item)
+    }
+
+    ; The character the active keyboard layout produces for vk/sc with the modifiers
+    ; held now (Shift, AltGr, CapsLock), or "" (dead keys, non-printing keys).
+    static TypedChar(vk, sc) {
+        static modVks := [0x10, 0x11, 0x12, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5]
+        keyState := Buffer(256, 0)
+        for modVk in modVks
+            if GetKeyState(Format("vk{:X}", modVk), "P")
+                NumPut("UChar", 0x80, keyState, modVk)
+        if GetKeyState("CapsLock", "T")
+            NumPut("UChar", 1, keyState, 0x14)
+        threadId := DllCall("GetWindowThreadProcessId", "Ptr", WinExist("A"), "Ptr", 0, "UInt")
+        layout := DllCall("GetKeyboardLayout", "UInt", threadId, "Ptr")
+        chars := Buffer(16, 0)
+        ; flag 4: leave the keyboard's dead-key state alone
+        count := DllCall("ToUnicodeEx", "UInt", vk, "UInt", sc, "Ptr", keyState, "Ptr", chars, "Int", 8, "UInt", 4, "Ptr", layout)
+        return count = 1 ? StrGet(chars, 1, "UTF-16") : ""
     }
 
     static PickerKeyUp(vk, sc) {
@@ -532,6 +576,7 @@ class Legend {
         full := state.Keys.Key(name, true)
         if full.Id == state.Picker.TriggerId || full.Id == state.Picker.ShiftTriggerId
             key := full
+        key.Char := this.TypedChar(vk, sc)
         if GetKeyState("Alt", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
             SetTimer(() => Send("{Blind}{vkE8}"), -1)   ; keep a lone Alt/Win release from opening a menu
         ; Keys that arrive while a redraw runs pile up here and are applied together,
@@ -567,7 +612,7 @@ class Legend {
                 item := picker.Selected
                 this.ClosePickerNow(false)
                 onPick := picker.OnPick
-                SetTimer(() => onPick(item), -1)   ; runs after the overlay is gone, not Critical
+                this.Defer(() => onPick(item))
             case "cancel":
                 this.ClosePickerNow(true)
         }
@@ -594,6 +639,6 @@ class Legend {
             this.Measurer.Destroy(), this.Measurer := ""
         onCancel := state.Picker.OnCancel
         if cancelled && IsObject(onCancel)
-            SetTimer(onCancel, -1)
+            this.Defer(onCancel)
     }
 }

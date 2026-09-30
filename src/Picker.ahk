@@ -37,6 +37,8 @@ class LegendPicker {
         shifted.Push("Shift")
         this.ShiftTriggerId := LegendKeyName.FromParts(shifted, trigger.Name).Id
         this.PageSize := 0
+        this.Loads := 0   ; source calls so far; part of LayoutKey
+        this.BeforeFilter := ""   ; the selection when / was pressed
         this.Items := [], this.Visible := [], this.Letters := []
         this.Cursor := 0, this.Mode := "normal", this.Query := "", this.ScopeIndex := 1
     }
@@ -47,7 +49,7 @@ class LegendPicker {
     ScreenIndex => this.PageSize && this.Cursor ? (this.Cursor - 1) // this.PageSize + 1 : 1
     ; Everything the drawn rows depend on except which row is selected: when it is
     ; unchanged, the controller only moves the selection instead of redrawing.
-    LayoutKey => ObjPtr(this.Items) "|" this.TitleLine "|" this.Mode "|" this.ScreenIndex "|" this.ScreenCount "|" this.Visible.Length
+    LayoutKey => this.Loads "|" this.TitleLine "|" this.Mode "|" this.ScreenIndex "|" this.ScreenCount "|" this.Visible.Length
     ScreenCount =>this.PageSize && this.Visible.Length ? (this.Visible.Length - 1) // this.PageSize + 1 : 1
 
     Open() {
@@ -59,6 +61,7 @@ class LegendPicker {
     Load() {
         source := this.Source
         this.Items := source(this.Scope)
+        this.Loads += 1
         this.Refresh(this.Start)
     }
 
@@ -89,6 +92,7 @@ class LegendPicker {
             case "=": return "density"
             case "Esc", "Ctrl+G": return "cancel"
             case "/":
+                this.BeforeFilter := this.Selected
                 this.Mode := "filter"
                 this.Refresh(this.Cursor)
                 return "redraw"
@@ -130,14 +134,15 @@ class LegendPicker {
             case "PgDn": return this.Page(1)
             case "PgUp": return this.Page(-1)
             case "Esc":
-                selected := this.Selected
+                selected := IsObject(this.Selected) ? this.Selected : this.BeforeFilter
                 this.Mode := "normal", this.Query := ""
                 this.Reselect(selected)
                 return "redraw"
             case "Backspace":
                 if this.Query = "" {
+                    selected := IsObject(this.Selected) ? this.Selected : this.BeforeFilter
                     this.Mode := "normal"
-                    this.Reselect(this.Selected)
+                    this.Reselect(selected)
                 } else {
                     this.Query := SubStr(this.Query, 1, -1)
                     this.Refresh(1)
@@ -160,9 +165,13 @@ class LegendPicker {
                 this.Cursor := index
     }
 
-    ; What a key types into the filter: its lowercase character with no modifier or
-    ; Shift only, a space for Space, else "".
+    ; What a key types into the filter. The controller sets key.Char to the character
+    ; the keyboard layout produces (Shift and AltGr included); without it, the key's
+    ; own lowercase character with no modifier or Shift only. Control characters and
+    ; other modifier combos type nothing; Space types a space.
     static CharOf(key) {
+        if key.HasOwnProp("Char") && key.Char != ""
+            return Ord(key.Char) >= 32 ? key.Char : ""
         if key.Verbatim != "" || key.Mods.Length > 1 || key.Mods.Length = 1 && key.Mods[1] != "Shift"
             return ""
         if key.Name = "Space"

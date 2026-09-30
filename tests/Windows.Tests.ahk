@@ -26,3 +26,22 @@ T.Test("Windows: desktop labels fall back without registry data", Windows_Deskto
 Windows_DesktopLabel() {
     T.Eq(LegendDesktops.Label("{00000000-0000-0000-0000-000000000001}"), "another desktop")
 }
+
+T.Test("Switcher: the preselected row skips the active window only when it is listed", Switcher_StartFor)
+Switcher_StartFor() {
+    T.Eq(LegendWindowSwitcher.StartFor(2, true), 2, "active window is row 1")
+    T.Eq(LegendWindowSwitcher.StartFor(2, false), 1, "desktop or an unlisted window is active")
+    T.Eq(LegendWindowSwitcher.StartFor(1, false), 1)
+}
+
+T.Test("Windows: workspace coordinates shift by the primary work area's offset", Windows_WorkspaceToScreen)
+Windows_WorkspaceToScreen() {
+    primary := {Left: 0, Top: 0, Right: 3840, Bottom: 2160}
+    topBar := {Left: 0, Top: 48, Right: 3840, Bottom: 2160}
+    moved := LegendWindows.WorkspaceToScreen({X: 100, Y: 0, W: 800, H: 600}, primary, topBar)
+    T.Eq(moved.X, 100)
+    T.Eq(moved.Y, 48)
+    T.Eq(moved.H, 600)
+    same := LegendWindows.WorkspaceToScreen({X: 5, Y: 5, W: 1, H: 1}, primary, primary)
+    T.Eq(same.Y, 5, "bottom taskbar: no offset")
+}

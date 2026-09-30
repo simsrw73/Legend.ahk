@@ -33,6 +33,7 @@ class LegendTheme {
         ["layout", "maxColumns", "int:1:8", 3],
         ["layout", "maxHeightPercent", "int:20:100", 80],
         ["layout", "maxWidthPercent", "int:20:100", 90],
+        ["layout", "pickerWidthPercent", "int:20:100", 60],
         ["layout", "opacity", "int:50:255", 245],
         ["layout", "rounded", "bool", true],
         ["keys", "keyStyle", "enum:text|symbols|ahk", "text"],
