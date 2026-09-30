@@ -41,4 +41,8 @@ DemoColors(scope) {
     return items
 }
 
+; Ctrl+Alt+Shift+A / S: window switchers (all windows / this monitor). h/l change scope.
+Legend.WindowSwitcher("^!+a", {Scope: "all"})
+Legend.WindowSwitcher("^!+s", {Scope: "monitor"})
+
 Legend.Start({Pages: [A_ScriptDir "\pages"]})

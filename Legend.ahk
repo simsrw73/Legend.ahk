@@ -12,6 +12,7 @@
 #Include %A_LineFile%\..\src\Chord.ahk
 #Include %A_LineFile%\..\src\Picker.ahk
 #Include %A_LineFile%\..\src\Windows.ahk
+#Include %A_LineFile%\..\src\WindowSwitcher.ahk
 
 ; Legend: a contextual shortcut overlay. See README.md.
 class Legend {
@@ -405,6 +406,14 @@ class Legend {
     static Picker(hotkey, title, source, options := "") {
         picker := LegendPicker(hotkey, title, source, options)
         return this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))
+    }
+
+    ; A picker over windows; see LegendWindowSwitcher for options.
+    static WindowSwitcher(hotkey, options := "") {
+        switcher := LegendWindowSwitcher(hotkey, options)
+        picker := switcher.Picker
+        this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))
+        return switcher
     }
 
     static OpenPicker(picker) => this.Serialized(() => this.OpenPickerNow(picker))
