@@ -3,7 +3,7 @@ match: ahk_exe notepad.exe
 ---
 # Notepad
 
-Notepad's own shortcuts. Ctrl+Alt+D is added by example.ahk, so it shows as bound.
+Notepad's own shortcuts. Ctrl+Alt+D is added by 02-page-files.ahk, so it shows as bound.
 
 ## Editing
 ### File
