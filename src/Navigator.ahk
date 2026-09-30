@@ -12,10 +12,17 @@ class LegendNavigator {
         this.Pinned := false
         this.Mode := "reference"
         this.RunItem := ""
+        this.Builds := 0   ; levels built so far; part of LayoutKey
     }
 
     Level => this.Stack[this.Stack.Length]
     ClaimsLetters => this.Level.Items.Length > 0
+    ; Changes with the shown level, its screen, the pin and the key style, but not
+    ; when only the cursor moves (Legend.Render then moves the selection in place).
+    LayoutKey => this.Level.BuildId "|" this.Stack.Length "|" this.Level.ScreenIndex "|" this.Pinned "|" this.Style
+
+    ; The cursor's position among the current screen's rows (0 without a cursor).
+    SelectedIndex => this.Level.Cursor ? this.Level.Cursor - this.FirstItemOf(this.Level, this.Level.ScreenIndex) + 1 : 0
 
     View {
         get {
@@ -28,7 +35,7 @@ class LegendNavigator {
                             rowIndex += 1, row.Selected := rowIndex = level.Cursor
             }
             return {Title: level.Title, Columns: level.Screens[level.ScreenIndex],
-                ScreenIndex: level.ScreenIndex, ScreenCount: level.Screens.Length}
+                ScreenIndex: level.ScreenIndex, ScreenCount: level.Screens.Length, SelectedIndex: this.SelectedIndex}
         }
     }
 
@@ -209,6 +216,7 @@ class LegendNavigator {
     ; Records how to rebuild a level, for Relayout.
     WithBuild(level, build) {
         level.Build := build
+        level.BuildId := ++this.Builds
         return level
     }
 
