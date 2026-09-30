@@ -128,3 +128,31 @@ Legend_KeyMaps() {
     T.Eq(w.Down(0x46, "f"), "", "Ctrl+F doesn't close the overlay")
     T.Eq(w.Down(0x42, "b"), "")
 }
+
+T.Test("Legend: Render builds once per layout key", Legend_Render)
+Legend_Render() {
+    builds := 0
+    make := () => (builds += 1, Legend_RenderWindow())
+    savedGui := Legend.Gui, savedKey := Legend.DrawnLayout
+    Legend.Gui := ""
+    try {
+        Legend.Render("test|a", make, 0)
+        Legend.Render("test|a", make, 0)
+        T.Eq(builds, 1, "same key: moved in place")
+        Legend.Render("test|b", make, 0)
+        T.Eq(builds, 2, "new key: rebuilt")
+        Legend.Gui.Destroy(), Legend.Gui := ""
+        Legend.Render("test|b", make, 0)
+        T.Eq(builds, 3, "no window: rebuilt even with the same key")
+    } finally {
+        if Legend.Gui
+            Legend.Gui.Destroy()
+        Legend.Gui := savedGui, Legend.DrawnLayout := savedKey
+    }
+}
+
+Legend_RenderWindow() {
+    g := Gui("-Caption +ToolWindow +E0x08000000")
+    g.Selection := LegendSelection(g, "45475A")
+    return g
+}
