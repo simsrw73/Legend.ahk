@@ -13,11 +13,12 @@ class LegendWindowSwitcher {
         labels := []
         for name in opt("Scopes", ["all", "desktop", "monitor"])
             labels.Push(LegendWindowSwitcher.LabelOf(name))
+        this.StartOption := opt("Start", 2)
         this.Picker := LegendPicker(hotkey, "Windows", label => this.Source(label), {
             OnPick: item => this.Pick(item),
             OnHighlight: item => IsObject(item) ? this.Peek.Show(item.Data) : this.Peek.Clear(true),
             OnCancel: () => this.Cancel(),
-            Start: opt("Start", 2), Scopes: labels, Scope: LegendWindowSwitcher.LabelOf(opt("Scope", "all")),
+            Start: this.StartOption, Scopes: labels, Scope: LegendWindowSwitcher.LabelOf(opt("Scope", "all")),
             Density: opt("Density", ""), Match: opt("Match", ""), Reference: opt("Reference", true),
             EmptyText: "No windows"})
     }
@@ -27,6 +28,10 @@ class LegendWindowSwitcher {
             throw ValueError("window switcher scope must be all, desktop or monitor; got '" scope "'", -3)
         return this.ScopeLabels[scope]
     }
+
+    ; The row to preselect: Start counts the active window as row 1, so when it isn't
+    ; listed (the desktop, a tool window) the most recent window is one row earlier.
+    static StartFor(start, activeListed) => activeListed ? start : Max(1, start - 1)
 
     static ScopeOf(label) {
         for scope, text in this.ScopeLabels
@@ -47,7 +52,7 @@ class LegendWindowSwitcher {
         if !activeMonitor && active
             activeMonitor := LegendWindows.InPhysicalPixels(() => LegendWindows.MonitorAt(LegendWindows.Monitors(),
                 LegendWindows.Bounds(active).X, LegendWindows.Bounds(active).Y))
-        items := []
+        items := [], activeListed := false
         for win in windows {
             if scope != "all" && !win.OnCurrentDesktop
                 continue
@@ -55,10 +60,11 @@ class LegendWindowSwitcher {
                 continue
             item := {Text: win.Title, Detail: this.DetailOf(win), Icon: this.IconOf(win.Hwnd), Data: win}
             if win.Hwnd = active
-                items.InsertAt(1, item)
+                items.InsertAt(1, item), activeListed := true
             else
                 items.Push(item)
         }
+        this.Picker.Start := LegendWindowSwitcher.StartFor(this.StartOption, activeListed)
         return items
     }
 

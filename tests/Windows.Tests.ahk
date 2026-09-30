@@ -26,3 +26,10 @@ T.Test("Windows: desktop labels fall back without registry data", Windows_Deskto
 Windows_DesktopLabel() {
     T.Eq(LegendDesktops.Label("{00000000-0000-0000-0000-000000000001}"), "another desktop")
 }
+
+T.Test("Switcher: the preselected row skips the active window only when it is listed", Switcher_StartFor)
+Switcher_StartFor() {
+    T.Eq(LegendWindowSwitcher.StartFor(2, true), 2, "active window is row 1")
+    T.Eq(LegendWindowSwitcher.StartFor(2, false), 1, "desktop or an unlisted window is active")
+    T.Eq(LegendWindowSwitcher.StartFor(1, false), 1)
+}
