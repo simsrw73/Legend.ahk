@@ -92,6 +92,8 @@ Legend.WindowSwitcher("!d", {Scope: "desktop", Scopes: ["desktop"]})
 | Esc, Ctrl+G | cancel |
 | focus moves to another window | cancel |
 
+*Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page, Ctrl+N/P move a cursor, Ctrl+T changes scope.*
+
 Tab (key notation) does nothing in a picker.
 
 ### Letters
@@ -113,6 +115,7 @@ Letters are assigned over the filtered list, top to bottom.
 - ↓ / ↑, Ctrl+N / Ctrl+P and the trigger move; J/K and `=` type.
 - Enter picks. Esc clears the query and returns to normal mode; a second Esc
   cancels.
+  *Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page, Ctrl+N/P move a cursor, Ctrl+T changes scope.*
 
 ### Serialization
 
@@ -234,6 +237,7 @@ padding, row spacing and placement (centered on the active monitor).
   modifier legend line, so the `legend` setting doesn't apply).
 - Every change redraws the GUI, as chord steps do. If that flickers with long
   lists, update only the two changed rows (measure first).
+  *Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page, Ctrl+N/P move a cursor, Ctrl+T changes scope.*
 
 ### Theme additions
 
