@@ -162,3 +162,103 @@ Picker_Reference() {
     T.Eq(entries[1].Key.Id, "Alt+S")
     T.Eq(entries[1].Description, "Windows · this monitor")
 }
+
+Picker_Type(picker, text) {
+    for char in StrSplit(text)
+        picker.Key(Picker_Key(char = " " ? "Space" : char))
+}
+
+T.Test("Picker: / filters by terms over Text and Detail", Picker_Filter)
+Picker_Filter() {
+    p := Picker_New(5, {Start: 4})
+    T.Eq(p.Key(Picker_Key("/")), "redraw")
+    T.Eq(p.Mode, "filter")
+    T.Eq(p.Letters.Length, 0, "letters hidden")
+    Picker_Type(p, "zen")
+    T.Eq(p.Query, "zen")
+    T.Eq(p.Visible.Length, 2)
+    T.Eq(p.Cursor, 1, "first match selected")
+    Picker_Type(p, " 2")
+    T.Eq(p.Visible.Length, 1)
+    T.Eq(p.Selected.Text, "item 2")
+    T.Eq(p.TitleLine, "Test / zen 2▏")
+    T.Eq(p.Key(Picker_Key("Enter")), "pick")
+}
+
+T.Test("Picker: j/k type in filter mode; arrows and Ctrl+N/P move", Picker_FilterKeys)
+Picker_FilterKeys() {
+    p := Picker_New(5)
+    p.Key(Picker_Key("/"))
+    Picker_Type(p, "item")
+    p.Key(Picker_Key("Down")), p.Key(Picker_Key("Ctrl+N"))
+    T.Eq(p.Cursor, 3)
+    p.Key(Picker_Key("Up"))
+    T.Eq(p.Cursor, 2)
+    p.Key(Picker_Key("Alt+S"))
+    T.Eq(p.Cursor, 3, "trigger still moves")
+    p.Key(Picker_Key("j"))
+    T.Eq(p.Query, "itemj")
+    T.Eq(p.Key(Picker_Key("=")), "redraw", "= types")
+    T.Eq(p.Query, "itemj=")
+}
+
+T.Test("Picker: the bare trigger key types in filter mode", Picker_FilterTypesTriggerKey)
+Picker_FilterTypesTriggerKey() {
+    p := Picker_New(5)
+    p.Key(Picker_Key("/"))
+    p.Key(Picker_Key("s"))
+    T.Eq(p.Query, "s")
+    p.Key(Picker_Key("Shift+S"))
+    T.Eq(p.Query, "ss", "Shift+letter types lowercase")
+}
+
+T.Test("Picker: no match leaves Enter harmless", Picker_FilterNoMatch)
+Picker_FilterNoMatch() {
+    p := Picker_New(5)
+    p.Key(Picker_Key("/"))
+    Picker_Type(p, "nothing")
+    T.Eq(p.Visible.Length, 0)
+    T.Eq(p.Selected, "")
+    T.Eq(p.Key(Picker_Key("Enter")), "none")
+    T.Eq(p.Key(Picker_Key("Down")), "none")
+}
+
+T.Test("Picker: Esc clears the filter and keeps the selection; Esc again cancels", Picker_FilterEscKeepsSelection)
+Picker_FilterEscKeepsSelection() {
+    p := Picker_New(5)
+    p.Key(Picker_Key("/"))
+    Picker_Type(p, "brave")
+    p.Key(Picker_Key("Down"))
+    T.Eq(p.Selected.Text, "item 4")
+    T.Eq(p.Key(Picker_Key("Esc")), "redraw")
+    T.Eq(p.Mode, "normal")
+    T.Eq(p.Query, "")
+    T.Eq(p.Visible.Length, 5)
+    T.Eq(p.Selected.Text, "item 4")
+    T.Eq(Picker_Letters(p), "adfg;")
+    T.Eq(p.Key(Picker_Key("Esc")), "cancel")
+}
+
+T.Test("Picker: Backspace edits; on an empty query it leaves filter mode", Picker_FilterBackspace)
+Picker_FilterBackspace() {
+    p := Picker_New(5)
+    p.Key(Picker_Key("/"))
+    Picker_Type(p, "ze")
+    p.Key(Picker_Key("Backspace"))
+    T.Eq(p.Query, "z")
+    p.Key(Picker_Key("Backspace"))
+    T.Eq(p.Query, "")
+    T.Eq(p.Mode, "filter")
+    p.Key(Picker_Key("Backspace"))
+    T.Eq(p.Mode, "normal")
+    T.Eq(p.Key(Picker_Key("Ctrl+G")), "cancel")
+}
+
+T.Test("Picker: CharOf", Picker_CharOf)
+Picker_CharOf() {
+    T.Eq(LegendPicker.CharOf(Picker_Key("A")), "a")
+    T.Eq(LegendPicker.CharOf(Picker_Key("Shift+A")), "a")
+    T.Eq(LegendPicker.CharOf(Picker_Key("Space")), " ")
+    T.Eq(LegendPicker.CharOf(Picker_Key("Ctrl+A")), "")
+    T.Eq(LegendPicker.CharOf(Picker_Key("F1")), "")
+}

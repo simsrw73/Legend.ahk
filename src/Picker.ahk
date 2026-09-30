@@ -100,7 +100,52 @@ class LegendPicker {
     }
 
     FilterKey(key) {
-        return "none"   ; Task 3
+        if step := this.Step(key, false)
+            return this.Move(step)
+        switch key.Id {
+            case "Enter": return this.Cursor ? "pick" : "none"
+            case "Ctrl+G": return "cancel"
+            case "PgDn": return this.Page(1)
+            case "PgUp": return this.Page(-1)
+            case "Esc":
+                selected := this.Selected
+                this.Mode := "normal", this.Query := ""
+                this.Reselect(selected)
+                return "redraw"
+            case "Backspace":
+                if this.Query = "" {
+                    this.Mode := "normal"
+                    this.Reselect(this.Selected)
+                } else {
+                    this.Query := SubStr(this.Query, 1, -1)
+                    this.Refresh(1)
+                }
+                return "redraw"
+        }
+        char := LegendPicker.CharOf(key)
+        if char = ""
+            return "none"
+        this.Query .= char
+        this.Refresh(1)
+        return "redraw"
+    }
+
+    ; Refreshes and puts the cursor back on item (row 1 if it is gone).
+    Reselect(item) {
+        this.Refresh(1)
+        for index, candidate in this.Visible
+            if IsObject(item) && candidate == item
+                this.Cursor := index
+    }
+
+    ; What a key types into the filter: its lowercase character with no modifier or
+    ; Shift only, a space for Space, else "".
+    static CharOf(key) {
+        if key.Verbatim != "" || key.Mods.Length > 1 || key.Mods.Length = 1 && key.Mods[1] != "Shift"
+            return ""
+        if key.Name = "Space"
+            return " "
+        return StrLen(key.Name) = 1 ? StrLower(key.Name) : ""
     }
 
     ; +1 / -1 for keys that move in both modes (and, in normal mode, the bare
