@@ -117,7 +117,7 @@ class LegendWindowSwitcher {
             activate := this.ActivateFn
             return activate(win.Hwnd)
         }
-        LegendWindows.Activate(win)
+        LegendWindows.Activate(win.Hwnd)
     }
 
     Cancel() {

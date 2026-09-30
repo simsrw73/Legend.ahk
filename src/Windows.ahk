@@ -119,14 +119,15 @@ class LegendWindows {
         return best
     }
 
-    ; Restores and activates win, first bringing it here from another virtual desktop
-    ; when activation alone doesn't switch desktops (PullFromOtherDesktops).
-    static Activate(win) {
+    ; Restores and activates hwnd, first bringing it here from another virtual desktop
+    ; when activation alone doesn't switch desktops (PullFromOtherDesktops). Windows on
+    ; other desktops are cloaked, which AutoHotkey treats as hidden.
+    static Activate(hwnd) {
         wasDetecting := DetectHiddenWindows(true)
         try {
-            target := "ahk_id " win.Hwnd
-            if !win.OnCurrentDesktop && this.PullFromOtherDesktops
-                LegendDesktops().MoveHere(win.Hwnd)
+            target := "ahk_id " hwnd
+            if this.PullFromOtherDesktops && !LegendDesktops().OnCurrent(hwnd)
+                LegendDesktops().MoveHere(hwnd)
             if WinGetMinMax(target) = -1
                 WinRestore(target)
             WinActivate(target)
