@@ -111,10 +111,10 @@ class LegendOverlay {
     static Place(overlay, theme) {
         this.Round(overlay.Hwnd, theme)
         overlay.Show("NA Hide AutoSize")
+        WinSetTransparent(theme["opacity"], overlay)   ; before it's visible: no opaque flash
         WinGetPos(, , &width, &height, overlay)
         area := this.WorkArea()
         overlay.Show("NA x" (area.Left + (area.Right - area.Left - width) // 2) " y" (area.Top + (area.Bottom - area.Top - height) // 2))
-        WinSetTransparent(theme["opacity"], overlay)
     }
 
     ; Moves the selection to row index (1-based on this screen; 0 = none) of an overlay
