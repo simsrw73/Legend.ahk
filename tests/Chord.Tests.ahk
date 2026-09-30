@@ -73,3 +73,14 @@ Chord_NeedsMask() {
     T.True(!LegendChordKeys.NeedsMask(LegendKeyName.FromText("Ctrl+S")))
     T.True(!LegendChordKeys.NeedsMask(LegendKeyName.FromText("z")))
 }
+
+T.Test("Chord keys: withStale includes modifiers held since open", Chord_KeyWithStale)
+Chord_KeyWithStale() {
+    keys := LegendChordKeys([0xA4], "s", true)   ; LAlt held when the picker opened
+    T.Eq(keys.Key("s").Id, "S")
+    T.Eq(keys.Key("s", true).Id, "Alt+S")
+    keys.Down(0xA0)                               ; LShift pressed after open
+    T.Eq(keys.Key("s", true).Id, "Alt+Shift+S")
+    keys.Up(0xA4)
+    T.Eq(keys.Key("s", true).Id, "Shift+S")
+}
