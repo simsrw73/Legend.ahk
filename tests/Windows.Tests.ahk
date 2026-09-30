@@ -45,3 +45,30 @@ Windows_WorkspaceToScreen() {
     same := LegendWindows.WorkspaceToScreen({X: 5, Y: 5, W: 1, H: 1}, primary, primary)
     T.Eq(same.Y, 5, "bottom taskbar: no offset")
 }
+
+; Two monitors side by side, as on the author's desk (4K left, 1440p right).
+Windows_Desk() => [{Index: 1, Left: 0, Top: 0, Right: 3840, Bottom: 2160},
+                   {Index: 2, Left: 3840, Top: 0, Right: 6400, Bottom: 1440}]
+
+T.Test("Focus: nearest window in the direction, preferring ones in line", Focus_Nearest)
+Focus_Nearest() {
+    items := [{Hwnd: 1, X: 1000, Y: 100}, {Hwnd: 2, X: 1200, Y: 900}, {Hwnd: 3, X: 3000, Y: 110}, {Hwnd: 4, X: 100, Y: 100}]
+    T.Eq(LegendWindows.Nearest(items, "right", 500, 100, true).Hwnd, 1)
+    T.Eq(LegendWindows.Nearest(items, "left", 500, 100, true).Hwnd, 4)
+    T.Eq(LegendWindows.Nearest(items, "down", 1000, 100, true).Hwnd, 2)
+    T.Eq(LegendWindows.Nearest(items, "up", 1000, 100, true), "", "nothing above")
+    T.Eq(LegendWindows.Nearest([{Hwnd: 5, X: 500, Y: 100}], "right", 500, 100, true), "", "strict: same x is not to the right")
+}
+
+T.Test("Focus: the next monitor that way and where focus enters it", Focus_NextMonitor)
+Focus_NextMonitor() {
+    desk := Windows_Desk()
+    T.Eq(LegendWindows.NextMonitor(desk, desk[1], "right").Index, 2)
+    T.Eq(LegendWindows.NextMonitor(desk, desk[2], "left").Index, 1)
+    T.Eq(LegendWindows.NextMonitor(desk, desk[1], "left"), "", "nothing left of the 4K")
+    T.Eq(LegendWindows.NextMonitor(desk, desk[1], "down"), "")
+    entry := LegendWindows.EntryPoint(desk[2], "right", {X: 3000, Y: 500})
+    T.Eq(entry.X " " entry.Y, "3840 500", "right enters at the left edge, level with the window")
+    entry := LegendWindows.EntryPoint(desk[1], "left", {X: 4000, Y: 700})
+    T.Eq(entry.X " " entry.Y, "3840 700", "left enters at the right edge")
+}

@@ -20,7 +20,7 @@ $out = & $AutoHotkey /ErrorStdOut (Join-Path $PSScriptRoot 'Legend.Tests.ahk') 2
 Write-Host $out
 if ($LASTEXITCODE) { $failures += [Math]::Max(1, $LASTEXITCODE) }
 
-foreach ($file in 'Legend.ahk', 'examples\example.ahk') {
+foreach ($file in @('Legend.ahk') + (Get-ChildItem (Join-Path $root 'examples') -Filter *.ahk | ForEach-Object { "examples\$($_.Name)" })) {
     $path = Join-Path $root $file
     if (-not (Test-Path $path)) { continue }
     $check = & $AutoHotkey /ErrorStdOut /Validate $path 2>&1 | Out-String

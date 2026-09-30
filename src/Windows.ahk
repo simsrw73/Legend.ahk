@@ -130,6 +130,88 @@ class LegendWindows {
         return best
     }
 
+    ; Directional focus: activates the nearest visible window in direction ("left",
+    ; "right", "up", "down") by the windows' visible top-left corners, on the current
+    ; monitor; at the edge, the nearest window on the next monitor that way, entering
+    ; level with the active window. Does nothing when there is none.
+    static Focus(direction) => this.InPhysicalPixels(() => this.FocusNow(direction))
+
+    static FocusNow(direction) {
+        if !(active := WinExist("A"))
+            return
+        from := this.Bounds(active)
+        monitors := this.Monitors()
+        current := monitors[this.MonitorAt(monitors, from.X, from.Y)]
+        windows := this.List({Exclude: active, VisibleOnly: true, Minimized: false})
+        target := this.Nearest(this.OnMonitor(windows, current.Index), direction, from.X, from.Y, true)
+        if !target {
+            if !(next := this.NextMonitor(monitors, current, direction))
+                return
+            entry := this.EntryPoint(next, direction, from)
+            target := this.Nearest(this.OnMonitor(windows, next.Index), direction, entry.X, entry.Y, false)
+        }
+        if target
+            WinActivate("ahk_id " target.Hwnd)
+    }
+
+    static OnMonitor(windows, index) {
+        result := []
+        for win in windows
+            if win.Monitor = index
+                result.Push(win)
+        return result
+    }
+
+    ; The monitor wholly beyond current in that direction, nearest first, or "".
+    static NextMonitor(monitors, current, direction) {
+        beyond := []
+        for mon in monitors {
+            switch direction {
+                case "right": ok := mon.Left >= current.Right
+                case "left": ok := mon.Right <= current.Left
+                case "down": ok := mon.Top >= current.Bottom
+                case "up": ok := mon.Bottom <= current.Top
+                default: ok := false
+            }
+            if ok
+                beyond.Push({Monitor: mon, X: mon.Left, Y: mon.Top})
+        }
+        best := this.Nearest(beyond, direction, current.Left, current.Top, false)
+        return best ? best.Monitor : ""
+    }
+
+    ; Where focus enters monitor mon: its near edge, level with the active window.
+    static EntryPoint(mon, direction, from) {
+        switch direction {
+            case "right": return {X: mon.Left, Y: from.Y}
+            case "left": return {X: mon.Right, Y: from.Y}
+            case "down": return {X: from.X, Y: mon.Top}
+            default: return {X: from.X, Y: mon.Bottom}
+        }
+    }
+
+    ; The item ({X, Y, …}) nearest (x, y) in the direction, preferring ones in line:
+    ; distance along the direction plus twice the sideways offset. With strict, only
+    ; items strictly beyond (x, y) count. "" when none does.
+    static Nearest(items, direction, x, y, strict) {
+        best := "", bestScore := ""
+        for item in items {
+            dx := item.X - x, dy := item.Y - y
+            switch direction {
+                case "right": along := dx, across := dy
+                case "left": along := -dx, across := dy
+                case "down": along := dy, across := dx
+                default: along := -dy, across := dx
+            }
+            if strict && along <= 0
+                continue
+            score := Abs(along) + 2 * Abs(across)
+            if bestScore = "" || score < bestScore
+                best := item, bestScore := score
+        }
+        return best
+    }
+
     ; Restores and activates hwnd, first bringing it here from another virtual desktop
     ; when activation alone doesn't switch desktops (PullFromOtherDesktops). Windows on
     ; other desktops are cloaked, which AutoHotkey treats as hidden.

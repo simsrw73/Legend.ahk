@@ -103,6 +103,11 @@ default restore-and-activate) and `Detail` (`win => text`, the row's detail;
 `win` has `Hwnd, Title, App, X, Y, W, H, Monitor, Minimized, Cloaked,
 OnCurrentDesktop`).
 
+`LegendWindows.Focus(direction)` (`"left"`, `"right"`, `"up"`, `"down"`) activates the
+nearest visible window that way by top-left corners, crossing to the next
+monitor at the edge: bind it to Alt+H/J/K/L for tiling-style focus without a
+window manager.
+
 ## Page files
 
 ```markdown
@@ -163,12 +168,27 @@ legend (auto/off/top/bottom). Leave padding and rowSpacing out to get them from
 density. Tab and `=` change keyStyle and density until the script reloads.
 Save theme files as ASCII or UTF-16.
 
+## Examples
+
+Small runnable scripts in `examples/`, one per feature. Each opens with a comment
+on what it shows and which keys to press. They use Ctrl+Alt+Shift keys (and
+Ctrl+Alt+Shift+/ for the overlay) so they run alongside your own script.
+
+| Script | Shows |
+|---|---|
+| `01-reference.ahk` | pages and categories from code, `Legend.Bind`, groups, merged rows, doc-only keys, an app-only page |
+| `02-page-files.ahk` | Markdown page files (`examples/pages`), bound vs doc-only keys, a page big enough to become a menu |
+| `03-themes.ahk` | a theme file (`examples/themes/sunset.ini`), key notation and density toggles |
+| `04-chords.ahk` | a chord menu with a submenu, a running dot, a condition, sent keys and a key range |
+| `05-picker.ahk` | `Legend.Picker` with two scopes, details, a fixed letter and callbacks |
+| `06-window-switcher.ahk` | `Legend.WindowSwitcher` on two scopes with a Detail hook, and `LegendWindows.Focus` for directional focus |
+
 ## Development
 
 `pwsh -File tests/Run-Tests.ps1` runs the unit tests and syntax checks.
 `tests/race/ChordRace.ahk` (run by hand) checks that fast chord keys never strand
 the overlay.
-`examples/example.ahk` is a runnable demo.
+`tests/Run-Tests.ps1` also syntax-checks every example.
 
 ## Acknowledgments
 
