@@ -60,7 +60,8 @@ Legend.WindowSwitcher("!d", {Scope: "desktop", Scopes: ["desktop"]})
   `["all", "desktop", "monitor"]`), `Start` (default `2`), `Include`,
   `Activate`, `Detail`, plus the picker options `Density`, `Match` and
   `Reference`.
-- Both return the created picker object, for tests.
+- `Legend.Picker` returns the picker; `Legend.WindowSwitcher` returns the
+  switcher, whose `.Picker` is the picker.
 
 ## Behaviour
 
@@ -95,7 +96,8 @@ Tab (key notation) does nothing in a picker.
 ### Letters
 
 Assigned from the pool `a s d f g ; q w e r t y u i o p z x c v b n m 1–9 0`
-in that order. h/j/k/l are never assigned, and neither is `/`. An item's fixed
+in that order. h/j/k/l are never assigned, nor is the trigger's key: the bare
+trigger key moves down in normal mode (and types in filter mode). An item's fixed
 `Letter` wins if it is in the pool and free; rows beyond the pool get none.
 Letters are assigned over the filtered list, top to bottom.
 
@@ -223,17 +225,19 @@ padding, row spacing and placement (centered on the active monitor).
   detail.
 - Width: capped by `maxWidthPercent`; text is cut with an ellipsis, the
   detail is kept.
-- Height: rows beyond `maxHeightPercent` are split into screens with
-  `LegendLayout.Paginate` (one column). The screen follows the cursor.
-- Footer: `↵ pick · / filter · h/l scope · = density · esc`, dropping `h/l
-  scope` without scopes, placed by the `legend` theme setting.
+- Height: rows beyond `maxHeightPercent` are split into screens of `PageSize`
+  rows (all rows have the same height). The screen follows the cursor.
+- Title: drawn as written (not upper-cased), so a filter query reads naturally.
+- Footer: `↵ pick · j/k move · / filter · h/l scope · = density · esc close`,
+  dropping `h/l scope` without scopes; always below the rows (pickers have no
+  modifier legend line, so the `legend` setting doesn't apply).
 - Every change redraws the GUI, as chord steps do. If that flickers with long
   lists, update only the two changed rows (measure first).
 
 ### Theme additions
 
 `[colors]` gains `selection`, `selectionText` and `outline`. When a theme
-does not set them: `selection` = `border`, `selectionText` = `title`,
+does not set them: `selection` = `border`, `selectionText` = `description`,
 `outline` = `category`. The Catppuccin themes set them explicitly.
 
 ## Reference

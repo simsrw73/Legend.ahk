@@ -69,6 +69,40 @@ appear as pages in Alt+/ unless `false`).
        alt="A Win+Space chord menu: one key per app, with dots for apps that are running, and › for submenus">
 </p>
 
+## Pickers
+
+```ahk
+Legend.Picker("^!+p", "Colors", scope => ColorItems(scope), {
+    OnPick: item => MsgBox(item.Text),
+    Scopes: ["warm", "cool"]            ; optional; h/l switch, source gets the name
+})
+```
+
+A picker opens a list: j/k, ↓/↑ or Ctrl+N/Ctrl+P move (the trigger again moves
+down, Shift+trigger up), a letter or Enter picks, `/` filters (every word must
+match), h/l change scope, `=` switches density, Esc cancels. Items are
+`{Text, Detail?, Icon?, Letter?, Data?}`. Options: `OnPick` (required),
+`OnHighlight`, `OnCancel`, `Start` (row selected at open), `Scopes`, `Scope`,
+`Density`, `Match`, `Reference` (pickers are listed on a "Pickers" page in
+Alt+/). Letters are assigned home row first and never use h/j/k/l or the
+trigger's key.
+
+## Window switcher
+
+```ahk
+Legend.WindowSwitcher("!a", {Scope: "all"})       ; every window, every virtual desktop
+Legend.WindowSwitcher("!s", {Scope: "monitor"})   ; this desktop, this monitor
+Legend.WindowSwitcher("!d", {Scope: "desktop", Scopes: ["desktop"]})   ; locked scope
+```
+
+A picker over your windows, most recent first with the previous one selected.
+The highlighted window comes forward and gets an outline (theme color
+`outline`); Esc puts everything back. Hooks for window managers: `Include`
+(`hwnd => true` lets in a cloaked window), `Activate` (`hwnd => …` replaces the
+default restore-and-activate) and `Detail` (`win => text`, the row's detail;
+`win` has `Hwnd, Title, App, X, Y, W, H, Monitor, Minimized, Cloaked,
+OnCurrentDesktop`).
+
 ## Page files
 
 ```markdown
