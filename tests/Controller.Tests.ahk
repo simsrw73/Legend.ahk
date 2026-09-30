@@ -156,3 +156,25 @@ Legend_RenderWindow() {
     g.Selection := LegendSelection(g, "45475A")
     return g
 }
+
+T.Test("Legend: pinned and flat pages leave Ctrl and menu keys to the app", Legend_KeyConditions)
+Legend_KeyConditions() {
+    savedVisible := Legend.Visible, savedNav := Legend.Nav
+    try {
+        nav := Navigator_New()
+        nav.Open([])   ; the index: a menu
+        Legend.Nav := nav
+        Legend.Visible := false
+        T.True(!Legend.CtrlKeysActive() && !Legend.MenuKeysActive(), "hidden")
+        Legend.Visible := true
+        T.True(Legend.CtrlKeysActive() && Legend.MenuKeysActive(), "menu")
+        nav.Press("Pin")
+        T.True(!Legend.CtrlKeysActive() && !Legend.MenuKeysActive(), "pinned menu")
+        nav.Press("Pin")
+        nav.Press("z")   ; Zen fits one screen: a flat page
+        T.True(Legend.CtrlKeysActive() && !Legend.MenuKeysActive(), "flat page")
+        nav.Press("Pin")
+        T.True(!Legend.CtrlKeysActive() && !Legend.MenuKeysActive(), "pinned flat page")
+    } finally
+        Legend.Visible := savedVisible, Legend.Nav := savedNav
+}

@@ -41,6 +41,8 @@ class LegendSelection {
     ; the whole overlay for a frame.)
     Select(index) {
         static RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
+        if !IsInteger(index) || index < 0 || index > this.Rows.Length
+            throw ValueError("selection index " index " is not 0–" this.Rows.Length, -1)
         changed := []
         if index != this.Index {
             if this.Index

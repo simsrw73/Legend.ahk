@@ -141,7 +141,7 @@ Picker_Paging() {
     rows := p.ScreenRows()
     T.Eq(rows.Length, 1)
     T.Eq(rows[1].Text, "item 5")
-    T.True(rows[1].Selected)
+    T.Eq(p.Cursor - (p.ScreenIndex - 1) * p.PageSize, 1, "the one row on the last screen is selected")
     T.Eq(rows[1].Letter, p.Letters[5])
     p.Key(Picker_Key("PgUp"))
     T.Eq(p.Cursor, 3)
@@ -361,6 +361,6 @@ Picker_FooterKeys() {
     q.PageSize := 2
     T.True(InStr(q.Footer("compact"), "^f/^b 1/2"))
     q.Key(Picker_Key("/"))
-    T.Eq(q.Footer("compact"), "↵ pick   ·   ^n/^p move   ·   esc clear   ·   ^f/^b 1/2")
+    T.Eq(q.Footer("compact"), "↵ pick   ·   ^n/^p move   ·   ^t scope   ·   esc clear   ·   ^f/^b 1/2")
     T.Eq(Picker_New(3).Footer("compact"), "↵ pick   ·   ^n/^p move   ·   / filter   ·   = compact   ·   esc close")
 }

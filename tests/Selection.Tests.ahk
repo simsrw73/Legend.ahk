@@ -99,3 +99,19 @@ Selection_NoTopLevelRedrawPause() {
         g.Destroy()
     }
 }
+
+T.Test("Selection: an out-of-range index throws before changing anything", Selection_OutOfRange)
+Selection_OutOfRange() {
+    g := Selection_Window()
+    sel := g.Selection
+    try {
+        sel.Select(2)
+        T.Throws(() => sel.Select(9), "past the last row")
+        T.Throws(() => sel.Select(-1), "negative")
+        T.Eq(sel.Index, 2)
+        T.Eq(Selection_Changed(sel), "2", "nothing recolored by the failed calls")
+        sel.Bar.GetPos(, &barY)
+        T.Eq(barY, 30)
+    } finally
+        g.Destroy()
+}

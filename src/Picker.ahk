@@ -240,8 +240,7 @@ class LegendPicker {
             rows.Push({Text: item.Text,
                 Detail: item.HasOwnProp("Detail") ? item.Detail : "",
                 Icon: item.HasOwnProp("Icon") ? item.Icon : 0,
-                Letter: this.Letters.Length >= index ? this.Letters[index] : "",
-                Selected: index = this.Cursor})
+                Letter: this.Letters.Length >= index ? this.Letters[index] : ""})
         }
         return rows
     }
@@ -249,6 +248,8 @@ class LegendPicker {
     Footer(density) {
         parts := ["↵ pick", "^n/^p move"]
         if this.Mode = "filter" {
+            if this.Scopes.Length > 1
+                parts.Push("^t scope")
             parts.Push("esc clear")
         } else {
             parts.Push("/ filter")

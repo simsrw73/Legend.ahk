@@ -77,7 +77,7 @@ class LegendOverlay {
         return this.Finish(frame, theme, footer, pinned, warningCount)
     }
 
-    ; view: {Title, Rows: [{Text, Detail, Icon, Letter, Selected}], Empty}.
+    ; view: {Title, Rows: [{Text, Detail, Icon, Letter}], Empty, SelectedIndex}.
     static ShowPicker(view, theme, measurer, footer, maxWidth) {
         frame := this.Frame(theme, view.Title)
         LegendListBody.Draw(frame, view, theme, measurer, maxWidth)
@@ -215,7 +215,7 @@ class LegendListBody {
             LegendOverlay.AddText(overlay, theme, "body", theme["footer"], "xm y" rowY, view.Empty)
             rowY += rowH
         }
-        selection := overlay.Selection, selectedIndex := 0
+        selection := overlay.Selection
         for row in view.Rows {
             cellX := rowX + gap
             LegendOverlay.AddText(overlay, theme, "key", theme["keyBound"], "x" cellX " y" rowY " w" letterW " h" rowH " BackgroundTrans +0x200", row.Letter)
@@ -229,12 +229,10 @@ class LegendListBody {
             selection.Add({X: rowX, Y: rowY, W: rowW, H: rowH},
                 [{Ctrl: textCtrl, Normal: theme["description"], Selected: theme["selectionText"]},
                  {Ctrl: detailCtrl, Normal: theme["footer"], Selected: theme["selectionText"]}])
-            if row.Selected
-                selectedIndex := A_Index
             rowY += rowH
         }
         frame.Bottom := rowY
         selection.Reserve()
-        selection.Select(selectedIndex)
+        selection.Select(view.HasOwnProp("SelectedIndex") ? view.SelectedIndex : 0)
     }
 }

@@ -4,6 +4,8 @@
 ; screen of each level, and pin state. Pure: rows come from LegendRows and
 ; paginate(rows) returns LegendLayout screens.
 class LegendNavigator {
+    static Builds := 0   ; levels built by any navigator; part of LayoutKey
+
     __New(pages, paginate, style := "text") {
         this.Pages := pages
         this.PaginateFn := paginate
@@ -12,7 +14,6 @@ class LegendNavigator {
         this.Pinned := false
         this.Mode := "reference"
         this.RunItem := ""
-        this.Builds := 0   ; levels built so far; part of LayoutKey
     }
 
     Level => this.Stack[this.Stack.Length]
@@ -27,13 +28,6 @@ class LegendNavigator {
     View {
         get {
             level := this.Level
-            if level.Cursor {
-                rowIndex := 0
-                for screen in level.Screens
-                    for col in screen
-                        for row in col.Rows
-                            rowIndex += 1, row.Selected := rowIndex = level.Cursor
-            }
             return {Title: level.Title, Columns: level.Screens[level.ScreenIndex],
                 ScreenIndex: level.ScreenIndex, ScreenCount: level.Screens.Length, SelectedIndex: this.SelectedIndex}
         }
@@ -216,7 +210,7 @@ class LegendNavigator {
     ; Records how to rebuild a level, for Relayout.
     WithBuild(level, build) {
         level.Build := build
-        level.BuildId := ++this.Builds
+        level.BuildId := ++LegendNavigator.Builds
         return level
     }
 
