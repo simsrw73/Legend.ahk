@@ -143,7 +143,7 @@ class LegendOverlay {
     static PickerRowHeight(theme, measurer) => Max(this.IconSize(theme), measurer.Size("X", "body").H) + theme["rowSpacing"]
 
     ; Draws a picker. view: {Title, Rows: [{Text, Detail, Icon, Letter, Selected}], Empty}.
-    ; A row is icon · letter · text · detail; the selected row sits on a selection-colored
+    ; A row is letter · icon · text · detail; the selected row sits on a selection-colored
     ; bar (a Progress control added first, so the transparent cells draw over it).
     static ShowPicker(view, theme, measurer, footer, maxWidth) {
         gutter := theme["padding"], gap := theme["rowSpacing"]
@@ -182,11 +182,11 @@ class LegendOverlay {
                 bar.Visible := true
             }
             cellX := rowX + gap
+            this.AddText(overlay, theme, "key", theme["keyBound"], "x" cellX " y" rowY " w" letterW " h" rowH " BackgroundTrans +0x200", row.Letter)
+            cellX += letterW + gap
             if row.Icon
                 overlay.AddPicture("x" cellX " y" (rowY + (rowH - iconW) // 2) " w" iconW " h" iconW " BackgroundTrans", "HICON:*" row.Icon)
             cellX += iconW + gap
-            this.AddText(overlay, theme, "key", theme["keyBound"], "x" cellX " y" rowY " w" letterW " h" rowH " BackgroundTrans +0x200", row.Letter)
-            cellX += letterW + gap
             textCtrl := this.AddText(overlay, theme, "body", textColor, "x" cellX " y" rowY " w" textW " h" rowH " BackgroundTrans +0x4200", row.Text)
             cellX += textW + gap
             detailCtrl := this.AddText(overlay, theme, "body", detailColor, "x" cellX " y" rowY " w" detailW " h" rowH " BackgroundTrans +0x202", row.Detail)
