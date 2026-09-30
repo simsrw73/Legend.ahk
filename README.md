@@ -152,7 +152,7 @@ category, group, keyBound, keyDoc, description, footer, pinned, warning,
 selection, selectionText, outline (pickers; default border, description, category);
 `[fonts]` uiFont, keyFont, titleSize, headingSize, bodySize; `[layout]`
 density (comfortable/compact), padding, rowSpacing, maxColumns,
-maxHeightPercent, maxWidthPercent, opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
+maxHeightPercent, maxWidthPercent, pickerWidthPercent (60), opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
 legend (auto/off/top/bottom). Leave padding and rowSpacing out to get them from
 density. Tab and `=` change keyStyle and density until the script reloads.
 Save theme files as ASCII or UTF-16.

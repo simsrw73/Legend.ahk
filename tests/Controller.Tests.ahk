@@ -93,3 +93,19 @@ Controller_CancelBeforeReopen() {
     } finally
         Legend.ClosePicker(false)
 }
+
+T.Test("Controller: pickerWidthPercent caps a picker with very long rows", Controller_PickerWidth)
+Controller_PickerWidth() {
+    T.Eq(LegendTheme.Read("")["pickerWidthPercent"], 60)
+    long := ""
+    loop 60
+        long .= "a very long window title "
+    picker := LegendPicker("^!+F9", "Wide", (*) => [{Text: long, Detail: "app"}], {OnPick: Noop})
+    Legend.OpenPicker(picker)
+    try {
+        WinGetPos(, , &overlayW, , Legend.Gui)
+        area := LegendOverlay.WorkArea()
+        T.True(overlayW <= (area.Right - area.Left) * 60 // 100, "overlay " overlayW " wider than 60%")
+    } finally
+        Legend.ClosePicker(false)
+}

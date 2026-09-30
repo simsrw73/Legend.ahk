@@ -512,7 +512,7 @@ class Legend {
         measurer := this.Measurer
         area := LegendOverlay.WorkArea()
         maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
-        maxWidth := (area.Right - area.Left) * theme["maxWidthPercent"] // 100 - theme["padding"] * 2
+        maxWidth := (area.Right - area.Left) * Min(theme["pickerWidthPercent"], theme["maxWidthPercent"]) // 100 - theme["padding"] * 2
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
         layout := picker.LayoutKey "|" theme["density"]
         if this.Gui && state.DrawnLayout == layout {   ; only the cursor moved: no rebuild
