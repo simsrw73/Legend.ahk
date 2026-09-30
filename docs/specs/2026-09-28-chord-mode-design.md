@@ -114,7 +114,7 @@ action runs per key press.
 - `ChordOverlay`: `"always"` shows the menu at once; `"never"` never shows it;
   a number shows it after that many ms unless a key completes the chord first.
   Descending into a submenu before the menu appears keeps the original timer.
-  *Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page, Ctrl+N/P move a cursor, Ctrl+T changes scope.*
+  *Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page; in chord menus Ctrl+N/P reach chord items; in Alt+/ they move the menu cursor.*
 
 ## Chord menu display
 
@@ -131,7 +131,7 @@ action runs per key press.
   written, with `-` in ranges shown as `–`.
 - Footer: `esc close · ⌫ back`, plus `pgdn/^n pgup/^p` when there is more than
   one screen, and the Tab / `=` display hints.
-  *Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page, Ctrl+N/P move a cursor, Ctrl+T changes scope.*
+  *Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page; in chord menus Ctrl+N/P reach chord items; in Alt+/ they move the menu cursor.*
 
 ## Reference pages
 
@@ -156,7 +156,7 @@ they are not claimed (Ctrl+N, Ctrl+P, Ctrl+G reach the app). When claimed,
 `LegendKeyWatch` must not treat them as closing combos (its claimed list
 accepts key ids such as `Ctrl+N`, not only single characters).
 
-*Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page, Ctrl+N/P move a cursor, Ctrl+T changes scope.*
+*Superseded by 2026-09-30-key-scheme-design.md: Ctrl+F/B page; in chord menus Ctrl+N/P reach chord items; in Alt+/ they move the menu cursor.*
 
 ## KeyChord parity
 

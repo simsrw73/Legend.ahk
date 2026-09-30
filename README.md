@@ -74,7 +74,7 @@ appear as pages in Alt+/ unless `false`).
 ```ahk
 Legend.Picker("^!+p", "Colors", scope => ColorItems(scope), {
     OnPick: item => MsgBox(item.Text),
-    Scopes: ["warm", "cool"]            ; optional; h/l switch, source gets the name
+    Scopes: ["warm", "cool"]            ; optional; Ctrl+T switches, source gets the name
 })
 ```
 
@@ -140,7 +140,8 @@ for the active window; only a match given in code makes hotkeys app-specific.
 | any Ctrl/Alt/Win shortcut | closes the overlay and goes to the app |
 
 > **Changed:** Ctrl+N/Ctrl+P used to page in Alt+/ and chord menus. They now move
-> the cursor in Alt+/ menus; page with Ctrl+F/Ctrl+B, PgDn/PgUp or Space.
+> the cursor in Alt+/ menus and reach chord items (a chord menu without them
+> closes); page with Ctrl+F/Ctrl+B, PgDn/PgUp or Space.
 
 <p align="center">
   <img src="docs/images/overlay-index.png" width="341" alt="The index of pages, each with its letter">
