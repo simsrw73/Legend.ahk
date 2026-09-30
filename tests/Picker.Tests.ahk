@@ -1,0 +1,164 @@
+#Requires AutoHotkey v2.0
+
+Picker_Key(text) => LegendKeyName.FromText(text)
+
+Picker_Items(n) {
+    items := []
+    loop n
+        items.Push({Text: "item " A_Index, Detail: A_Index <= 2 ? "zen" : "brave"})
+    return items
+}
+
+; A picker on !s over n items; options are merged over {OnPick: Noop}.
+Picker_New(n := 5, options := "") {
+    opts := {OnPick: Noop}
+    if IsObject(options)
+        for name, value in options.OwnProps()
+            opts.%name% := value
+    picker := LegendPicker("!s", "Test", (*) => Picker_Items(n), opts)
+    picker.Open()
+    return picker
+}
+
+Picker_Letters(picker) {
+    out := ""
+    for letter in picker.Letters
+        out .= letter = "" ? "_" : letter
+    return out
+}
+
+T.Test("Picker: OnPick is required", Picker_NeedsOnPick)
+Picker_NeedsOnPick() {
+    T.Throws(() => LegendPicker("!s", "x", (*) => [], {}))
+}
+
+T.Test("Picker: Start is clamped; an empty list selects nothing", Picker_Start)
+Picker_Start() {
+    T.Eq(Picker_New(5, {Start: 2}).Cursor, 2)
+    T.Eq(Picker_New(3, {Start: 9}).Cursor, 3)
+    empty := Picker_New(0)
+    T.Eq(empty.Cursor, 0)
+    T.Eq(empty.Selected, "")
+    T.Eq(empty.Key(Picker_Key("Enter")), "none")
+    T.Eq(empty.Key(Picker_Key("j")), "none")
+}
+
+T.Test("Picker: movement wraps; trigger and Shift+trigger step", Picker_Move)
+Picker_Move() {
+    p := Picker_New(3)
+    T.Eq(p.Key(Picker_Key("k")), "redraw")
+    T.Eq(p.Cursor, 3, "k from the top wraps")
+    p.Key(Picker_Key("j"))
+    T.Eq(p.Cursor, 1, "j from the bottom wraps")
+    p.Key(Picker_Key("Down")), p.Key(Picker_Key("Ctrl+N"))
+    T.Eq(p.Cursor, 3)
+    p.Key(Picker_Key("Up")), p.Key(Picker_Key("Ctrl+P"))
+    T.Eq(p.Cursor, 1)
+    p.Key(Picker_Key("Alt+S"))
+    T.Eq(p.Cursor, 2, "trigger moves down")
+    p.Key(Picker_Key("Alt+Shift+S"))
+    T.Eq(p.Cursor, 1, "Shift+trigger moves up")
+    p.Key(Picker_Key("s"))
+    T.Eq(p.Cursor, 2, "bare trigger key moves down in normal mode")
+    p.Key(Picker_Key("Shift+S"))
+    T.Eq(p.Cursor, 1)
+}
+
+T.Test("Picker: trigger key with its modifier still held moves", Picker_TriggerHeld)
+Picker_TriggerHeld() {
+    ; the controller passes the key with the held modifiers (Alt+S); it must not pick
+    p := Picker_New(5)
+    T.Eq(p.Key(Picker_Key("Alt+S")), "redraw")
+    T.Eq(p.Cursor, 2)
+}
+
+T.Test("Picker: letters follow the pool, skip hjkl and the trigger key", Picker_LetterPool)
+Picker_LetterPool() {
+    p := Picker_New(8)
+    T.Eq(Picker_Letters(p), "adfg;qwe")
+    items := [{Text: "one"}, {Text: "two", Letter: "Q"}, {Text: "three", Letter: "h"}]
+    T.Eq(LegendPicker.AssignLetters(items, "S")[2], "q", "fixed letter honoured, lowercased")
+    T.Eq(LegendPicker.AssignLetters(items, "S")[3], "d", "h is never assigned")
+    many := []
+    loop 40
+        many.Push({Text: "x"})
+    letters := LegendPicker.AssignLetters(many, "S")
+    T.Eq(letters[32], "0")
+    T.Eq(letters[33], "", "rows beyond the pool get none")
+}
+
+T.Test("Picker: a letter picks its row", Picker_LetterPick)
+Picker_LetterPick() {
+    p := Picker_New(5)
+    T.Eq(p.Key(Picker_Key("f")), "pick")
+    T.Eq(p.Selected.Text, "item 3")
+    T.Eq(p.Key(Picker_Key("Shift+F")), "none", "Shift+letter is not a pick")
+}
+
+T.Test("Picker: Enter picks, Esc and Ctrl+G cancel, = asks for density", Picker_Actions)
+Picker_Actions() {
+    p := Picker_New(5, {Start: 2})
+    T.Eq(p.Key(Picker_Key("Enter")), "pick")
+    T.Eq(p.Selected.Text, "item 2")
+    T.Eq(p.Key(Picker_Key("Esc")), "cancel")
+    T.Eq(p.Key(Picker_Key("Ctrl+G")), "cancel")
+    T.Eq(p.Key(Picker_Key("=")), "density")
+    T.Eq(p.Key(Picker_Key("x")), "none", "a letter with no row")
+}
+
+T.Test("Picker: h/l cycle scopes and reload from the source", Picker_Scopes)
+Picker_Scopes() {
+    seen := []
+    source := (scope) => (seen.Push(scope), Picker_Items(StrLen(scope)))
+    p := LegendPicker("!s", "Test", source, {OnPick: Noop, Scopes: ["ab", "abc", "abcd"], Scope: "abc"})
+    p.Open()
+    T.Eq(p.Scope, "abc")
+    T.Eq(p.Visible.Length, 3)
+    T.Eq(p.Key(Picker_Key("l")), "redraw")
+    T.Eq(p.Scope, "abcd")
+    p.Key(Picker_Key("l"))
+    T.Eq(p.Scope, "ab", "wraps")
+    p.Key(Picker_Key("h"))
+    T.Eq(p.Scope, "abcd")
+    T.Eq(seen.Length, 4)
+    T.Eq(p.TitleLine, "Test · abcd")
+    T.Eq(Picker_New(3).Key(Picker_Key("l")), "none", "no scopes")
+    T.Throws(() => LegendPicker("!s", "x", (*) => [], {OnPick: Noop, Scopes: ["a"], Scope: "b"}))
+}
+
+T.Test("Picker: paging by PageSize", Picker_Paging)
+Picker_Paging() {
+    p := Picker_New(5)
+    p.PageSize := 2
+    T.Eq(p.ScreenCount, 3)
+    T.Eq(p.ScreenRows().Length, 2)
+    T.Eq(p.Key(Picker_Key("PgDn")), "redraw")
+    T.Eq(p.Cursor, 3)
+    T.Eq(p.ScreenIndex, 2)
+    p.Key(Picker_Key("PgDn")), p.Key(Picker_Key("PgDn"))
+    T.Eq(p.Cursor, 5)
+    T.Eq(p.Key(Picker_Key("PgDn")), "none")
+    rows := p.ScreenRows()
+    T.Eq(rows.Length, 1)
+    T.Eq(rows[1].Text, "item 5")
+    T.True(rows[1].Selected)
+    T.Eq(rows[1].Letter, p.Letters[5])
+    p.Key(Picker_Key("PgUp"))
+    T.Eq(p.Cursor, 3)
+    unpaged := Picker_New(5)
+    T.Eq(unpaged.Key(Picker_Key("PgDn")), "none", "PageSize 0 = one screen")
+}
+
+T.Test("Picker: the Pickers reference page lists triggers", Picker_Reference)
+Picker_Reference() {
+    r := Registry_New()
+    shown := LegendPicker("!s", "Windows", (*) => [], {OnPick: Noop, Scopes: ["this monitor"]})
+    hidden := LegendPicker("!e", "Files", (*) => [], {OnPick: Noop, Reference: false})
+    r.AddPicker(shown, Noop)
+    r.AddPicker(hidden, Noop)
+    T.Eq(r.BindLog.Length, 2)
+    entries := Registry_AllEntries(r.Get("Pickers"))
+    T.Eq(entries.Length, 1)
+    T.Eq(entries[1].Key.Id, "Alt+S")
+    T.Eq(entries[1].Description, "Windows · this monitor")
+}

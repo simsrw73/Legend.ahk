@@ -25,5 +25,7 @@
 #Include %A_ScriptDir%\ChordMatch.Tests.ahk
 #Include %A_ScriptDir%\..\src\Chord.ahk
 #Include %A_ScriptDir%\Chord.Tests.ahk
+#Include %A_ScriptDir%\..\src\Picker.ahk
+#Include %A_ScriptDir%\Picker.Tests.ahk
 
 T.Finish()
