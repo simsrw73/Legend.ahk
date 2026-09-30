@@ -150,20 +150,26 @@ class LegendPeek {
         this.Raised := win.Hwnd, this.Above := above
         DllCall("SetWindowPos", "Ptr", win.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", SWP_QUIET)
         color := IsObject(Legend.Theme) ? Legend.Theme["outline"] : "89B4FA"
-        this.Outline := LegendWindows.InPhysicalPixels(() => LegendPeek.Frame(LegendWindows.Bounds(win.Hwnd), color))
+        overlay := IsObject(Legend.Gui) ? Legend.Gui.Hwnd : 0
+        this.Outline := LegendWindows.InPhysicalPixels(() => LegendPeek.Frame(LegendWindows.Bounds(win.Hwnd), color, 4, overlay))
     }
 
     Clear(restore := true) {
         static SWP_QUIET := 0x13
         if this.Outline
             this.Outline.Destroy(), this.Outline := ""
-        if restore && this.Raised && this.Above && DllCall("IsWindow", "Ptr", this.Raised)
+        if LegendPeek.ShouldRestore(restore, this.Raised, this.Above, WinExist("A")) && DllCall("IsWindow", "Ptr", this.Raised)
             DllCall("SetWindowPos", "Ptr", this.Raised, "Ptr", this.Above, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", SWP_QUIET)
         this.Raised := 0, this.Above := 0
     }
 
-    ; A click-through, always-on-top frame `thickness` px outside bounds.
-    static Frame(bounds, color, thickness := 4) {
+    ; Put the raised window back only when asked, when there is an anchor, and when the
+    ; user hasn't activated it (clicking the peeked window keeps it in front).
+    static ShouldRestore(restore, raised, above, active) => restore && raised && above && active != raised
+
+    ; A click-through, always-on-top frame `thickness` px outside bounds, placed just
+    ; below the window `below` when given (a new topmost window would cover it).
+    static Frame(bounds, color, thickness := 4, below := 0) {
         frame := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000020")   ; NOACTIVATE | TRANSPARENT
         frame.BackColor := color
         frameW := bounds.W + thickness * 2, frameH := bounds.H + thickness * 2
@@ -174,6 +180,8 @@ class LegendPeek {
         frame.Show("NA x" (bounds.X - thickness) " y" (bounds.Y - thickness) " w" frameW " h" frameH)
         DllCall("SetWindowRgn", "Ptr", frame.Hwnd, "Ptr", outer, "Int", true)   ; the window owns outer now
         WinSetTransparent(255, frame)   ; layered, so clicks pass through
+        if below
+            DllCall("SetWindowPos", "Ptr", frame.Hwnd, "Ptr", below, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)
         return frame
     }
 }

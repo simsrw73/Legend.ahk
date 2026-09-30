@@ -426,11 +426,8 @@ class Legend {
             this.Close()
         if this.ChordState
             this.CloseChordNow()
-        try
-            picker.Open()
-        catch as err
-            throw Error("picker '" picker.Title "': " err.Message, -1)
-        this.LoadTheme()
+        ; Capture keys before loading the source: a fast trigger → Enter must not
+        ; reach the app while the source runs; those keys wait in Pending.
         trigger := LegendKeyName.FromHotkey(picker.Hotkey)
         triggerHeld := trigger.Name != "" && GetKeyState(trigger.Name, "P")
         state := this.PickerState := {Picker: picker, Keys: LegendChordKeys(this.HeldModifiers(), trigger.Name, triggerHeld),
@@ -444,14 +441,23 @@ class Legend {
         this.ActiveHwnd := WinExist("A")
         state.FocusTimer := () => Legend.CheckPickerFocus()
         SetTimer(state.FocusTimer, 150)
+        try
+            picker.Open()
+        catch as err {
+            this.ClosePickerNow(false)
+            throw Error("picker '" picker.Title "': " err.Message, -1)
+        }
+        this.LoadTheme()
         try {
             this.PickerTheme()
-            this.Highlight()      ; before drawing, so the overlay ends up above an outline
+            this.Highlight()
             this.DrawPicker()
         } catch as err {
             this.ClosePickerNow(true)
             throw err
         }
+        if state.Pending.Length
+            this.DrainPickerKeys()
     }
 
     static HeldModifiers() {

@@ -29,5 +29,7 @@
 #Include %A_ScriptDir%\Picker.Tests.ahk
 #Include %A_ScriptDir%\..\src\Windows.ahk
 #Include %A_ScriptDir%\Windows.Tests.ahk
+#Include %A_ScriptDir%\..\Legend.ahk
+#Include %A_ScriptDir%\Controller.Tests.ahk
 
 T.Finish()
