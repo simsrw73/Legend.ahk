@@ -61,6 +61,11 @@ class Legend {
     static Opt(name) => IsObject(this.Options) ? this.Options.%name% : this.DefaultOptions.%name%
     static Warnings => this.Registry.Warnings
     static ClaimsLetters => this.Visible && this.Nav.ClaimsLetters
+    ; CtrlKeys while the overlay is up and not pinned (pinned: they reach the app).
+    static CtrlKeysActive() => this.Visible && !this.Nav.Pinned
+    ; MenuKeys (Enter, ↓/↑) only on a menu level, and not while pinned: on a flat page
+    ; or a pinned overlay they reach the app.
+    static MenuKeysActive() => this.ClaimsLetters && !this.Nav.Pinned
 
     ; options: HelpKey ("!/"), Pages ([] folders of *.md), Themes ([] folders searched
     ; before the built-in themes), Theme ("auto" or a theme file name without .ini),
@@ -92,10 +97,10 @@ class Legend {
         HotIf((*) => Legend.ClaimsLetters)
         for char in StrSplit("abcdefghijklmnopqrstuvwxyz0123456789")
             Hotkey(char, this.Handler(char))
-        HotIf((*) => Legend.Visible && !Legend.Nav.Pinned)   ; pinned: they reach the app
+        HotIf((*) => Legend.CtrlKeysActive())
         for key, action in this.CtrlKeys
             Hotkey(key, this.Handler(action))
-        HotIf((*) => Legend.ClaimsLetters && !Legend.Nav.Pinned)   ; a menu is shown
+        HotIf((*) => Legend.MenuKeysActive())
         for key, action in this.MenuKeys
             Hotkey(key, this.Handler(action))
         HotIf()
