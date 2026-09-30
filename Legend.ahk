@@ -434,7 +434,7 @@ class Legend {
         trigger := LegendKeyName.FromHotkey(picker.Hotkey)
         triggerHeld := trigger.Name != "" && GetKeyState(trigger.Name, "P")
         state := this.PickerState := {Picker: picker, Keys: LegendChordKeys(this.HeldModifiers(), trigger.Name, triggerHeld),
-            Highlighted: "", MeasuredDensity: ""}
+            Highlighted: "", MeasuredDensity: "", Pending: [], DrawnLayout: ""}
         keyHook := state.Hook := InputHook("L0")
         keyHook.KeyOpt("{All}", "+SN")
         keyHook.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
@@ -483,6 +483,12 @@ class Legend {
         maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
         maxWidth := (area.Right - area.Left) * theme["maxWidthPercent"] // 100 - theme["padding"] * 2
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
+        layout := picker.LayoutKey "|" theme["density"]
+        if this.Gui && state.DrawnLayout == layout {   ; only the cursor moved: no rebuild
+            LegendOverlay.SelectPickerRow(this.Gui, theme, picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0)
+            return
+        }
+        state.DrawnLayout := layout
         view := {Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText}
         old := this.Gui
         this.Gui := LegendOverlay.ShowPicker(view, theme, measurer, picker.Footer(theme["density"]), maxWidth)
@@ -522,21 +528,34 @@ class Legend {
             key := full
         if GetKeyState("Alt", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
             SetTimer(() => Send("{Blind}{vkE8}"), -1)   ; keep a lone Alt/Win release from opening a menu
-        SetTimer(() => Legend.PickerKey(key), -1)
+        ; Keys that arrive while a redraw runs pile up here and are applied together,
+        ; so a held key never builds a backlog that keeps scrolling after release.
+        state.Pending.Push(key)
+        if state.Pending.Length = 1
+            SetTimer(() => Legend.DrainPickerKeys(), -1)
     }
 
+    ; Test hook and single-key entry: queue key and drain.
     static PickerKey(key) {
+        if this.PickerState {
+            this.PickerState.Pending.Push(key)
+            this.DrainPickerKeys()
+        }
+    }
+
+    static DrainPickerKeys() {
         Critical
         state := this.PickerState
-        if !state
+        if !state || !state.Pending.Length
             return
+        keys := state.Pending, state.Pending := []
         picker := state.Picker
-        switch picker.Key(key) {
+        batch := picker.KeyBatch(keys)
+        loop batch.Density
+            this.DensityOverride := (this.DensityOverride != "" ? this.DensityOverride : this.Theme["density"]) = "compact" ? "comfortable" : "compact"
+        switch batch.Action {
             case "redraw":
                 this.Highlight()
-                this.DrawPicker()
-            case "density":
-                this.DensityOverride := this.Theme["density"] = "compact" ? "comfortable" : "compact"
                 this.DrawPicker()
             case "pick":
                 item := picker.Selected

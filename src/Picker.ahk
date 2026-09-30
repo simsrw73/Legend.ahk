@@ -45,7 +45,10 @@ class LegendPicker {
     Selected => this.Cursor ? this.Visible[this.Cursor] : ""
     TitleLine => this.Title (this.Scope != "" ? " · " this.Scope : "") (this.Mode = "filter" ? " / " this.Query "▏" : "")
     ScreenIndex => this.PageSize && this.Cursor ? (this.Cursor - 1) // this.PageSize + 1 : 1
-    ScreenCount => this.PageSize && this.Visible.Length ? (this.Visible.Length - 1) // this.PageSize + 1 : 1
+    ; Everything the drawn rows depend on except which row is selected: when it is
+    ; unchanged, the controller only moves the selection instead of redrawing.
+    LayoutKey => ObjPtr(this.Items) "|" this.TitleLine "|" this.Mode "|" this.ScreenIndex "|" this.ScreenCount "|" this.Visible.Length
+    ScreenCount =>this.PageSize && this.Visible.Length ? (this.Visible.Length - 1) // this.PageSize + 1 : 1
 
     Open() {
         this.Mode := "normal", this.Query := ""
@@ -97,6 +100,25 @@ class LegendPicker {
                     return "pick"
                 }
         return "none"
+    }
+
+    ; Applies keys in order (the ones that piled up while the controller was drawing).
+    ; Returns {Action: "pick" | "cancel" | "redraw" | "none", Density: number of "="
+    ; presses}; keys after a pick or cancel are dropped.
+    KeyBatch(keys) {
+        changed := false, density := 0
+        for key in keys {
+            result := this.Key(key)
+            switch result {
+                case "pick", "cancel":
+                    return {Action: result, Density: density}
+                case "density":
+                    density += 1, changed := true
+                case "redraw":
+                    changed := true
+            }
+        }
+        return {Action: changed ? "redraw" : "none", Density: density}
     }
 
     FilterKey(key) {

@@ -262,3 +262,44 @@ Picker_CharOf() {
     T.Eq(LegendPicker.CharOf(Picker_Key("Ctrl+A")), "")
     T.Eq(LegendPicker.CharOf(Picker_Key("F1")), "")
 }
+
+T.Test("Picker: a batch of keys applies in order and reports one outcome", Picker_Batch)
+Picker_Batch() {
+    p := Picker_New(5)
+    held := []
+    loop 3
+        held.Push(Picker_Key("j"))
+    r := p.KeyBatch(held)
+    T.Eq(r.Action, "redraw")
+    T.Eq(p.Cursor, 4)
+    T.Eq(p.KeyBatch([Picker_Key("x"), Picker_Key("y")]).Action, "none")
+    r := p.KeyBatch([Picker_Key("="), Picker_Key("j"), Picker_Key("=")])
+    T.Eq(r.Action, "redraw")
+    T.Eq(r.Density, 2)
+    r := p.KeyBatch([Picker_Key("j"), Picker_Key("Enter"), Picker_Key("j")])
+    T.Eq(r.Action, "pick")
+    T.Eq(p.Cursor, 1, "j wrapped 5 → 1, Enter picked, the last j was dropped")
+    T.Eq(p.KeyBatch([Picker_Key("Esc"), Picker_Key("k")]).Action, "cancel")
+}
+
+T.Test("Picker: LayoutKey changes with the layout, not with the cursor", Picker_LayoutKey)
+Picker_LayoutKey() {
+    p := Picker_New(5)
+    p.PageSize := 3
+    first := p.LayoutKey
+    p.Key(Picker_Key("j"))
+    T.Eq(p.LayoutKey, first, "moving within a screen")
+    p.Key(Picker_Key("j")), p.Key(Picker_Key("j"))
+    T.True(p.LayoutKey != first, "moving onto the next screen")
+    p := Picker_New(5)
+    first := p.LayoutKey
+    p.Key(Picker_Key("/"))
+    T.True(p.LayoutKey != first, "filter mode")
+    second := p.LayoutKey
+    p.Key(Picker_Key("z"))
+    T.True(p.LayoutKey != second, "query typed")
+    q := Picker_New(3, {Scopes: ["x", "y"]})
+    first := q.LayoutKey
+    q.Key(Picker_Key("l"))
+    T.True(q.LayoutKey != first, "scope")
+}

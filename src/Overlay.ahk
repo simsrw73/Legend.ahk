@@ -117,6 +117,27 @@ class LegendOverlay {
         WinSetTransparent(theme["opacity"], overlay)
     }
 
+    ; Moves the selection to row index (1-based on this screen; 0 = none) of an overlay
+    ; drawn by ShowPicker, recoloring only the rows that change.
+    static SelectPickerRow(overlay, theme, index) {
+        static RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
+        for rowIndex, row in overlay.PickerRows {
+            selected := rowIndex = index
+            if selected = row.Selected
+                continue
+            row.Selected := selected
+            row.Text.SetFont("c" (selected ? theme["selectionText"] : theme["description"]))
+            row.Detail.SetFont("c" (selected ? theme["selectionText"] : theme["footer"]))
+        }
+        bar := overlay.PickerBar
+        if index {
+            bar.Move(, overlay.PickerRows[index].Y)
+            bar.Visible := true
+        } else
+            bar.Visible := false
+        DllCall("RedrawWindow", "Ptr", overlay.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", RDW_REPAINT)
+    }
+
     static IconSize(theme) => theme["density"] = "compact" ? 16 : 20
 
     static PickerRowHeight(theme, measurer) => Max(this.IconSize(theme), measurer.Size("X", "body").H) + theme["rowSpacing"]
@@ -148,22 +169,31 @@ class LegendOverlay {
             this.AddText(overlay, theme, "body", theme["footer"], "xm y" rowY, view.Empty)
             rowY += rowH
         }
+        ; the selection bar comes first so the transparent cells draw over it; moving the
+        ; cursor later just moves it (SelectPickerRow)
+        bar := overlay.AddProgress("x" rowX " y" rowY " w" rowW " h" rowH " Background" theme["selection"] " Disabled")
+        bar.Visible := false
+        drawn := []
         for row in view.Rows {
             textColor := row.Selected ? theme["selectionText"] : theme["description"]
             detailColor := row.Selected ? theme["selectionText"] : theme["footer"]
-            if row.Selected
-                overlay.AddProgress("x" rowX " y" rowY " w" rowW " h" rowH " Background" theme["selection"] " Disabled")
+            if row.Selected {
+                bar.Move(, rowY)
+                bar.Visible := true
+            }
             cellX := rowX + gap
             if row.Icon
                 overlay.AddPicture("x" cellX " y" (rowY + (rowH - iconW) // 2) " w" iconW " h" iconW " BackgroundTrans", "HICON:*" row.Icon)
             cellX += iconW + gap
             this.AddText(overlay, theme, "key", theme["keyBound"], "x" cellX " y" rowY " w" letterW " h" rowH " BackgroundTrans +0x200", row.Letter)
             cellX += letterW + gap
-            this.AddText(overlay, theme, "body", textColor, "x" cellX " y" rowY " w" textW " h" rowH " BackgroundTrans +0x4200", row.Text)
+            textCtrl := this.AddText(overlay, theme, "body", textColor, "x" cellX " y" rowY " w" textW " h" rowH " BackgroundTrans +0x4200", row.Text)
             cellX += textW + gap
-            this.AddText(overlay, theme, "body", detailColor, "x" cellX " y" rowY " w" detailW " h" rowH " BackgroundTrans +0x202", row.Detail)
+            detailCtrl := this.AddText(overlay, theme, "body", detailColor, "x" cellX " y" rowY " w" detailW " h" rowH " BackgroundTrans +0x202", row.Detail)
+            drawn.Push({Text: textCtrl, Detail: detailCtrl, Y: rowY, Selected: row.Selected})
             rowY += rowH
         }
+        overlay.PickerBar := bar, overlay.PickerRows := drawn
         this.AddText(overlay, theme, "footer", theme["footer"], "xm y" (rowY + gap), footer)
         this.Place(overlay, theme)
         return overlay
