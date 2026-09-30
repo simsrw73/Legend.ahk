@@ -28,6 +28,14 @@ class Legend {
     static DefaultOptions := {HelpKey: "!/", Pages: [], Themes: [], Theme: "auto",
         ChordTimeout: 0, ChordOverlay: 400, ChordReference: true}
     static ChordState := ""
+    ; Reference-mode keys (see docs/specs/2026-09-30-key-scheme-design.md).
+    static OverlayKeys := Map("Esc", "Close", "Backspace", "Backspace", "Space", "Next",
+        "PgDn", "Next", "PgUp", "Prev", "``", "Pin", "Tab", "Style", "=", "Density")
+    static CtrlKeys := Map("^n", "Down", "^p", "Up", "^f", "Next", "^b", "Prev", "^g", "Close")
+    static MenuKeys := Map("Down", "Down", "Up", "Up", "Enter", "Enter")
+    static WatchClaims := ["``", "=", "Ctrl+N", "Ctrl+P", "Ctrl+F", "Ctrl+B", "Ctrl+G"]
+    static ChordOverlayKeys := Map("PgDn", "Next", "Ctrl+F", "Next", "PgUp", "Prev", "Ctrl+B", "Prev",
+        "Tab", "Style", "=", "Density")
     static PickerState := ""
 
     static Page(title, match := "", options := "") => this.Registry.Page(title, match, options)
@@ -78,14 +86,16 @@ class Legend {
         HotIf()
         Hotkey(this.Options.HelpKey, (*) => Legend.Toggle())
         HotIf((*) => Legend.Visible)
-        for key, action in Map("Esc", "Close", "Backspace", "Backspace", "Space", "Next",
-                "PgDn", "Next", "PgUp", "Prev", "``", "Pin", "Tab", "Style", "=", "Density")
+        for key, action in this.OverlayKeys
             Hotkey(key, this.Handler(action))
         HotIf((*) => Legend.ClaimsLetters)
         for char in StrSplit("abcdefghijklmnopqrstuvwxyz0123456789")
             Hotkey(char, this.Handler(char))
         HotIf((*) => Legend.Visible && !Legend.Nav.Pinned)   ; pinned: they reach the app
-        for key, action in Map("^n", "Next", "^p", "Prev", "^g", "Close")
+        for key, action in this.CtrlKeys
+            Hotkey(key, this.Handler(action))
+        HotIf((*) => Legend.ClaimsLetters && !Legend.Nav.Pinned)   ; a menu is shown
+        for key, action in this.MenuKeys
             Hotkey(key, this.Handler(action))
         HotIf()
     }
@@ -195,7 +205,7 @@ class Legend {
     ; A visible-mode InputHook sees keys without blocking them, so Ctrl/Alt/Win combos
     ; still reach the app while the overlay closes. A timer notices focus changes.
     static StartWatching() {
-        this.Keys := LegendKeyWatch(this.HelpId, ["``", "=", "Ctrl+N", "Ctrl+P", "Ctrl+G"])
+        this.Keys := LegendKeyWatch(this.HelpId, this.WatchClaims)
         held := []
         for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
             if GetKeyState(Format("vk{:X}", modVk), "P")
@@ -327,8 +337,6 @@ class Legend {
     ; the first key is still building a submenu, or leave a half-built overlay behind.
     static ChordKey(key, name) {
         Critical
-        static overlayKeys := Map("PgDn", "Next", "Ctrl+N", "Next", "PgUp", "Prev", "Ctrl+P", "Prev",
-            "Tab", "Style", "=", "Density")
         state := this.ChordState
         if !state
             return
@@ -341,8 +349,8 @@ class Legend {
             this.Nav.Press("Backspace")
             return this.AfterChordStep()
         }
-        if state.Shown && overlayKeys.Has(keyId) && !LegendChords.Find(this.Nav.Level.ChordItems, key) {
-            action := overlayKeys[keyId]
+        if state.Shown && this.ChordOverlayKeys.Has(keyId) && !LegendChords.Find(this.Nav.Level.ChordItems, key) {
+            action := this.ChordOverlayKeys[keyId]
             if action = "Style" || action = "Density"
                 this.ChangeDisplay(action)
             else if this.Nav.Press(action) = "redraw"
