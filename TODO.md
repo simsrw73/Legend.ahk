@@ -13,7 +13,6 @@
   (WS_EX_COMPOSITED), invalidating only the two changed rows, and updating rows
   in place instead of rebuilding.
 - Picker review minors (2026-09-30):
-  - A deferred OnCancel can clear the peek of a picker reopened within one tick.
   - Filter typing drops shifted and AltGr characters (translate with ToUnicodeEx).
   - Very long window titles stretch the switcher to maxWidthPercent; consider a
     narrower cap for pickers.

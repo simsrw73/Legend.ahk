@@ -76,3 +76,20 @@ Peek_Anchor() {
     } finally
         hidden.Destroy(), topmost.Destroy(), plain.Destroy()
 }
+
+T.Test("Controller: a pending OnCancel runs before the next picker opens", Controller_CancelBeforeReopen)
+Controller_CancelBeforeReopen() {
+    order := []
+    first := LegendPicker("^!+F9", "First", (*) => [{Text: "a"}], {OnPick: Noop, OnCancel: () => order.Push("cancel")})
+    second := LegendPicker("^!+F8", "Second", (*) => (order.Push("load"), [{Text: "b"}]), {OnPick: Noop})
+    Legend.OpenPicker(first)
+    Legend.ClosePicker(true)
+    Legend.OpenPicker(second)   ; before the cancel's timer has had a chance to run
+    try {
+        Sleep(50)
+        T.Eq(order.Length, 2)
+        T.Eq(order[1], "cancel")
+        T.Eq(order[2], "load")
+    } finally
+        Legend.ClosePicker(false)
+}

@@ -422,6 +422,7 @@ class Legend {
         ; serialized by OpenPicker
         if this.PickerState
             return
+        this.RunDeferred()   ; the last picker's OnPick / OnCancel before this one's source
         if this.Visible
             this.Close()
         if this.ChordState
@@ -458,6 +459,28 @@ class Legend {
         }
         if state.Pending.Length
             this.DrainPickerKeys()
+    }
+
+    ; OnPick / OnCancel run after the overlay is gone, outside Critical, on a timer;
+    ; a picker opened before that timer fires runs it first.
+    static Deferred := ""
+
+    static Defer(callback) {
+        this.RunDeferred()
+        this.Deferred := callback
+        SetTimer(() => Legend.RunDeferred(), -1)
+    }
+
+    static RunDeferred() {
+        if !IsObject(callback := this.Deferred)
+            return
+        this.Deferred := ""
+        was := A_IsCritical
+        Critical("Off")
+        try
+            callback()
+        finally
+            Critical(was ? was : "Off")
     }
 
     static HeldModifiers() {
@@ -570,7 +593,7 @@ class Legend {
                 item := picker.Selected
                 this.ClosePickerNow(false)
                 onPick := picker.OnPick
-                SetTimer(() => onPick(item), -1)   ; runs after the overlay is gone, not Critical
+                this.Defer(() => onPick(item))
             case "cancel":
                 this.ClosePickerNow(true)
         }
@@ -597,6 +620,6 @@ class Legend {
             this.Measurer.Destroy(), this.Measurer := ""
         onCancel := state.Picker.OnCancel
         if cancelled && IsObject(onCancel)
-            SetTimer(onCancel, -1)
+            this.Defer(onCancel)
     }
 }
