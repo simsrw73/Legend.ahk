@@ -99,6 +99,7 @@ class LegendRegistry {
         this.Binder := ObjBindMethod(LegendRegistry, "DefaultBinder")
         this.Chords := []
         this.ChordReference := ""   ; set by EnableChordReference (Legend.Start)
+        this.Pickers := []
     }
 
     ; Registers fn for keyName, active only in windows matching match ("" = everywhere).
@@ -192,6 +193,17 @@ class LegendRegistry {
         if chord.Match != "" && page.FileMatch = ""
             page.FileMatch := chord.Match   ; decides which page opens; never conditions hotkeys
         this.AddChordLevel(page, chord.Items, [LegendKeyName.FromHotkey(chord.Hotkey)], chord.Title)
+    }
+
+    ; Registers a picker: binds its trigger to open (under its Match) and lists it on
+    ; the "Pickers" reference page unless its Reference is false.
+    AddPicker(picker, open) {
+        binder := this.Binder
+        binder(picker.Hotkey, open, picker.Match)
+        this.Pickers.Push(picker)
+        if picker.Reference
+            this.AddEntry(this.Page("Pickers"), "Pickers", "", LegendKeyName.FromHotkey(picker.Hotkey), picker.ReferenceTitle, true)
+        return picker
     }
 
     ; One category per menu level: the level's items first, then each submenu.

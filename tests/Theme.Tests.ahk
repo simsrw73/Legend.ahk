@@ -35,7 +35,8 @@ Theme_MochaMatchesDefaults() {
     r := LegendTheme.Load("catppuccin-mocha")
     T.Eq(r.Warnings.Length, 0)
     for item in LegendTheme.Schema
-        T.Eq(r.Values[item[2]], item[4], item[2])
+        if item[4] != ""   ; "" defaults are derived in Resolve; Mocha may set them
+            T.Eq(r.Values[item[2]], item[4], item[2])
 }
 
 T.Test("Theme: auto resolves to a shipped theme", Theme_Auto)
@@ -90,4 +91,18 @@ Theme_Indicators() {
     latte := LegendTheme.Load("catppuccin-latte").Values
     T.Eq(latte["indicatorOn"], "40A02B")
     T.Eq(latte["indicatorOff"], "BCC0CC")
+}
+
+T.Test("Theme: picker colors fall back to existing colors", Theme_PickerFallback)
+Theme_PickerFallback() {
+    v := LegendTheme.Read("")
+    T.Eq(v["selection"], "", "unset before Resolve")
+    r := LegendTheme.Resolve(v)
+    T.Eq(r["selection"], "313244")
+    T.Eq(r["selectionText"], "CDD6F4")
+    T.Eq(r["outline"], "89B4FA")
+    mocha := LegendTheme.Resolve(LegendTheme.Load("catppuccin-mocha").Values)
+    T.Eq(mocha["selection"], "45475A")
+    latte := LegendTheme.Resolve(LegendTheme.Load("catppuccin-latte").Values)
+    T.Eq(latte["outline"], "1E66F5")
 }

@@ -10,6 +10,9 @@
 #Include %A_LineFile%\..\src\KeyWatch.ahk
 #Include %A_LineFile%\..\src\ChordMatch.ahk
 #Include %A_LineFile%\..\src\Chord.ahk
+#Include %A_LineFile%\..\src\Picker.ahk
+#Include %A_LineFile%\..\src\Windows.ahk
+#Include %A_LineFile%\..\src\WindowSwitcher.ahk
 
 ; Legend: a contextual shortcut overlay. See README.md.
 class Legend {
@@ -25,6 +28,7 @@ class Legend {
     static DefaultOptions := {HelpKey: "!/", Pages: [], Themes: [], Theme: "auto",
         ChordTimeout: 0, ChordOverlay: 400, ChordReference: true}
     static ChordState := ""
+    static PickerState := ""
 
     static Page(title, match := "", options := "") => this.Registry.Page(title, match, options)
 
@@ -91,6 +95,8 @@ class Legend {
     static Toggle() => this.Visible ? this.Close() : this.Open()
 
     static Open() {
+        if this.PickerState
+            this.ClosePickerNow(true)
         if this.ChordState
             this.CloseChord()
         this.LoadTheme()
@@ -234,6 +240,8 @@ class Legend {
 
     static OpenChordNow(chord) {
         ; serialized by OpenChord
+        if this.PickerState
+            this.ClosePickerNow(true)
         if this.ChordState
             return this.CloseChord()          ; trigger again closes
         if this.Visible
@@ -391,5 +399,201 @@ class Legend {
             this.Gui.Destroy(), this.Gui := ""
         if this.Measurer
             this.Measurer.Destroy(), this.Measurer := ""
+    }
+
+    ; ---- Picker mode ----
+
+    static Picker(hotkey, title, source, options := "") {
+        picker := LegendPicker(hotkey, title, source, options)
+        return this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))
+    }
+
+    ; A picker over windows; see LegendWindowSwitcher for options.
+    static WindowSwitcher(hotkey, options := "") {
+        switcher := LegendWindowSwitcher(hotkey, options)
+        picker := switcher.Picker
+        this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))
+        return switcher
+    }
+
+    static OpenPicker(picker) => this.Serialized(() => this.OpenPickerNow(picker))
+
+    static OpenPickerNow(picker) {
+        ; serialized by OpenPicker
+        if this.PickerState
+            return
+        if this.Visible
+            this.Close()
+        if this.ChordState
+            this.CloseChordNow()
+        ; Capture keys before loading the source: a fast trigger → Enter must not
+        ; reach the app while the source runs; those keys wait in Pending.
+        trigger := LegendKeyName.FromHotkey(picker.Hotkey)
+        triggerHeld := trigger.Name != "" && GetKeyState(trigger.Name, "P")
+        state := this.PickerState := {Picker: picker, Keys: LegendChordKeys(this.HeldModifiers(), trigger.Name, triggerHeld),
+            Highlighted: "", MeasuredDensity: "", Pending: [], DrawnLayout: ""}
+        keyHook := state.Hook := InputHook("L0")
+        keyHook.KeyOpt("{All}", "+SN")
+        keyHook.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
+        keyHook.OnKeyDown := (hook, vk, sc) => Legend.PickerKeyDown(vk, sc)
+        keyHook.OnKeyUp := (hook, vk, sc) => Legend.PickerKeyUp(vk, sc)
+        keyHook.Start()
+        this.ActiveHwnd := WinExist("A")
+        state.FocusTimer := () => Legend.CheckPickerFocus()
+        SetTimer(state.FocusTimer, 150)
+        try
+            picker.Open()
+        catch as err {
+            this.ClosePickerNow(false)
+            throw Error("picker '" picker.Title "': " err.Message, -1)
+        }
+        this.LoadTheme()
+        try {
+            this.PickerTheme()
+            this.Highlight()
+            this.DrawPicker()
+        } catch as err {
+            this.ClosePickerNow(true)
+            throw err
+        }
+        if state.Pending.Length
+            this.DrainPickerKeys()
+    }
+
+    static HeldModifiers() {
+        held := []
+        for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
+            if GetKeyState(Format("vk{:X}", modVk), "P")
+                held.Push(modVk)
+        return held
+    }
+
+    ; The session density toggle wins, then the picker's Density, then the theme's.
+    static PickerTheme() {
+        picker := this.PickerState.Picker
+        density := this.DensityOverride != "" ? this.DensityOverride : picker.Density
+        return this.Theme := LegendTheme.Resolve(this.BaseTheme, density, "")
+    }
+
+    static DrawPicker() {
+        state := this.PickerState, picker := state.Picker
+        theme := this.PickerTheme()
+        if !this.Measurer || state.MeasuredDensity != theme["density"] {
+            if this.Measurer
+                this.Measurer.Destroy()
+            this.Measurer := LegendMeasurer(theme)
+            state.MeasuredDensity := theme["density"]
+        }
+        measurer := this.Measurer
+        area := LegendOverlay.WorkArea()
+        maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
+        maxWidth := (area.Right - area.Left) * theme["maxWidthPercent"] // 100 - theme["padding"] * 2
+        picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
+        layout := picker.LayoutKey "|" theme["density"]
+        if this.Gui && state.DrawnLayout == layout {   ; only the cursor moved: no rebuild
+            LegendOverlay.SelectPickerRow(this.Gui, theme, picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0)
+            return
+        }
+        state.DrawnLayout := layout
+        view := {Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText}
+        old := this.Gui
+        this.Gui := LegendOverlay.ShowPicker(view, theme, measurer, picker.Footer(theme["density"]), maxWidth)
+        if old
+            old.Destroy()
+    }
+
+    ; Calls OnHighlight when the selected item changed.
+    static Highlight() {
+        state := this.PickerState
+        item := state.Picker.Selected
+        if IsObject(item) && IsObject(state.Highlighted) && item == state.Highlighted
+            return
+        state.Highlighted := item
+        onHighlight := state.Picker.OnHighlight
+        if IsObject(onHighlight) && IsObject(item)
+            onHighlight(item)
+    }
+
+    static PickerKeyUp(vk, sc) {
+        if this.PickerState
+            this.PickerState.Keys.Up(vk, GetKeyName(Format("vk{:X}sc{:X}", vk, sc)))
+    }
+
+    ; Hook callback: track modifiers here, handle keys on the script thread. The trigger
+    ; pressed again while its modifiers are still held keeps those modifiers.
+    static PickerKeyDown(vk, sc) {
+        state := this.PickerState
+        if !state || LegendKeyWatch.IgnoredVks.Has(vk) || state.Keys.Down(vk)
+            return
+        name := GetKeyName(Format("vk{:X}sc{:X}", vk, sc))
+        if state.Keys.IsTriggerRepeat(name)
+            return
+        key := state.Keys.Key(name)
+        full := state.Keys.Key(name, true)
+        if full.Id == state.Picker.TriggerId || full.Id == state.Picker.ShiftTriggerId
+            key := full
+        if GetKeyState("Alt", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
+            SetTimer(() => Send("{Blind}{vkE8}"), -1)   ; keep a lone Alt/Win release from opening a menu
+        ; Keys that arrive while a redraw runs pile up here and are applied together,
+        ; so a held key never builds a backlog that keeps scrolling after release.
+        state.Pending.Push(key)
+        if state.Pending.Length = 1
+            SetTimer(() => Legend.DrainPickerKeys(), -1)
+    }
+
+    ; Test hook and single-key entry: queue key and drain.
+    static PickerKey(key) {
+        if this.PickerState {
+            this.PickerState.Pending.Push(key)
+            this.DrainPickerKeys()
+        }
+    }
+
+    static DrainPickerKeys() {
+        Critical
+        state := this.PickerState
+        if !state || !state.Pending.Length
+            return
+        keys := state.Pending, state.Pending := []
+        picker := state.Picker
+        batch := picker.KeyBatch(keys)
+        loop batch.Density
+            this.DensityOverride := (this.DensityOverride != "" ? this.DensityOverride : this.Theme["density"]) = "compact" ? "comfortable" : "compact"
+        switch batch.Action {
+            case "redraw":
+                this.Highlight()
+                this.DrawPicker()
+            case "pick":
+                item := picker.Selected
+                this.ClosePickerNow(false)
+                onPick := picker.OnPick
+                SetTimer(() => onPick(item), -1)   ; runs after the overlay is gone, not Critical
+            case "cancel":
+                this.ClosePickerNow(true)
+        }
+    }
+
+    static CheckPickerFocus() {
+        Critical
+        if this.PickerState && WinExist("A") != this.ActiveHwnd
+            this.ClosePickerNow(true)
+    }
+
+    static ClosePicker(cancelled := true) => this.Serialized(() => this.ClosePickerNow(cancelled))
+
+    static ClosePickerNow(cancelled) {
+        state := this.PickerState
+        if !state
+            return
+        this.PickerState := ""
+        state.Hook.Stop()
+        SetTimer(state.FocusTimer, 0)
+        if this.Gui
+            this.Gui.Destroy(), this.Gui := ""
+        if this.Measurer
+            this.Measurer.Destroy(), this.Measurer := ""
+        onCancel := state.Picker.OnCancel
+        if cancelled && IsObject(onCancel)
+            SetTimer(onCancel, -1)
     }
 }

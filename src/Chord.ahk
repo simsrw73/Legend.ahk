@@ -117,11 +117,12 @@ class LegendChordKeys {
             this.TriggerHeld := false
     }
 
-    ; The pressed key with the modifiers pressed since the chord opened.
-    Key(keyName) {
+    ; The pressed key with the modifiers pressed since the chord opened, or with every
+    ; held modifier when withStale is true.
+    Key(keyName, withStale := false) {
         mods := []
         for heldVk, name in this.Held
-            if !this.Stale.Has(heldVk)
+            if withStale || !this.Stale.Has(heldVk)
                 mods.Push(name)
         return LegendKeyName.FromParts(mods, keyName)
     }
