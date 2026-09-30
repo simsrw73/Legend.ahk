@@ -56,8 +56,8 @@ class LegendWindows {
                     }
                     if hwnd = exclude
                         continue
-                    app := RegExReplace(WinGetProcessName(hwnd), "i)\.exe$")
-                    result.Push({Hwnd: hwnd, Title: title, App: app, X: bounds.X, Y: bounds.Y, W: bounds.W, H: bounds.H,
+                    appName := RegExReplace(WinGetProcessName(hwnd), "i)\.exe$")
+                    result.Push({Hwnd: hwnd, Title: title, App: appName, X: bounds.X, Y: bounds.Y, W: bounds.W, H: bounds.H,
                         Monitor: this.MonitorAt(monitors, bounds.X, bounds.Y), Minimized: minimized, Cloaked: cloaked,
                         OnCurrentDesktop: desktops.OnCurrent(hwnd), DesktopId: desktopId})
                 } catch TargetError   ; closed while we looked
