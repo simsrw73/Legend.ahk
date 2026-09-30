@@ -7,6 +7,7 @@
 #Include %A_LineFile%\..\src\Navigator.ahk
 #Include %A_LineFile%\..\src\Theme.ahk
 #Include %A_LineFile%\..\src\Overlay.ahk
+#Include %A_LineFile%\..\src\Selection.ahk
 #Include %A_LineFile%\..\src\KeyWatch.ahk
 #Include %A_LineFile%\..\src\ChordMatch.ahk
 #Include %A_LineFile%\..\src\Chord.ahk
