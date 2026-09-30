@@ -379,3 +379,10 @@ Navigator_CursorColumns() {
     T.Eq(nav.View.ScreenIndex, 1)
     T.Eq(nav.SelectedIndex, 6, "bottom of column 2")
 }
+
+T.Test("Navigator: layout keys never repeat across navigators", Navigator_LayoutKeyUnique)
+Navigator_LayoutKeyUnique() {
+    first := Navigator_Many()
+    second := Navigator_Many()
+    T.True(first.LayoutKey != second.LayoutKey, first.LayoutKey " = " second.LayoutKey)
+}
