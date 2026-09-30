@@ -472,7 +472,9 @@ class Legend {
     static PickerTheme() {
         picker := this.PickerState.Picker
         density := this.DensityOverride != "" ? this.DensityOverride : picker.Density
-        return this.Theme := LegendTheme.Resolve(this.BaseTheme, density, "")
+        theme := LegendTheme.Resolve(this.BaseTheme, density, "")
+        theme["legend"] := "off"   ; pickers have no modifier legend line to make room for
+        return this.Theme := theme
     }
 
     static DrawPicker() {

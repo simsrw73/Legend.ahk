@@ -33,3 +33,14 @@ Peek_KeepsActivated() {
     T.True(!LegendPeek.ShouldRestore(false, 0x10, 0x20, 0x30), "restore not asked")
     T.True(!LegendPeek.ShouldRestore(true, 0x10, 0, 0x30), "no anchor")
 }
+
+T.Test("Controller: pickers never reserve room for a key legend line", Controller_NoLegendLine)
+Controller_NoLegendLine() {
+    picker := LegendPicker("^!+F9", "Legend line", (*) => [{Text: "a"}], {OnPick: Noop})
+    Legend.OpenPicker(picker)
+    try {
+        Legend.BaseTheme["keyStyle"] := "symbols"   ; reloaded on the next open
+        T.Eq(Legend.PickerTheme()["legend"], "off")
+    } finally
+        Legend.ClosePicker(false)
+}
