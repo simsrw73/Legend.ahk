@@ -249,6 +249,8 @@ class LegendPicker {
     Footer(density) {
         parts := ["↵ pick", "^n/^p move"]
         if this.Mode = "filter" {
+            if this.Scopes.Length > 1
+                parts.Push("^t scope")
             parts.Push("esc clear")
         } else {
             parts.Push("/ filter")

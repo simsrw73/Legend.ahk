@@ -361,6 +361,6 @@ Picker_FooterKeys() {
     q.PageSize := 2
     T.True(InStr(q.Footer("compact"), "^f/^b 1/2"))
     q.Key(Picker_Key("/"))
-    T.Eq(q.Footer("compact"), "↵ pick   ·   ^n/^p move   ·   esc clear   ·   ^f/^b 1/2")
+    T.Eq(q.Footer("compact"), "↵ pick   ·   ^n/^p move   ·   ^t scope   ·   esc clear   ·   ^f/^b 1/2")
     T.Eq(Picker_New(3).Footer("compact"), "↵ pick   ·   ^n/^p move   ·   / filter   ·   = compact   ·   esc close")
 }
