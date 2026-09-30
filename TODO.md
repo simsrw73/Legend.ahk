@@ -8,9 +8,8 @@
   Ctrl+F/B next/previous screen (PgDn/PgUp stay), Ctrl+T next scope, Enter
   picks, Esc/Ctrl+G cancel. Alt+/ gains a cursor on its index and category
   menus; chords stay letter-driven. j/k/h/l remain hidden extras in pickers.
-- Flicker: moving through a picker repaints the whole overlay (RedrawWindow on
-  every control) and page/filter changes rebuild the Gui. Try double-buffering
-  (WS_EX_COMPOSITED), invalidating only the two changed rows, and updating rows
-  in place instead of rebuilding.
+- Flicker: row moves now repaint only the two changed rows. Page changes and
+  filter typing still rebuild the Gui; update rows in place there too (reuse
+  the row controls, hide unused ones) and try WS_EX_COMPOSITED double-buffering.
 - Picker review minors (2026-09-30):
   - Filter typing drops shifted and AltGr characters (translate with ToUnicodeEx).

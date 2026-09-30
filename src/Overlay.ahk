@@ -120,22 +120,34 @@ class LegendOverlay {
     ; Moves the selection to row index (1-based on this screen; 0 = none) of an overlay
     ; drawn by ShowPicker, recoloring only the rows that change.
     static SelectPickerRow(overlay, theme, index) {
-        static RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
-        for rowIndex, row in overlay.PickerRows {
-            selected := rowIndex = index
-            if selected = row.Selected
-                continue
-            row.Selected := selected
-            row.Text.SetFont("c" (selected ? theme["selectionText"] : theme["description"]))
-            row.Detail.SetFont("c" (selected ? theme["selectionText"] : theme["footer"]))
+        static WM_SETREDRAW := 0x0B, RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
+        changed := []
+        ; batch the recolors and the bar move into one paint of just the changed rows
+        DllCall("SendMessageW", "Ptr", overlay.Hwnd, "UInt", WM_SETREDRAW, "Ptr", 0, "Ptr", 0)
+        try {
+            for rowIndex, row in overlay.PickerRows {
+                selected := rowIndex = index
+                if selected = row.Selected
+                    continue
+                row.Selected := selected
+                row.Text.SetFont("c" (selected ? theme["selectionText"] : theme["description"]))
+                row.Detail.SetFont("c" (selected ? theme["selectionText"] : theme["footer"]))
+                changed.Push(row.Y)
+            }
+            bar := overlay.PickerBar
+            if index {
+                bar.Move(, overlay.PickerRows[index].Y)
+                bar.Visible := true
+            } else
+                bar.Visible := false
+        } finally
+            DllCall("SendMessageW", "Ptr", overlay.Hwnd, "UInt", WM_SETREDRAW, "Ptr", 1, "Ptr", 0)
+        bar.GetPos(&barX, , &barW, &barH)
+        rect := Buffer(16)
+        for rowY in changed {
+            NumPut("Int", barX, "Int", rowY, "Int", barX + barW, "Int", rowY + barH, rect)
+            DllCall("RedrawWindow", "Ptr", overlay.Hwnd, "Ptr", rect, "Ptr", 0, "UInt", RDW_REPAINT)
         }
-        bar := overlay.PickerBar
-        if index {
-            bar.Move(, overlay.PickerRows[index].Y)
-            bar.Visible := true
-        } else
-            bar.Visible := false
-        DllCall("RedrawWindow", "Ptr", overlay.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", RDW_REPAINT)
     }
 
     static IconSize(theme) => theme["density"] = "compact" ? 16 : 20
