@@ -265,9 +265,7 @@ Navigator_CursorEnter() {
     nav := Navigator_New()
     nav.Open([])
     nav.Press("Down")
-    rows := nav.View.Columns[1].Rows
-    T.True(!rows[1].Selected)
-    T.True(rows[2].Selected)
+    T.Eq(nav.View.SelectedIndex, 2)
     T.Eq(nav.Press("Enter"), "redraw")
     T.Eq(nav.View.Title, "Zen")
 }

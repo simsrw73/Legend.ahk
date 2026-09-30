@@ -546,7 +546,7 @@ class Legend {
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
         index := picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0
         this.Render("picker|" picker.LayoutKey "|" theme["density"],
-            () => LegendOverlay.ShowPicker({Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText},
+            () => LegendOverlay.ShowPicker({Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText, SelectedIndex: index},
                 theme, measurer, picker.Footer(theme["density"]), maxWidth),
             index)
     }

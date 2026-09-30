@@ -141,7 +141,7 @@ Picker_Paging() {
     rows := p.ScreenRows()
     T.Eq(rows.Length, 1)
     T.Eq(rows[1].Text, "item 5")
-    T.True(rows[1].Selected)
+    T.Eq(p.Cursor - (p.ScreenIndex - 1) * p.PageSize, 1, "the one row on the last screen is selected")
     T.Eq(rows[1].Letter, p.Letters[5])
     p.Key(Picker_Key("PgUp"))
     T.Eq(p.Cursor, 3)

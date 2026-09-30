@@ -82,3 +82,17 @@ Overlay_FlatUnchanged() {
     finally
         flat.Destroy(), m.Destroy()
 }
+
+T.Test("Overlay: the list body selects view.SelectedIndex", Overlay_ListSelectedIndex)
+Overlay_ListSelectedIndex() {
+    theme := LegendTheme.Resolve(LegendTheme.Read(""))
+    m := LegendMeasurer(theme)
+    rows := []
+    for text in ["one", "two", "three"]
+        rows.Push({Text: text, Detail: "", Icon: 0, Letter: ""})
+    shown := LegendOverlay.ShowPicker({Title: "t", Rows: rows, Empty: "", SelectedIndex: 2}, theme, m, "f", 400)
+    try
+        T.Eq(shown.Selection.Index, 2)
+    finally
+        shown.Destroy(), m.Destroy()
+}

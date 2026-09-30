@@ -28,13 +28,6 @@ class LegendNavigator {
     View {
         get {
             level := this.Level
-            if level.Cursor {
-                rowIndex := 0
-                for screen in level.Screens
-                    for col in screen
-                        for row in col.Rows
-                            rowIndex += 1, row.Selected := rowIndex = level.Cursor
-            }
             return {Title: level.Title, Columns: level.Screens[level.ScreenIndex],
                 ScreenIndex: level.ScreenIndex, ScreenCount: level.Screens.Length, SelectedIndex: this.SelectedIndex}
         }

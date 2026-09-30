@@ -75,5 +75,5 @@ class LegendRows {
     }
 
     static Row(kind, key, text, style := "", mods := "", status := "") =>
-        {Kind: kind, Key: key, Text: text, Style: style, Mods: IsObject(mods) ? mods : [], Status: status, Selected: false}
+        {Kind: kind, Key: key, Text: text, Style: style, Mods: IsObject(mods) ? mods : [], Status: status}
 }
