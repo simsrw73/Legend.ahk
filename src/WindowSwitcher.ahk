@@ -15,7 +15,7 @@ class LegendWindowSwitcher {
             labels.Push(LegendWindowSwitcher.LabelOf(name))
         this.Picker := LegendPicker(hotkey, "Windows", label => this.Source(label), {
             OnPick: item => this.Pick(item),
-            OnHighlight: item => this.Peek.Show(item.Data),
+            OnHighlight: item => IsObject(item) ? this.Peek.Show(item.Data) : this.Peek.Clear(true),
             OnCancel: () => this.Cancel(),
             Start: opt("Start", 2), Scopes: labels, Scope: LegendWindowSwitcher.LabelOf(opt("Scope", "all")),
             Density: opt("Density", ""), Match: opt("Match", ""), Reference: opt("Reference", true),

@@ -504,15 +504,16 @@ class Legend {
             old.Destroy()
     }
 
-    ; Calls OnHighlight when the selected item changed.
+    ; Calls OnHighlight when the selected item changed; with "" when nothing is
+    ; selected any more (a filter with no match).
     static Highlight() {
         state := this.PickerState
         item := state.Picker.Selected
-        if IsObject(item) && IsObject(state.Highlighted) && item == state.Highlighted
+        if IsObject(item) ? IsObject(state.Highlighted) && item == state.Highlighted : !IsObject(state.Highlighted)
             return
         state.Highlighted := item
         onHighlight := state.Picker.OnHighlight
-        if IsObject(onHighlight) && IsObject(item)
+        if IsObject(onHighlight)
             onHighlight(item)
     }
 

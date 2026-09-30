@@ -44,3 +44,20 @@ Controller_NoLegendLine() {
     } finally
         Legend.ClosePicker(false)
 }
+
+T.Test("Controller: OnHighlight gets an empty item when a filter leaves nothing selected", Controller_HighlightNothing)
+Controller_HighlightNothing() {
+    seen := []
+    picker := LegendPicker("^!+F9", "Highlight", (*) => [{Text: "one"}, {Text: "two"}],
+        {OnPick: Noop, OnHighlight: item => seen.Push(IsObject(item) ? item.Text : "(none)")})
+    Legend.OpenPicker(picker)
+    try {
+        for keyText in ["/", "z", "z"]
+            Legend.PickerKey(LegendKeyName.FromText(keyText))
+        T.Eq(seen.Length, 2, "one call at open, one when the list emptied")
+        T.Eq(seen[2], "(none)")
+        Legend.PickerKey(LegendKeyName.FromText("Esc"))
+        T.Eq(seen[3], "one", "a selection again after Esc")
+    } finally
+        Legend.ClosePicker(false)
+}

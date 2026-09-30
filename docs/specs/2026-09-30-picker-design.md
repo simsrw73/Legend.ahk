@@ -51,7 +51,8 @@ Legend.WindowSwitcher("!d", {Scope: "desktop", Scopes: ["desktop"]})
   `""`. `Letter` asks for a fixed letter (honoured if free and allowed).
   `Data` is the host's own value, passed back untouched.
 - `OnPick(item)` is required. `OnHighlight(item)` runs on every selection
-  change, including at open and when the filter changes the selection.
+  change, including at open and when the filter changes the selection; it gets
+  `""` when a filter leaves nothing selected.
   `OnCancel()` runs when the picker closes without a pick. `OnPick` and
   `OnCancel` run after the overlay is gone, with Critical off.
 - `Legend.WindowSwitcher(hotkey, options?)` is `Legend.Picker` with the window
