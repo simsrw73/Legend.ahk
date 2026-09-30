@@ -7,6 +7,7 @@
 #Include %A_LineFile%\..\src\Navigator.ahk
 #Include %A_LineFile%\..\src\Theme.ahk
 #Include %A_LineFile%\..\src\Overlay.ahk
+#Include %A_LineFile%\..\src\Selection.ahk
 #Include %A_LineFile%\..\src\KeyWatch.ahk
 #Include %A_LineFile%\..\src\ChordMatch.ahk
 #Include %A_LineFile%\..\src\Chord.ahk
@@ -164,6 +165,23 @@ class Legend {
         this.Draw()
     }
 
+    static DrawnLayout := ""   ; layout key of the window in this.Gui
+
+    ; Shows an overlay. When a window is up and layoutKey is the one it was built
+    ; with, only the cursor moved: move the selection in place. Otherwise build() a
+    ; new window and swap it in.
+    static Render(layoutKey, build, index) {
+        if this.Gui && this.DrawnLayout == layoutKey {
+            this.Gui.Selection.Select(index)
+            return
+        }
+        old := this.Gui
+        this.Gui := build()
+        this.DrawnLayout := layoutKey
+        if old
+            old.Destroy()
+    }
+
     static Draw() {
         view := this.Nav.View
         mods := []
@@ -171,12 +189,11 @@ class Legend {
             for row in col.Rows
                 mods.Push(row.Mods*)
         legendLine := this.Theme["legend"] = "off" ? "" : LegendKeyName.LegendLine(mods, this.Theme["keyStyle"])
-        old := this.Gui
         footer := this.Nav.Footer("tab " this.Theme["keyStyle"], "= " this.Theme["density"])
-        this.Gui := LegendOverlay.Show(view, this.Theme, this.Measurer, footer, legendLine,
-            this.Nav.Pinned, this.Registry.Warnings.Length + this.ThemeWarnings.Length)
-        if old
-            old.Destroy()
+        warnings := this.Registry.Warnings.Length + this.ThemeWarnings.Length
+        this.Render("nav|" this.Nav.LayoutKey "|" footer "|" legendLine "|" warnings,
+            () => LegendOverlay.Show(view, this.Theme, this.Measurer, footer, legendLine, this.Nav.Pinned, warnings),
+            this.Nav.SelectedIndex)
     }
 
     static Close() {
@@ -440,7 +457,7 @@ class Legend {
         trigger := LegendKeyName.FromHotkey(picker.Hotkey)
         triggerHeld := trigger.Name != "" && GetKeyState(trigger.Name, "P")
         state := this.PickerState := {Picker: picker, Keys: LegendChordKeys(this.HeldModifiers(), trigger.Name, triggerHeld),
-            Highlighted: "", MeasuredDensity: "", Pending: [], DrawnLayout: ""}
+            Highlighted: "", MeasuredDensity: "", Pending: []}
         keyHook := state.Hook := InputHook("L0")
         keyHook.KeyOpt("{All}", "+SN")
         keyHook.KeyOpt("{LWin}{RWin}{LShift}{RShift}{LCtrl}{RCtrl}{LAlt}{RAlt}", "-S")
@@ -522,17 +539,11 @@ class Legend {
         maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
         maxWidth := (area.Right - area.Left) * Min(theme["pickerWidthPercent"], theme["maxWidthPercent"]) // 100 - theme["padding"] * 2
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
-        layout := picker.LayoutKey "|" theme["density"]
-        if this.Gui && state.DrawnLayout == layout {   ; only the cursor moved: no rebuild
-            LegendOverlay.SelectPickerRow(this.Gui, theme, picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0)
-            return
-        }
-        state.DrawnLayout := layout
-        view := {Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText}
-        old := this.Gui
-        this.Gui := LegendOverlay.ShowPicker(view, theme, measurer, picker.Footer(theme["density"]), maxWidth)
-        if old
-            old.Destroy()
+        index := picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0
+        this.Render("picker|" picker.LayoutKey "|" theme["density"],
+            () => LegendOverlay.ShowPicker({Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText},
+                theme, measurer, picker.Footer(theme["density"]), maxWidth),
+            index)
     }
 
     ; Calls OnHighlight when the selected item changed; with "" when nothing is

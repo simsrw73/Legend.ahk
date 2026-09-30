@@ -19,6 +19,8 @@
 #Include %A_ScriptDir%\Theme.Tests.ahk
 #Include %A_ScriptDir%\..\src\Overlay.ahk
 #Include %A_ScriptDir%\Overlay.Tests.ahk
+#Include %A_ScriptDir%\..\src\Selection.ahk
+#Include %A_ScriptDir%\Selection.Tests.ahk
 #Include %A_ScriptDir%\..\src\KeyWatch.ahk
 #Include %A_ScriptDir%\KeyWatch.Tests.ahk
 #Include %A_ScriptDir%\..\src\ChordMatch.ahk

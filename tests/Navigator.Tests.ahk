@@ -323,3 +323,30 @@ Navigator_FooterKeys() {
     f := chord.Footer()
     T.True(InStr(f, "esc close   ·   ⌫ back   ·   ^f/^b 1/2"), f)
 }
+
+T.Test("Navigator: LayoutKey ignores cursor moves within a screen", Navigator_LayoutKey)
+Navigator_LayoutKey() {
+    nav := Navigator_Many()
+    key := nav.LayoutKey
+    nav.Press("Down")
+    T.Eq(nav.LayoutKey, key, "cursor move")
+    T.Eq(nav.SelectedIndex, 2)
+    T.Eq(nav.View.SelectedIndex, 2)
+    loop 4
+        nav.Press("Down")
+    T.True(nav.LayoutKey != key, "next screen")
+    T.Eq(nav.SelectedIndex, 1, "item 6 is first on screen 2")
+    key := nav.LayoutKey
+    nav.Press("Pin")
+    T.True(nav.LayoutKey != key, "pin")
+    key := nav.LayoutKey
+    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1), "text")
+    T.True(nav.LayoutKey != key, "relayout")
+    key := nav.LayoutKey
+    nav.Press("Enter")
+    T.True(nav.LayoutKey != key, "opened a level")
+    T.Eq(nav.SelectedIndex, 0, "flat page")
+    key := nav.LayoutKey
+    nav.Press("Backspace")
+    T.True(nav.LayoutKey != key, "back")
+}
