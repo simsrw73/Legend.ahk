@@ -144,18 +144,19 @@ class LegendNavigator {
     Footer(extras*) {
         level := this.Level
         parts := []
+        pages := level.Screens.Length > 1 ? "^f/^b " level.ScreenIndex "/" level.Screens.Length : ""
         if this.Mode = "chord" {
             parts.Push("esc close", "⌫ back")
-            if level.Screens.Length > 1
-                parts.Push("pgdn/^n  pgup/^p  " level.ScreenIndex "/" level.Screens.Length)
+            if pages != ""
+                parts.Push(pages)
             parts.Push(extras*)
         } else {
-            if this.ClaimsLetters
-                parts.Push("a–z open")
+            if level.Cursor
+                parts.Push("↵ open", "^n/^p move")
+            if pages != ""
+                parts.Push(pages)
             if this.Stack.Length > 1
                 parts.Push("⌫ back")
-            if level.Screens.Length > 1
-                parts.Push("spc/^n  pgup/^p  " level.ScreenIndex "/" level.Screens.Length)
             parts.Push(this.Pinned ? "`` unpin" : "`` pin")
             parts.Push(extras*)
             parts.Push("esc close")

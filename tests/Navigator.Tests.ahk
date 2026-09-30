@@ -127,7 +127,7 @@ T.Test("Navigator: footer hints follow the view", Navigator_Footer)
 Navigator_Footer() {
     nav := Navigator_New()
     nav.Open([])
-    T.True(InStr(nav.Footer(), "a–z open"))
+    T.True(InStr(nav.Footer(), "↵ open"))
     T.True(!InStr(nav.Footer(), "back"))
     nav.Press("k"), nav.Press("l")
     T.True(InStr(nav.Footer(), "⌫ back"))
@@ -304,4 +304,22 @@ Navigator_CursorRelayout() {
     nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "text")
     T.Eq(nav.Level.Cursor, 6)
     T.Eq(nav.View.ScreenIndex, 1)
+}
+
+T.Test("Navigator: footers use the shared key names", Navigator_FooterKeys)
+Navigator_FooterKeys() {
+    nav := Navigator_Many()
+    f := nav.Footer()
+    T.True(InStr(f, "↵ open   ·   ^n/^p move   ·   ^f/^b 1/2"), f)
+    T.True(!InStr(f, "spc/") && !InStr(f, "a–z"), f)
+    nav.Press("Enter")
+    f := nav.Footer()
+    T.True(!InStr(f, "↵ open") && !InStr(f, "^n/^p"), f)
+    chord := LegendNavigator([], rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    items := []
+    loop 7
+        items.Push(LegendChordItem(Chr(96 + A_Index), "item " A_Index, Noop))
+    chord.OpenChord(LegendChord("#Space", "Many", items))
+    f := chord.Footer()
+    T.True(InStr(f, "esc close   ·   ⌫ back   ·   ^f/^b 1/2"), f)
 }
