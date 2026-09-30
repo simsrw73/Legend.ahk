@@ -303,3 +303,13 @@ Picker_LayoutKey() {
     q.Key(Picker_Key("l"))
     T.True(q.LayoutKey != first, "scope")
 }
+
+T.Test("Picker: LayoutKey changes on every load, even to the same array", Picker_LayoutKeyReload)
+Picker_LayoutKeyReload() {
+    items := Picker_Items(3)
+    p := LegendPicker("!s", "Test", (*) => items, {OnPick: Noop, Scopes: ["x", "y"]})
+    p.Open()
+    first := p.LayoutKey
+    p.Key(Picker_Key("l")), p.Key(Picker_Key("h"))   ; same scope, same array object
+    T.True(p.LayoutKey != first, "a reload must force a rebuild")
+}

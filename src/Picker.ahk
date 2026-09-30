@@ -37,6 +37,7 @@ class LegendPicker {
         shifted.Push("Shift")
         this.ShiftTriggerId := LegendKeyName.FromParts(shifted, trigger.Name).Id
         this.PageSize := 0
+        this.Loads := 0   ; source calls so far; part of LayoutKey
         this.Items := [], this.Visible := [], this.Letters := []
         this.Cursor := 0, this.Mode := "normal", this.Query := "", this.ScopeIndex := 1
     }
@@ -47,7 +48,7 @@ class LegendPicker {
     ScreenIndex => this.PageSize && this.Cursor ? (this.Cursor - 1) // this.PageSize + 1 : 1
     ; Everything the drawn rows depend on except which row is selected: when it is
     ; unchanged, the controller only moves the selection instead of redrawing.
-    LayoutKey => ObjPtr(this.Items) "|" this.TitleLine "|" this.Mode "|" this.ScreenIndex "|" this.ScreenCount "|" this.Visible.Length
+    LayoutKey => this.Loads "|" this.TitleLine "|" this.Mode "|" this.ScreenIndex "|" this.ScreenCount "|" this.Visible.Length
     ScreenCount =>this.PageSize && this.Visible.Length ? (this.Visible.Length - 1) // this.PageSize + 1 : 1
 
     Open() {
@@ -59,6 +60,7 @@ class LegendPicker {
     Load() {
         source := this.Source
         this.Items := source(this.Scope)
+        this.Loads += 1
         this.Refresh(this.Start)
     }
 
