@@ -13,6 +13,7 @@ class LegendSelection {
         this.Rows := []
         this.Index := 0
         this.LastChanged := []
+        this.Spacer := ""
     }
 
     ; rect: {X, Y, W, H} of the bar on this row; recolors: [{Ctrl, Normal, Selected}].
@@ -21,15 +22,16 @@ class LegendSelection {
         return this.Rows.Length
     }
 
-    ; An invisible spacer at the furthest corner any bar reaches, so AutoSize always
-    ; makes room for it and moving the selection never resizes the window.
+    ; A 1x1 spacer at the right-most edge any bar reaches, so AutoSize always makes
+    ; room for it and moving the selection never resizes the window. It sits at the
+    ; top of the window, where no bar reaches (it would cut a notch into one).
     Reserve() {
         if !this.Rows.Length
             return
-        right := 0, bottom := 0
+        right := 0
         for row in this.Rows
-            right := Max(right, row.Rect.X + row.Rect.W), bottom := Max(bottom, row.Rect.Y + row.Rect.H)
-        this.Gui.AddText("x" (right - 1) " y" (bottom - 1) " w1 h1")
+            right := Max(right, row.Rect.X + row.Rect.W)
+        this.Spacer := this.Gui.AddText("x" (right - 1) " y0 w1 h1")
     }
 
     ; index: 1-based over the registered rows; 0 hides the bar.

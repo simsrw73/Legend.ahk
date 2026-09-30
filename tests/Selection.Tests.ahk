@@ -63,3 +63,20 @@ Selection_Hidden() {
     } finally
         g.Destroy()
 }
+
+T.Test("Selection: the Reserve spacer never paints over a bar", Selection_SpacerClear)
+Selection_SpacerClear() {
+    g := Selection_Window()
+    sel := g.Selection
+    sel.Reserve()
+    try {
+        sel.Spacer.GetPos(&spacerX, &spacerY, &spacerW, &spacerH)
+        for row in sel.Rows {
+            overlapsX := spacerX < row.Rect.X + row.Rect.W && spacerX + spacerW > row.Rect.X
+            overlapsY := spacerY < row.Rect.Y + row.Rect.H && spacerY + spacerH > row.Rect.Y
+            T.True(!(overlapsX && overlapsY), "spacer overlaps row " A_Index)
+        }
+        T.Eq(spacerX + spacerW, 5 + 120, "still reaches the widest bar's right edge")
+    } finally
+        g.Destroy()
+}
