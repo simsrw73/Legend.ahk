@@ -25,8 +25,8 @@ Legend.Chord("^!+Space", "Demo chords", [
     Legend.Run("1-3", "Show a digit", key => MsgBox("You pressed " key))
 ])
 
-; Ctrl+Alt+Shift+P: a picker. j/k or Ctrl+N/P move, a letter or Enter picks, / filters,
-; h/l switch between the two scopes, Esc cancels.
+; Ctrl+Alt+Shift+P: a picker. Ctrl+N/P move, a letter or Enter picks, / filters,
+; Ctrl+T switches between the two scopes, Esc cancels.
 Legend.Picker("^!+p", "Colors", scope => DemoColors(scope), {
     OnPick: item => MsgBox("You picked " item.Text),
     Scopes: ["warm", "cool"]
@@ -41,7 +41,7 @@ DemoColors(scope) {
     return items
 }
 
-; Ctrl+Alt+Shift+A / S: window switchers (all windows / this monitor). h/l change scope.
+; Ctrl+Alt+Shift+A / S: window switchers (all windows / this monitor). Ctrl+T changes scope.
 Legend.WindowSwitcher("^!+a", {Scope: "all"})
 Legend.WindowSwitcher("^!+s", {Scope: "monitor"})
 

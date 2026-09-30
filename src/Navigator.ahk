@@ -20,6 +20,13 @@ class LegendNavigator {
     View {
         get {
             level := this.Level
+            if level.Cursor {
+                rowIndex := 0
+                for screen in level.Screens
+                    for col in screen
+                        for row in col.Rows
+                            rowIndex += 1, row.Selected := rowIndex = level.Cursor
+            }
             return {Title: level.Title, Columns: level.Screens[level.ScreenIndex],
                 ScreenIndex: level.ScreenIndex, ScreenCount: level.Screens.Length}
         }
@@ -62,16 +69,36 @@ class LegendNavigator {
                 if this.Stack.Length = 1
                     return "none"
                 this.Stack.Pop()
+                back := this.Level
+                if back.Cursor
+                    back.Cursor := 1, back.ScreenIndex := 1
                 return "redraw"
             case "Next":
                 if level.ScreenIndex >= level.Screens.Length
                     return "none"
                 level.ScreenIndex += 1
+                if level.Cursor
+                    level.Cursor := this.FirstItemOf(level, level.ScreenIndex)
                 return "redraw"
             case "Prev":
                 if level.ScreenIndex <= 1
                     return "none"
                 level.ScreenIndex -= 1
+                if level.Cursor
+                    level.Cursor := this.FirstItemOf(level, level.ScreenIndex)
+                return "redraw"
+            case "Down", "Up":
+                count := level.Items.Length
+                if !level.Cursor || count < 2
+                    return "none"
+                level.Cursor := Mod(level.Cursor - 1 + (key = "Down" ? 1 : -1) + count, count) + 1
+                level.ScreenIndex := this.ScreenOf(level, level.Cursor)
+                return "redraw"
+            case "Enter":
+                if !level.Cursor
+                    return "none"
+                open := level.OpenItem
+                this.Stack.Push(open(level.Items[level.Cursor]))
                 return "redraw"
             case "Pin":
                 this.Pinned := !this.Pinned
@@ -104,6 +131,10 @@ class LegendNavigator {
             build := level.Build
             fresh := build()
             fresh.ScreenIndex := Min(level.ScreenIndex, fresh.Screens.Length)
+            if fresh.Cursor && level.Cursor {
+                fresh.Cursor := Min(level.Cursor, fresh.Items.Length)
+                fresh.ScreenIndex := this.ScreenOf(fresh, fresh.Cursor)
+            }
             stack.Push(fresh)
         }
         this.Stack := stack
@@ -113,18 +144,19 @@ class LegendNavigator {
     Footer(extras*) {
         level := this.Level
         parts := []
+        pages := level.Screens.Length > 1 ? "^f/^b " level.ScreenIndex "/" level.Screens.Length : ""
         if this.Mode = "chord" {
             parts.Push("esc close", "⌫ back")
-            if level.Screens.Length > 1
-                parts.Push("pgdn/^n  pgup/^p  " level.ScreenIndex "/" level.Screens.Length)
+            if pages != ""
+                parts.Push(pages)
             parts.Push(extras*)
         } else {
-            if this.ClaimsLetters
-                parts.Push("a–z open")
+            if level.Cursor
+                parts.Push("↵ open", "^n/^p move")
+            if pages != ""
+                parts.Push(pages)
             if this.Stack.Length > 1
                 parts.Push("⌫ back")
-            if level.Screens.Length > 1
-                parts.Push("spc/^n  pgup/^p  " level.ScreenIndex "/" level.Screens.Length)
             parts.Push(this.Pinned ? "`` unpin" : "`` pin")
             parts.Push(extras*)
             parts.Push("esc close")
@@ -148,7 +180,7 @@ class LegendNavigator {
     PageLevel(page) {
         screens := this.Paginate(LegendRows.ForPage(page, this.Style))
         if screens.Length = 1
-            return this.WithBuild({Title: page.Title, Screens: screens, ScreenIndex: 1, Items: []},
+            return this.WithBuild({Title: page.Title, Screens: screens, ScreenIndex: 1, Items: [], Cursor: 0},
                 () => this.PageLevel(page))
         cats := []
         for cat in page.Categories
@@ -165,13 +197,13 @@ class LegendNavigator {
 
     ChordLevel(items, title) {
         return this.WithBuild({Title: title, Screens: this.Paginate(LegendRows.ForChord(LegendChords.Visible(items), this.Style)),
-            ScreenIndex: 1, Items: [], ChordItems: items}, () => this.ChordLevel(items, title))
+            ScreenIndex: 1, Items: [], ChordItems: items, Cursor: 0}, () => this.ChordLevel(items, title))
     }
 
     CategoryLevel(page, cat) {
         name := cat.Name != "" ? cat.Name : "Other"
         return this.WithBuild({Title: page.Title " › " name, Screens: this.Paginate(LegendRows.ForCategory(cat, this.Style)),
-            ScreenIndex: 1, Items: []}, () => this.CategoryLevel(page, cat))
+            ScreenIndex: 1, Items: [], Cursor: 0}, () => this.CategoryLevel(page, cat))
     }
 
     ; Records how to rebuild a level, for Relayout.
@@ -181,11 +213,33 @@ class LegendNavigator {
     }
 
     MenuLevel(title, items, open) =>
-        {Title: title, Screens: this.Paginate(LegendRows.ForMenu(items)), ScreenIndex: 1, Items: items, OpenItem: open}
+        {Title: title, Screens: this.Paginate(LegendRows.ForMenu(items)), ScreenIndex: 1, Items: items, OpenItem: open,
+            Cursor: items.Length ? 1 : 0}
 
     Paginate(rows) {
         paginateFn := this.PaginateFn
         return paginateFn(rows)
+    }
+
+    ; Screen holding menu row `index` (menu rows and items are 1:1).
+    ScreenOf(level, index) {
+        count := 0
+        for screenIndex, screen in level.Screens
+            for col in screen {
+                count += col.Rows.Length
+                if index <= count
+                    return screenIndex
+            }
+        return level.Screens.Length
+    }
+
+    ; Index of the first menu row on screen screenIndex.
+    FirstItemOf(level, screenIndex) {
+        count := 0
+        loop screenIndex - 1
+            for col in level.Screens[A_Index]
+                count += col.Rows.Length
+        return count + 1
     }
 
     ; One letter per item: its fixed letter if free, else the first free letter or

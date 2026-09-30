@@ -127,7 +127,7 @@ T.Test("Navigator: footer hints follow the view", Navigator_Footer)
 Navigator_Footer() {
     nav := Navigator_New()
     nav.Open([])
-    T.True(InStr(nav.Footer(), "a–z open"))
+    T.True(InStr(nav.Footer(), "↵ open"))
     T.True(!InStr(nav.Footer(), "back"))
     nav.Press("k"), nav.Press("l")
     T.True(InStr(nav.Footer(), "⌫ back"))
@@ -222,4 +222,104 @@ Navigator_NoLetterTitles() {
     T.Eq(letters[2], "b")
     T.Eq(letters[3], "c")   ; its own "a" is taken
     T.Eq(letters[4], "d")
+}
+
+; Seven one-entry pages: the index has 7 items, 5 per screen (FakeMeasure rows are 20 px).
+Navigator_Many() {
+    r := Registry_New()
+    loop 7
+        r.Bind(["Page " A_Index, "c"], "^!F" A_Index, "x", Noop)
+    nav := LegendNavigator(r.SortedPages(), rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    nav.Open([])
+    return nav
+}
+
+T.Test("Navigator: the menu cursor starts on the first item and wraps", Navigator_CursorWraps)
+Navigator_CursorWraps() {
+    nav := Navigator_Many()
+    T.Eq(nav.Level.Cursor, 1)
+    T.Eq(nav.Press("Up"), "redraw")
+    T.Eq(nav.Level.Cursor, 7)
+    T.Eq(nav.View.ScreenIndex, 2)
+    nav.Press("Down")
+    T.Eq(nav.Level.Cursor, 1)
+    T.Eq(nav.View.ScreenIndex, 1)
+}
+
+T.Test("Navigator: the screen follows the cursor; paging moves it to the screen's first item", Navigator_CursorFollowsScreen)
+Navigator_CursorFollowsScreen() {
+    nav := Navigator_Many()
+    loop 5
+        nav.Press("Down")
+    T.Eq(nav.Level.Cursor, 6)
+    T.Eq(nav.View.ScreenIndex, 2)
+    nav.Press("Prev")
+    T.Eq(nav.View.ScreenIndex, 1)
+    T.Eq(nav.Level.Cursor, 1)
+    nav.Press("Next")
+    T.Eq(nav.Level.Cursor, 6)
+}
+
+T.Test("Navigator: Enter opens the selected item and the view marks it", Navigator_CursorEnter)
+Navigator_CursorEnter() {
+    nav := Navigator_New()
+    nav.Open([])
+    nav.Press("Down")
+    rows := nav.View.Columns[1].Rows
+    T.True(!rows[1].Selected)
+    T.True(rows[2].Selected)
+    T.Eq(nav.Press("Enter"), "redraw")
+    T.Eq(nav.View.Title, "Zen")
+}
+
+T.Test("Navigator: Backspace returns with the cursor on the first item", Navigator_CursorBack)
+Navigator_CursorBack() {
+    nav := Navigator_New()
+    nav.Open([])
+    nav.Press("k")
+    nav.Press("Down"), nav.Press("Down")
+    T.Eq(nav.Level.Cursor, 3)
+    nav.Press("r")
+    nav.Press("Backspace")
+    T.Eq(nav.View.Title, "komorebi")
+    T.Eq(nav.Level.Cursor, 1)
+}
+
+T.Test("Navigator: flat pages ignore Down, Up and Enter", Navigator_CursorFlat)
+Navigator_CursorFlat() {
+    nav := Navigator_New()
+    nav.Open([])
+    nav.Press("z")
+    T.Eq(nav.Level.Cursor, 0)
+    T.Eq(nav.Press("Down"), "none")
+    T.Eq(nav.Press("Up"), "none")
+    T.Eq(nav.Press("Enter"), "none")
+}
+
+T.Test("Navigator: relayout keeps the selected item", Navigator_CursorRelayout)
+Navigator_CursorRelayout() {
+    nav := Navigator_Many()
+    loop 5
+        nav.Press("Down")
+    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "text")
+    T.Eq(nav.Level.Cursor, 6)
+    T.Eq(nav.View.ScreenIndex, 1)
+}
+
+T.Test("Navigator: footers use the shared key names", Navigator_FooterKeys)
+Navigator_FooterKeys() {
+    nav := Navigator_Many()
+    f := nav.Footer()
+    T.True(InStr(f, "↵ open   ·   ^n/^p move   ·   ^f/^b 1/2"), f)
+    T.True(!InStr(f, "spc/") && !InStr(f, "a–z"), f)
+    nav.Press("Enter")
+    f := nav.Footer()
+    T.True(!InStr(f, "↵ open") && !InStr(f, "^n/^p"), f)
+    chord := LegendNavigator([], rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    items := []
+    loop 7
+        items.Push(LegendChordItem(Chr(96 + A_Index), "item " A_Index, Noop))
+    chord.OpenChord(LegendChord("#Space", "Many", items))
+    f := chord.Footer()
+    T.True(InStr(f, "esc close   ·   ⌫ back   ·   ^f/^b 1/2"), f)
 }

@@ -88,3 +88,8 @@ Rows_Chord() {
     T.Eq(rows[3].Key, "⌃S")
     T.Eq(rows[3].Style, "bound")
 }
+
+T.Test("Rows: rows start unselected", Rows_Selected)
+Rows_Selected() {
+    T.Eq(LegendRows.Row("entry", "a", "b").Selected, false)
+}

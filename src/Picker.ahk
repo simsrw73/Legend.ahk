@@ -86,8 +86,9 @@ class LegendPicker {
             case "K": return this.Move(-1)
             case "H": return this.ChangeScope(-1)
             case "L": return this.ChangeScope(1)
-            case "PgDn": return this.Page(1)
-            case "PgUp": return this.Page(-1)
+            case "PgDn", "Ctrl+F": return this.Page(1)
+            case "PgUp", "Ctrl+B": return this.Page(-1)
+            case "Ctrl+T": return this.ChangeScope(1)
             case "Enter": return this.Cursor ? "pick" : "none"
             case "=": return "density"
             case "Esc", "Ctrl+G": return "cancel"
@@ -131,8 +132,9 @@ class LegendPicker {
         switch key.Id {
             case "Enter": return this.Cursor ? "pick" : "none"
             case "Ctrl+G": return "cancel"
-            case "PgDn": return this.Page(1)
-            case "PgUp": return this.Page(-1)
+            case "PgDn", "Ctrl+F": return this.Page(1)
+            case "PgUp", "Ctrl+B": return this.Page(-1)
+            case "Ctrl+T": return this.ChangeScope(1)
             case "Esc":
                 selected := IsObject(this.Selected) ? this.Selected : this.BeforeFilter
                 this.Mode := "normal", this.Query := ""
@@ -245,17 +247,17 @@ class LegendPicker {
     }
 
     Footer(density) {
-        parts := []
+        parts := ["↵ pick", "^n/^p move"]
         if this.Mode = "filter" {
-            parts.Push("↵ pick", "↑↓ move", "esc clear")
+            parts.Push("esc clear")
         } else {
-            parts.Push("↵ pick", "j/k move", "/ filter")
+            parts.Push("/ filter")
             if this.Scopes.Length > 1
-                parts.Push("h/l scope")
+                parts.Push("^t scope")
             parts.Push("= " density, "esc close")
         }
         if this.ScreenCount > 1
-            parts.Push("pgdn/pgup  " this.ScreenIndex "/" this.ScreenCount)
+            parts.Push("^f/^b " this.ScreenIndex "/" this.ScreenCount)
         text := ""
         for part in parts
             text .= (A_Index > 1 ? "   ·   " : "") part

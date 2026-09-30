@@ -75,15 +75,22 @@ class LegendOverlay {
                         this.AddText(overlay, theme, "group", theme["group"], "x" colX " y" rowY, row.Text)
                     default:
                         keyColor := row.Style = "doc" ? theme["keyDoc"] : theme["keyBound"]
+                        ; the menu cursor's row sits on a selection bar, added first so the
+                        ; transparent text draws over it
+                        selected := row.Selected
+                        if selected
+                            overlay.AddProgress("x" (colX - spacing) " y" rowY " w" (col.Width + spacing * 2) " h" size.H
+                                " Background" theme["selection"] " Disabled")
+                        trans := selected ? " BackgroundTrans" : ""
                         ; center the key font's line on the description's
                         keyY := rowY + (measurer.Size(row.Text, "body").H - measurer.Size(row.Key, "key").H) // 2
-                        this.AddText(overlay, theme, "key", keyColor, "x" colX " y" keyY " w" col.KeyWidth, row.Key)
+                        this.AddText(overlay, theme, "key", keyColor, "x" colX " y" keyY " w" col.KeyWidth trans, row.Key)
                         textX := colX + col.KeyWidth + gutter
                         if row.Status != "" {
-                            this.AddText(overlay, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" rowY, "●")
+                            this.AddText(overlay, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" rowY trans, "●")
                             textX += measurer.Size("● ", "body").W
                         }
-                        this.AddText(overlay, theme, "body", theme["description"], "x" textX " y" rowY, row.Text)
+                        this.AddText(overlay, theme, "body", selected ? theme["selectionText"] : theme["description"], "x" textX " y" rowY trans, row.Text)
                 }
                 rowY += size.H
             }

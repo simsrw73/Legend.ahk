@@ -109,3 +109,22 @@ Controller_PickerWidth() {
     } finally
         Legend.ClosePicker(false)
 }
+
+T.Test("Legend: key maps follow the shared scheme", Legend_KeyMaps)
+Legend_KeyMaps() {
+    T.Eq(Legend.CtrlKeys["^n"], "Down")
+    T.Eq(Legend.CtrlKeys["^p"], "Up")
+    T.Eq(Legend.CtrlKeys["^f"], "Next")
+    T.Eq(Legend.CtrlKeys["^b"], "Prev")
+    T.Eq(Legend.MenuKeys["Enter"], "Enter")
+    T.Eq(Legend.MenuKeys["Down"], "Down")
+    T.Eq(Legend.OverlayKeys["Space"], "Next")
+    T.True(!Legend.OverlayKeys.Has("Enter") && !Legend.OverlayKeys.Has("Down"), "never claimed on flat pages or while pinned")
+    T.Eq(Legend.ChordOverlayKeys["Ctrl+F"], "Next")
+    T.Eq(Legend.ChordOverlayKeys["Ctrl+B"], "Prev")
+    T.True(!Legend.ChordOverlayKeys.Has("Ctrl+N") && !Legend.ChordOverlayKeys.Has("Ctrl+P"), "Ctrl+N/P reach chord items")
+    w := LegendKeyWatch(LegendKeyName.FromHotkey("!/").Id, Legend.WatchClaims)
+    w.Down(0xA2, "LControl")
+    T.Eq(w.Down(0x46, "f"), "", "Ctrl+F doesn't close the overlay")
+    T.Eq(w.Down(0x42, "b"), "")
+}

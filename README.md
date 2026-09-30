@@ -57,7 +57,7 @@ Legend.Chord("#Space", "Launch", [
 
 Press the trigger, then keys. The menu appears after `ChordOverlay` ms (default
 400; `"always"` / `"never"`); Esc or Ctrl+G cancels, Backspace goes up a level,
-PgDn/PgUp or Ctrl+N/Ctrl+P page. Options per item: `If` (condition; the first
+PgDn/PgUp or Ctrl+F/Ctrl+B page. Options per item: `If` (condition; the first
 matching item whose `If` holds runs), `Status` (running dot), `Hint`. Keys may
 use modifiers (`^s`; Shift+; is `+;`, not `:`) and [KeyChord](#acknowledgments) wildcards (`?`, `F*`,
 `a-f`). `Start` options:
@@ -74,13 +74,13 @@ appear as pages in Alt+/ unless `false`).
 ```ahk
 Legend.Picker("^!+p", "Colors", scope => ColorItems(scope), {
     OnPick: item => MsgBox(item.Text),
-    Scopes: ["warm", "cool"]            ; optional; h/l switch, source gets the name
+    Scopes: ["warm", "cool"]            ; optional; Ctrl+T switches, source gets the name
 })
 ```
 
-A picker opens a list: j/k, ↓/↑ or Ctrl+N/Ctrl+P move (the trigger again moves
-down, Shift+trigger up), a letter or Enter picks, `/` filters (every word must
-match), h/l change scope, `=` switches density, Esc cancels. Items are
+A picker opens a list: Ctrl+N/Ctrl+P or ↓/↑ move, Ctrl+F/Ctrl+B or PgDn/PgUp
+page, a letter or Enter picks, `/` filters (every word must match), Ctrl+T changes scope, `=` switches
+density, Esc cancels. Items are
 `{Text, Detail?, Icon?, Letter?, Data?}`. Options: `OnPick` (required),
 `OnHighlight` (gets `""` when a filter leaves nothing selected), `OnCancel`, `Start` (row selected at open), `Scopes`, `Scope`,
 `Density`, `Match`, `Reference` (pickers are listed on a "Pickers" page in
@@ -129,13 +129,19 @@ for the active window; only a match given in code makes hotkeys app-specific.
 |---|---|
 | Alt+/ | open (the active app's page, or the index) / close |
 | letter | open the lettered item |
+| Ctrl+N / Ctrl+P, ↓ / ↑ | move the cursor in a menu |
+| Enter | open the selected item |
 | Backspace | back |
-| Space / PgDn, PgUp | next / previous screen |
+| Space / PgDn, PgUp / Ctrl+F, Ctrl+B | next / previous screen |
 | `` ` `` | pin: stay open while you use shortcuts |
 | Tab | show keys as text, symbols (`⌃⇧T`) or AHK (`^+t`) |
 | `=` | switch between comfortable and compact spacing |
 | Esc | close |
 | any Ctrl/Alt/Win shortcut | closes the overlay and goes to the app |
+
+> **Changed:** Ctrl+N/Ctrl+P used to page in Alt+/ and chord menus. They now move
+> the cursor in Alt+/ menus and reach chord items (a chord menu without them
+> closes); page with Ctrl+F/Ctrl+B, PgDn/PgUp or Space.
 
 <p align="center">
   <img src="docs/images/overlay-index.png" width="341" alt="The index of pages, each with its letter">

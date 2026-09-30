@@ -337,3 +337,30 @@ Picker_CharOfTyped() {
     p.Key(altGr)
     T.Eq(p.Query, "@")
 }
+
+T.Test("Picker: Ctrl+F/B page and Ctrl+T cycles scopes", Picker_CtrlKeys)
+Picker_CtrlKeys() {
+    p := Picker_New(5)
+    p.PageSize := 2
+    T.Eq(p.Key(Picker_Key("Ctrl+F")), "redraw")
+    T.Eq(p.Cursor, 3)
+    T.Eq(p.Key(Picker_Key("Ctrl+B")), "redraw")
+    T.Eq(p.Cursor, 1)
+    q := Picker_New(3, {Scopes: ["x", "y"]})
+    T.Eq(q.Key(Picker_Key("Ctrl+T")), "redraw")
+    T.Eq(q.Scope, "y")
+    q.Key(Picker_Key("/"))
+    T.Eq(q.Key(Picker_Key("Ctrl+T")), "redraw", "works while filtering")
+    T.Eq(q.Scope, "x")
+}
+
+T.Test("Picker: footers use the shared key names", Picker_FooterKeys)
+Picker_FooterKeys() {
+    q := Picker_New(3, {Scopes: ["x", "y"]})
+    T.Eq(q.Footer("comfortable"), "↵ pick   ·   ^n/^p move   ·   / filter   ·   ^t scope   ·   = comfortable   ·   esc close")
+    q.PageSize := 2
+    T.True(InStr(q.Footer("compact"), "^f/^b 1/2"))
+    q.Key(Picker_Key("/"))
+    T.Eq(q.Footer("compact"), "↵ pick   ·   ^n/^p move   ·   esc clear   ·   ^f/^b 1/2")
+    T.Eq(Picker_New(3).Footer("compact"), "↵ pick   ·   ^n/^p move   ·   / filter   ·   = compact   ·   esc close")
+}
