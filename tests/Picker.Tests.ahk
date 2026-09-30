@@ -313,3 +313,13 @@ Picker_LayoutKeyReload() {
     p.Key(Picker_Key("l")), p.Key(Picker_Key("h"))   ; same scope, same array object
     T.True(p.LayoutKey != first, "a reload must force a rebuild")
 }
+
+T.Test("Picker: Esc from a filter with no match returns to the row selected before /", Picker_FilterEscNoMatch)
+Picker_FilterEscNoMatch() {
+    p := Picker_New(5, {Start: 2})
+    p.Key(Picker_Key("/"))
+    Picker_Type(p, "nothing")
+    T.Eq(p.Selected, "")
+    p.Key(Picker_Key("Esc"))
+    T.Eq(p.Selected.Text, "item 2")
+}

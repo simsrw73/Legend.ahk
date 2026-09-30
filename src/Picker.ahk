@@ -38,6 +38,7 @@ class LegendPicker {
         this.ShiftTriggerId := LegendKeyName.FromParts(shifted, trigger.Name).Id
         this.PageSize := 0
         this.Loads := 0   ; source calls so far; part of LayoutKey
+        this.BeforeFilter := ""   ; the selection when / was pressed
         this.Items := [], this.Visible := [], this.Letters := []
         this.Cursor := 0, this.Mode := "normal", this.Query := "", this.ScopeIndex := 1
     }
@@ -91,6 +92,7 @@ class LegendPicker {
             case "=": return "density"
             case "Esc", "Ctrl+G": return "cancel"
             case "/":
+                this.BeforeFilter := this.Selected
                 this.Mode := "filter"
                 this.Refresh(this.Cursor)
                 return "redraw"
@@ -132,14 +134,15 @@ class LegendPicker {
             case "PgDn": return this.Page(1)
             case "PgUp": return this.Page(-1)
             case "Esc":
-                selected := this.Selected
+                selected := IsObject(this.Selected) ? this.Selected : this.BeforeFilter
                 this.Mode := "normal", this.Query := ""
                 this.Reselect(selected)
                 return "redraw"
             case "Backspace":
                 if this.Query = "" {
+                    selected := IsObject(this.Selected) ? this.Selected : this.BeforeFilter
                     this.Mode := "normal"
-                    this.Reselect(this.Selected)
+                    this.Reselect(selected)
                 } else {
                     this.Query := SubStr(this.Query, 1, -1)
                     this.Refresh(1)
