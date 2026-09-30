@@ -11,6 +11,7 @@
 #Include %A_LineFile%\..\src\ChordMatch.ahk
 #Include %A_LineFile%\..\src\Chord.ahk
 #Include %A_LineFile%\..\src\Picker.ahk
+#Include %A_LineFile%\..\src\Windows.ahk
 
 ; Legend: a contextual shortcut overlay. See README.md.
 class Legend {
