@@ -350,3 +350,32 @@ Navigator_LayoutKey() {
     nav.Press("Backspace")
     T.True(nav.LayoutKey != key, "back")
 }
+
+T.Test("Navigator: the cursor walks down columns and across screens", Navigator_CursorColumns)
+Navigator_CursorColumns() {
+    r := Registry_New()
+    loop 7
+        r.Bind(["Page " A_Index, "c"], "^!F" A_Index, "x", Noop)
+    ; 3 rows per column, 2 columns per screen: screen 1 holds items 1–6, screen 2 item 7
+    nav := LegendNavigator(r.SortedPages(), rows => LegendLayout.Paginate(rows, FakeMeasure, 60, 2))
+    nav.Open([])
+    T.Eq(nav.View.Columns.Length, 2)
+    loop 3
+        nav.Press("Down")
+    T.Eq(nav.Level.Cursor, 4, "top of column 2")
+    T.Eq(nav.View.ScreenIndex, 1)
+    T.Eq(nav.SelectedIndex, 4)
+    loop 3
+        nav.Press("Down")
+    T.Eq(nav.Level.Cursor, 7)
+    T.Eq(nav.View.ScreenIndex, 2)
+    T.Eq(nav.SelectedIndex, 1)
+    nav.Press("Prev")
+    T.Eq(nav.Level.Cursor, 1)
+    nav.Press("Next")
+    T.Eq(nav.Level.Cursor, 7, "first item of screen 2")
+    nav.Press("Up")
+    T.Eq(nav.Level.Cursor, 6)
+    T.Eq(nav.View.ScreenIndex, 1)
+    T.Eq(nav.SelectedIndex, 6, "bottom of column 2")
+}
