@@ -165,9 +165,13 @@ class LegendPicker {
                 this.Cursor := index
     }
 
-    ; What a key types into the filter: its lowercase character with no modifier or
-    ; Shift only, a space for Space, else "".
+    ; What a key types into the filter. The controller sets key.Char to the character
+    ; the keyboard layout produces (Shift and AltGr included); without it, the key's
+    ; own lowercase character with no modifier or Shift only. Control characters and
+    ; other modifier combos type nothing; Space types a space.
     static CharOf(key) {
+        if key.HasOwnProp("Char") && key.Char != ""
+            return Ord(key.Char) >= 32 ? key.Char : ""
         if key.Verbatim != "" || key.Mods.Length > 1 || key.Mods.Length = 1 && key.Mods[1] != "Shift"
             return ""
         if key.Name = "Space"

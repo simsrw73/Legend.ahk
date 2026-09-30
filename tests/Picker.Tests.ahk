@@ -323,3 +323,17 @@ Picker_FilterEscNoMatch() {
     p.Key(Picker_Key("Esc"))
     T.Eq(p.Selected.Text, "item 2")
 }
+
+T.Test("Picker: CharOf uses the typed character when the controller provides it", Picker_CharOfTyped)
+Picker_CharOfTyped() {
+    shifted := Picker_Key("Shift+1"), shifted.Char := "!"
+    T.Eq(LegendPicker.CharOf(shifted), "!")
+    altGr := Picker_Key("Ctrl+Alt+Q"), altGr.Char := "@"
+    T.Eq(LegendPicker.CharOf(altGr), "@", "AltGr arrives as Ctrl+Alt")
+    control := Picker_Key("Ctrl+A"), control.Char := Chr(1)
+    T.Eq(LegendPicker.CharOf(control), "", "control characters never type")
+    p := Picker_New(3)
+    p.Key(Picker_Key("/"))
+    p.Key(altGr)
+    T.Eq(p.Query, "@")
+}

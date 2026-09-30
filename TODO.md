@@ -11,5 +11,3 @@
 - Flicker: row moves now repaint only the two changed rows. Page changes and
   filter typing still rebuild the Gui; update rows in place there too (reuse
   the row controls, hide unused ones) and try WS_EX_COMPOSITED double-buffering.
-- Picker review minors (2026-09-30):
-  - Filter typing drops shifted and AltGr characters (translate with ToUnicodeEx).

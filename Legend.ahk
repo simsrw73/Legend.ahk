@@ -540,6 +540,24 @@ class Legend {
             onHighlight(item)
     }
 
+    ; The character the active keyboard layout produces for vk/sc with the modifiers
+    ; held now (Shift, AltGr, CapsLock), or "" (dead keys, non-printing keys).
+    static TypedChar(vk, sc) {
+        static modVks := [0x10, 0x11, 0x12, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5]
+        keyState := Buffer(256, 0)
+        for modVk in modVks
+            if GetKeyState(Format("vk{:X}", modVk), "P")
+                NumPut("UChar", 0x80, keyState, modVk)
+        if GetKeyState("CapsLock", "T")
+            NumPut("UChar", 1, keyState, 0x14)
+        threadId := DllCall("GetWindowThreadProcessId", "Ptr", WinExist("A"), "Ptr", 0, "UInt")
+        layout := DllCall("GetKeyboardLayout", "UInt", threadId, "Ptr")
+        chars := Buffer(16, 0)
+        ; flag 4: leave the keyboard's dead-key state alone
+        count := DllCall("ToUnicodeEx", "UInt", vk, "UInt", sc, "Ptr", keyState, "Ptr", chars, "Int", 8, "UInt", 4, "Ptr", layout)
+        return count = 1 ? StrGet(chars, 1, "UTF-16") : ""
+    }
+
     static PickerKeyUp(vk, sc) {
         if this.PickerState
             this.PickerState.Keys.Up(vk, GetKeyName(Format("vk{:X}sc{:X}", vk, sc)))
@@ -558,6 +576,7 @@ class Legend {
         full := state.Keys.Key(name, true)
         if full.Id == state.Picker.TriggerId || full.Id == state.Picker.ShiftTriggerId
             key := full
+        key.Char := this.TypedChar(vk, sc)
         if GetKeyState("Alt", "P") || GetKeyState("LWin", "P") || GetKeyState("RWin", "P")
             SetTimer(() => Send("{Blind}{vkE8}"), -1)   ; keep a lone Alt/Win release from opening a menu
         ; Keys that arrive while a redraw runs pile up here and are applied together,
