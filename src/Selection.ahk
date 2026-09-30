@@ -34,9 +34,13 @@ class LegendSelection {
         this.Spacer := this.Gui.AddText("x" (right - 1) " y0 w1 h1")
     }
 
-    ; index: 1-based over the registered rows; 0 hides the bar.
+    ; index: 1-based over the registered rows; 0 hides the bar. Recolors and the bar
+    ; move only invalidate; nothing paints until the one RedrawWindow of the changed
+    ; rows at the end, so the screen goes straight from the old picture to the new.
+    ; (No WM_SETREDRAW: on a top-level window it clears WS_VISIBLE, and DWM can drop
+    ; the whole overlay for a frame.)
     Select(index) {
-        static WM_SETREDRAW := 0x0B, RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
+        static RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
         changed := []
         if index != this.Index {
             if this.Index
@@ -47,28 +51,20 @@ class LegendSelection {
         this.LastChanged := changed
         if !changed.Length
             return
-        hwnd := this.Gui.Hwnd
-        visible := DllCall("IsWindowVisible", "Ptr", hwnd)   ; WM_SETREDRAW TRUE would show a hidden window
-        if visible
-            DllCall("SendMessageW", "Ptr", hwnd, "UInt", WM_SETREDRAW, "Ptr", 0, "Ptr", 0)
-        try {
-            for rowIndex in changed {
-                selected := rowIndex = index
-                for recolor in this.Rows[rowIndex].Recolors
-                    recolor.Ctrl.SetFont("c" (selected ? recolor.Selected : recolor.Normal))
-            }
-            if index {
-                rect := this.Rows[index].Rect
-                this.Bar.Move(rect.X, rect.Y, rect.W, rect.H)
-                this.Bar.Visible := true
-            } else
-                this.Bar.Visible := false
-        } finally {
-            if visible
-                DllCall("SendMessageW", "Ptr", hwnd, "UInt", WM_SETREDRAW, "Ptr", 1, "Ptr", 0)
+        for rowIndex in changed {
+            selected := rowIndex = index
+            for recolor in this.Rows[rowIndex].Recolors
+                recolor.Ctrl.SetFont("c" (selected ? recolor.Selected : recolor.Normal))
         }
+        if index {
+            rect := this.Rows[index].Rect
+            this.Bar.Move(rect.X, rect.Y, rect.W, rect.H)
+            this.Bar.Visible := true
+        } else
+            this.Bar.Visible := false
         this.Index := index
-        if !visible
+        hwnd := this.Gui.Hwnd
+        if !DllCall("IsWindowVisible", "Ptr", hwnd)
             return
         area := Buffer(16)
         for rowIndex in changed {

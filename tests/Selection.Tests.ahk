@@ -80,3 +80,22 @@ Selection_SpacerClear() {
     } finally
         g.Destroy()
 }
+
+T.Test("Selection: moving never pauses painting on the whole window", Selection_NoTopLevelRedrawPause)
+Selection_NoTopLevelRedrawPause() {
+    static WM_SETREDRAW := 0x0B
+    g := Selection_Window()
+    sel := g.Selection
+    sel.Reserve()
+    g.Show("NA x-3000 y-3000 AutoSize")
+    paused := []
+    watch := (wParam, lParam, msg, hwnd) => (hwnd = g.Hwnd ? paused.Push(wParam) : "")
+    OnMessage(WM_SETREDRAW, watch)
+    try {
+        sel.Select(1), sel.Select(3), sel.Select(2)
+        T.Eq(paused.Length, 0, "WM_SETREDRAW FALSE on a top-level window clears WS_VISIBLE, so DWM can drop it for a frame")
+    } finally {
+        OnMessage(WM_SETREDRAW, watch, 0)
+        g.Destroy()
+    }
+}
