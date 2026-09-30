@@ -525,7 +525,7 @@ class Legend {
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
         layout := picker.LayoutKey "|" theme["density"]
         if this.Gui && state.DrawnLayout == layout {   ; only the cursor moved: no rebuild
-            LegendOverlay.SelectPickerRow(this.Gui, theme, picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0)
+            this.Gui.Selection.Select(picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0)
             return
         }
         state.DrawnLayout := layout

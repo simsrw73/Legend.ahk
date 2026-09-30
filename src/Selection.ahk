@@ -6,8 +6,9 @@
 class LegendSelection {
     __New(gui, color) {
         this.Gui := gui
-        ; created before any row, so the rows' transparent controls draw over it
-        this.Bar := gui.AddProgress("x0 y0 w0 h0 Background" color " Disabled")
+        ; created before any row, so the rows' transparent controls draw over it. A Text
+        ; control, not a Progress: a Progress created at size 0 and moved later draws a border.
+        this.Bar := gui.AddText("x0 y0 w0 h0 Background" color)
         this.Bar.Visible := false
         this.Rows := []
         this.Index := 0

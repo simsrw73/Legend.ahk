@@ -47,71 +47,41 @@ class LegendOverlay {
         }
     }
 
-    static Show(view, theme, measurer, footer, legendLine, pinned, warningCount) {
-        gutter := theme["padding"], spacing := theme["rowSpacing"]
-        ; WS_EX_NOACTIVATE; -DPIScale keeps coordinates in the measurer's physical pixels
-        overlay := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")
+    ; A window with background, margins, a selection bar and the title. Returns
+    ; {Gui, Top, Bottom}: bodies draw from Top and set Bottom.
+    static Frame(theme, title) {
+        overlay := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")   ; WS_EX_NOACTIVATE
         overlay.BackColor := theme["background"]
-        overlay.MarginX := gutter, overlay.MarginY := gutter
+        overlay.MarginX := overlay.MarginY := theme["padding"]
+        overlay.Selection := LegendSelection(overlay, theme["selection"])
+        titleCtrl := this.AddText(overlay, theme, "title", theme["title"], "xm ym", title)
+        titleCtrl.GetPos(, &titleY, , &titleHeight)
+        return {Gui: overlay, Top: titleY + titleHeight + theme["rowSpacing"] * 2, Bottom: 0}
+    }
 
-        title := this.AddText(overlay, theme, "title", theme["title"], "xm ym", StrUpper(view.Title))
-        title.GetPos(, &titleY, , &titleHeight)
-        top := titleY + titleHeight + spacing * 2
-        if legendLine != "" && theme["legend"] = "top" {
-            line := this.AddText(overlay, theme, "body", theme["footer"], "xm y" top, legendLine)
-            line.GetPos(, , , &lineHeight)
-            top += lineHeight + spacing * 2
-        }
-
-        colX := gutter, bottom := top
-        for col in view.Columns {
-            rowY := top
-            for row in col.Rows {
-                size := measurer(row)
-                switch row.Kind {
-                    case "heading":
-                        this.AddText(overlay, theme, "heading", theme["category"], "x" colX " y" (rowY + spacing), row.Text)
-                    case "group":
-                        this.AddText(overlay, theme, "group", theme["group"], "x" colX " y" rowY, row.Text)
-                    default:
-                        keyColor := row.Style = "doc" ? theme["keyDoc"] : theme["keyBound"]
-                        ; the menu cursor's row sits on a selection bar, added first so the
-                        ; transparent text draws over it
-                        selected := row.Selected
-                        if selected
-                            overlay.AddProgress("x" (colX - spacing) " y" rowY " w" (col.Width + spacing * 2) " h" size.H
-                                " Background" theme["selection"] " Disabled")
-                        trans := selected ? " BackgroundTrans" : ""
-                        ; center the key font's line on the description's
-                        keyY := rowY + (measurer.Size(row.Text, "body").H - measurer.Size(row.Key, "key").H) // 2
-                        this.AddText(overlay, theme, "key", keyColor, "x" colX " y" keyY " w" col.KeyWidth trans, row.Key)
-                        textX := colX + col.KeyWidth + gutter
-                        if row.Status != "" {
-                            this.AddText(overlay, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" rowY trans, "●")
-                            textX += measurer.Size("● ", "body").W
-                        }
-                        this.AddText(overlay, theme, "body", selected ? theme["selectionText"] : theme["description"], "x" textX " y" rowY trans, row.Text)
-                }
-                rowY += size.H
-            }
-            bottom := Max(bottom, rowY)
-            colX += col.Width + theme["columnGap"]
-        }
-
-        rowY := bottom + spacing
-        if legendLine != "" && theme["legend"] = "bottom" {
-            line := this.AddText(overlay, theme, "body", theme["footer"], "xm y" rowY, legendLine)
-            line.GetPos(, , , &lineHeight)
-            rowY += lineHeight + spacing
-        }
-        this.AddText(overlay, theme, "footer", theme["footer"], "xm y" rowY, footer)
+    ; The footer (and Alt+/'s pinned and warning badges), then placement.
+    static Finish(frame, theme, footer, pinned := false, warningCount := 0) {
+        overlay := frame.Gui
+        this.AddText(overlay, theme, "footer", theme["footer"], "xm y" (frame.Bottom + theme["rowSpacing"]), footer)
         if pinned
             this.AddText(overlay, theme, "footer", theme["pinned"], "x+24 yp", "📌 pinned")
         if warningCount
             this.AddText(overlay, theme, "footer", theme["warning"], "x+24 yp", "⚠ " warningCount " warning" (warningCount = 1 ? "" : "s"))
-
         this.Place(overlay, theme)
         return overlay
+    }
+
+    static Show(view, theme, measurer, footer, legendLine, pinned, warningCount) {
+        frame := this.Frame(theme, StrUpper(view.Title))
+        LegendTableBody.Draw(frame, view, theme, measurer, legendLine)
+        return this.Finish(frame, theme, footer, pinned, warningCount)
+    }
+
+    ; view: {Title, Rows: [{Text, Detail, Icon, Letter, Selected}], Empty}.
+    static ShowPicker(view, theme, measurer, footer, maxWidth) {
+        frame := this.Frame(theme, view.Title)
+        LegendListBody.Draw(frame, view, theme, measurer, maxWidth)
+        return this.Finish(frame, theme, footer)
     }
 
     ; Rounds the overlay, centers it on the active monitor and shows it without focus.
@@ -124,99 +94,9 @@ class LegendOverlay {
         overlay.Show("NA x" (area.Left + (area.Right - area.Left - width) // 2) " y" (area.Top + (area.Bottom - area.Top - height) // 2))
     }
 
-    ; Moves the selection to row index (1-based on this screen; 0 = none) of an overlay
-    ; drawn by ShowPicker, recoloring only the rows that change.
-    static SelectPickerRow(overlay, theme, index) {
-        static WM_SETREDRAW := 0x0B, RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
-        changed := []
-        ; batch the recolors and the bar move into one paint of just the changed rows
-        DllCall("SendMessageW", "Ptr", overlay.Hwnd, "UInt", WM_SETREDRAW, "Ptr", 0, "Ptr", 0)
-        try {
-            for rowIndex, row in overlay.PickerRows {
-                selected := rowIndex = index
-                if selected = row.Selected
-                    continue
-                row.Selected := selected
-                row.Text.SetFont("c" (selected ? theme["selectionText"] : theme["description"]))
-                row.Detail.SetFont("c" (selected ? theme["selectionText"] : theme["footer"]))
-                changed.Push(row.Y)
-            }
-            bar := overlay.PickerBar
-            if index {
-                bar.Move(, overlay.PickerRows[index].Y)
-                bar.Visible := true
-            } else
-                bar.Visible := false
-        } finally
-            DllCall("SendMessageW", "Ptr", overlay.Hwnd, "UInt", WM_SETREDRAW, "Ptr", 1, "Ptr", 0)
-        bar.GetPos(&barX, , &barW, &barH)
-        rect := Buffer(16)
-        for rowY in changed {
-            NumPut("Int", barX, "Int", rowY, "Int", barX + barW, "Int", rowY + barH, rect)
-            DllCall("RedrawWindow", "Ptr", overlay.Hwnd, "Ptr", rect, "Ptr", 0, "UInt", RDW_REPAINT)
-        }
-    }
-
     static IconSize(theme) => theme["density"] = "compact" ? 16 : 20
 
     static PickerRowHeight(theme, measurer) => Max(this.IconSize(theme), measurer.Size("X", "body").H) + theme["rowSpacing"]
-
-    ; Draws a picker. view: {Title, Rows: [{Text, Detail, Icon, Letter, Selected}], Empty}.
-    ; A row is letter · icon · text · detail; the selected row sits on a selection-colored
-    ; bar (a Progress control added first, so the transparent cells draw over it).
-    static ShowPicker(view, theme, measurer, footer, maxWidth) {
-        gutter := theme["padding"], gap := theme["rowSpacing"]
-        overlay := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")
-        overlay.BackColor := theme["background"]
-        overlay.MarginX := gutter, overlay.MarginY := gutter
-        title := this.AddText(overlay, theme, "title", theme["title"], "xm ym", view.Title)
-        title.GetPos(, &titleY, , &titleHeight)
-        rowY := titleY + titleHeight + gap * 2
-
-        rowH := this.PickerRowHeight(theme, measurer), iconW := this.IconSize(theme)
-        letterW := measurer.Size("W", "key").W
-        textW := 0, detailW := 0
-        for row in view.Rows {
-            textW := Max(textW, measurer.Size(row.Text, "body").W)
-            detailW := Max(detailW, measurer.Size(row.Detail, "body").W)
-        }
-        textW := Max(60, Min(textW, maxWidth - (gap * 5 + iconW + letterW + detailW)))
-        rowW := gap * 5 + iconW + letterW + textW + detailW
-        rowX := gutter - gap   ; content lines up with the title
-
-        if !view.Rows.Length {
-            this.AddText(overlay, theme, "body", theme["footer"], "xm y" rowY, view.Empty)
-            rowY += rowH
-        }
-        ; the selection bar comes first so the transparent cells draw over it; moving the
-        ; cursor later just moves it (SelectPickerRow)
-        bar := overlay.AddProgress("x" rowX " y" rowY " w" rowW " h" rowH " Background" theme["selection"] " Disabled")
-        bar.Visible := false
-        drawn := []
-        for row in view.Rows {
-            textColor := row.Selected ? theme["selectionText"] : theme["description"]
-            detailColor := row.Selected ? theme["selectionText"] : theme["footer"]
-            if row.Selected {
-                bar.Move(, rowY)
-                bar.Visible := true
-            }
-            cellX := rowX + gap
-            this.AddText(overlay, theme, "key", theme["keyBound"], "x" cellX " y" rowY " w" letterW " h" rowH " BackgroundTrans +0x200", row.Letter)
-            cellX += letterW + gap
-            if row.Icon
-                overlay.AddPicture("x" cellX " y" (rowY + (rowH - iconW) // 2) " w" iconW " h" iconW " BackgroundTrans", "HICON:*" row.Icon)
-            cellX += iconW + gap
-            textCtrl := this.AddText(overlay, theme, "body", textColor, "x" cellX " y" rowY " w" textW " h" rowH " BackgroundTrans +0x4200", row.Text)
-            cellX += textW + gap
-            detailCtrl := this.AddText(overlay, theme, "body", detailColor, "x" cellX " y" rowY " w" detailW " h" rowH " BackgroundTrans +0x202", row.Detail)
-            drawn.Push({Text: textCtrl, Detail: detailCtrl, Y: rowY, Selected: row.Selected})
-            rowY += rowH
-        }
-        overlay.PickerBar := bar, overlay.PickerRows := drawn
-        this.AddText(overlay, theme, "footer", theme["footer"], "xm y" (rowY + gap), footer)
-        this.Place(overlay, theme)
-        return overlay
-    }
 
     ; Height Show adds around the columns: padding, title, legend line (when the
     ; theme shows one) and footer, measured with the theme's fonts.
@@ -257,5 +137,104 @@ class LegendOverlay {
         colorRgb := Integer("0x" theme["border"])
         colorBgr := ((colorRgb & 0xFF) << 16) | (colorRgb & 0xFF00) | ((colorRgb >> 16) & 0xFF)
         DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_BORDER_COLOR, "UInt*", colorBgr, "UInt", 4)
+    }
+}
+
+; Alt+/ and chord bodies: columns of headings, groups and key/description entries.
+; Menu levels (view.SelectedIndex > 0) register their entries with the selection.
+class LegendTableBody {
+    static Draw(frame, view, theme, measurer, legendLine) {
+        overlay := frame.Gui, gutter := theme["padding"], spacing := theme["rowSpacing"]
+        top := frame.Top
+        if legendLine != "" && theme["legend"] = "top" {
+            line := LegendOverlay.AddText(overlay, theme, "body", theme["footer"], "xm y" top, legendLine)
+            line.GetPos(, , , &lineHeight)
+            top += lineHeight + spacing * 2
+        }
+        selection := overlay.Selection
+        selectable := view.HasOwnProp("SelectedIndex") && view.SelectedIndex > 0
+        colX := gutter, bottom := top
+        for col in view.Columns {
+            rowY := top
+            for row in col.Rows {
+                size := measurer(row)
+                switch row.Kind {
+                    case "heading":
+                        LegendOverlay.AddText(overlay, theme, "heading", theme["category"], "x" colX " y" (rowY + spacing), row.Text)
+                    case "group":
+                        LegendOverlay.AddText(overlay, theme, "group", theme["group"], "x" colX " y" rowY, row.Text)
+                    default:
+                        keyColor := row.Style = "doc" ? theme["keyDoc"] : theme["keyBound"]
+                        ; center the key font's line on the description's
+                        keyY := rowY + (measurer.Size(row.Text, "body").H - measurer.Size(row.Key, "key").H) // 2
+                        LegendOverlay.AddText(overlay, theme, "key", keyColor, "x" colX " y" keyY " w" col.KeyWidth " BackgroundTrans", row.Key)
+                        textX := colX + col.KeyWidth + gutter
+                        if row.Status != "" {
+                            LegendOverlay.AddText(overlay, theme, "body", row.Status ? theme["indicatorOn"] : theme["indicatorOff"], "x" textX " y" rowY " BackgroundTrans", "●")
+                            textX += measurer.Size("● ", "body").W
+                        }
+                        textCtrl := LegendOverlay.AddText(overlay, theme, "body", theme["description"], "x" textX " y" rowY " BackgroundTrans", row.Text)
+                        if selectable
+                            selection.Add({X: colX - spacing, Y: rowY, W: col.Width + spacing * 2, H: size.H},
+                                [{Ctrl: textCtrl, Normal: theme["description"], Selected: theme["selectionText"]}])
+                }
+                rowY += size.H
+            }
+            bottom := Max(bottom, rowY)
+            colX += col.Width + theme["columnGap"]
+        }
+        if legendLine != "" && theme["legend"] = "bottom" {
+            line := LegendOverlay.AddText(overlay, theme, "body", theme["footer"], "xm y" (bottom + spacing), legendLine)
+            line.GetPos(, , , &lineHeight)
+            bottom += spacing + lineHeight
+        }
+        frame.Bottom := bottom
+        if selectable {
+            selection.Reserve()
+            selection.Select(view.SelectedIndex)
+        }
+    }
+}
+
+; Picker body: letter · icon · text · detail rows, every row selectable.
+class LegendListBody {
+    static Draw(frame, view, theme, measurer, maxWidth) {
+        overlay := frame.Gui, gutter := theme["padding"], gap := theme["rowSpacing"]
+        rowY := frame.Top
+        rowH := LegendOverlay.PickerRowHeight(theme, measurer), iconW := LegendOverlay.IconSize(theme)
+        letterW := measurer.Size("W", "key").W
+        textW := 0, detailW := 0
+        for row in view.Rows {
+            textW := Max(textW, measurer.Size(row.Text, "body").W)
+            detailW := Max(detailW, measurer.Size(row.Detail, "body").W)
+        }
+        textW := Max(60, Min(textW, maxWidth - (gap * 5 + iconW + letterW + detailW)))
+        rowW := gap * 5 + iconW + letterW + textW + detailW
+        rowX := gutter - gap   ; content lines up with the title
+        if !view.Rows.Length {
+            LegendOverlay.AddText(overlay, theme, "body", theme["footer"], "xm y" rowY, view.Empty)
+            rowY += rowH
+        }
+        selection := overlay.Selection, selectedIndex := 0
+        for row in view.Rows {
+            cellX := rowX + gap
+            LegendOverlay.AddText(overlay, theme, "key", theme["keyBound"], "x" cellX " y" rowY " w" letterW " h" rowH " BackgroundTrans +0x200", row.Letter)
+            cellX += letterW + gap
+            if row.Icon
+                overlay.AddPicture("x" cellX " y" (rowY + (rowH - iconW) // 2) " w" iconW " h" iconW " BackgroundTrans", "HICON:*" row.Icon)
+            cellX += iconW + gap
+            textCtrl := LegendOverlay.AddText(overlay, theme, "body", theme["description"], "x" cellX " y" rowY " w" textW " h" rowH " BackgroundTrans +0x4200", row.Text)
+            cellX += textW + gap
+            detailCtrl := LegendOverlay.AddText(overlay, theme, "body", theme["footer"], "x" cellX " y" rowY " w" detailW " h" rowH " BackgroundTrans +0x202", row.Detail)
+            selection.Add({X: rowX, Y: rowY, W: rowW, H: rowH},
+                [{Ctrl: textCtrl, Normal: theme["description"], Selected: theme["selectionText"]},
+                 {Ctrl: detailCtrl, Normal: theme["footer"], Selected: theme["selectionText"]}])
+            if row.Selected
+                selectedIndex := A_Index
+            rowY += rowH
+        }
+        frame.Bottom := rowY
+        selection.Reserve()
+        selection.Select(selectedIndex)
     }
 }
