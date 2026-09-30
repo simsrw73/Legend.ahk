@@ -25,4 +25,20 @@ Legend.Chord("^!+Space", "Demo chords", [
     Legend.Run("1-3", "Show a digit", key => MsgBox("You pressed " key))
 ])
 
+; Ctrl+Alt+Shift+P: a picker. j/k or Ctrl+N/P move, a letter or Enter picks, / filters,
+; h/l switch between the two scopes, Esc cancels.
+Legend.Picker("^!+p", "Colors", scope => DemoColors(scope), {
+    OnPick: item => MsgBox("You picked " item.Text),
+    Scopes: ["warm", "cool"]
+})
+
+DemoColors(scope) {
+    names := scope = "warm" ? ["Red", "Orange", "Yellow", "Coral", "Amber", "Crimson"]
+        : ["Blue", "Teal", "Green", "Cyan", "Indigo", "Violet"]
+    items := []
+    for name in names
+        items.Push({Text: name, Detail: scope})
+    return items
+}
+
 Legend.Start({Pages: [A_ScriptDir "\pages"]})

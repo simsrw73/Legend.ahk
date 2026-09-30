@@ -151,10 +151,10 @@ class LegendPicker {
     ; +1 / -1 for keys that move in both modes (and, in normal mode, the bare
     ; trigger key), else 0.
     Step(key, bare) {
-        id := key.Id
-        if id == this.TriggerId || id == "Down" || id == "Ctrl+N" || bare && this.Bare(key, "")
+        keyId := key.Id
+        if keyId == this.TriggerId || keyId == "Down" || keyId == "Ctrl+N" || bare && this.Bare(key, "")
             return 1
-        if id == this.ShiftTriggerId || id == "Up" || id == "Ctrl+P" || bare && this.Bare(key, "Shift")
+        if keyId == this.ShiftTriggerId || keyId == "Up" || keyId == "Ctrl+P" || bare && this.Bare(key, "Shift")
             return -1
         return 0
     }
