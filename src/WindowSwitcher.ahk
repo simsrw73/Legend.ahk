@@ -140,17 +140,17 @@ class LegendPeek {
     }
 
     Show(win) {
-        static GW_HWNDPREV := 3, GWL_EXSTYLE := -20, WS_EX_TOPMOST := 0x8
+        static GW_HWNDPREV := 3
         static SWP_QUIET := 0x13   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
         this.Clear(true)
         if !IsObject(win) || win.Minimized || win.Cloaked || !DllCall("IsWindow", "Ptr", win.Hwnd)
             return
-        ; the nearest non-topmost window above it: restoring behind a topmost window
-        ; would make it topmost
+        ; the nearest visible, non-topmost window above it: restoring behind a topmost
+        ; window would make it topmost, and an invisible one may be gone by then
         above := win.Hwnd
         loop {
             above := DllCall("GetWindow", "Ptr", above, "UInt", GW_HWNDPREV, "Ptr")
-            if !above || !(DllCall("GetWindowLongPtrW", "Ptr", above, "Int", GWL_EXSTYLE, "Ptr") & WS_EX_TOPMOST)
+            if !above || LegendPeek.IsAnchor(above)
                 break
         }
         this.Raised := win.Hwnd, this.Above := above
@@ -167,6 +167,13 @@ class LegendPeek {
         if LegendPeek.ShouldRestore(restore, this.Raised, this.Above, WinExist("A")) && DllCall("IsWindow", "Ptr", this.Raised)
             DllCall("SetWindowPos", "Ptr", this.Raised, "Ptr", this.Above, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", SWP_QUIET)
         this.Raised := 0, this.Above := 0
+    }
+
+    ; A window the peeked one can be put back behind.
+    static IsAnchor(hwnd) {
+        static GWL_EXSTYLE := -20, WS_EX_TOPMOST := 0x8
+        return DllCall("IsWindowVisible", "Ptr", hwnd)
+            && !(DllCall("GetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr") & WS_EX_TOPMOST)
     }
 
     ; Put the raised window back only when asked, when there is an anchor, and when the

@@ -61,3 +61,18 @@ Controller_HighlightNothing() {
     } finally
         Legend.ClosePicker(false)
 }
+
+T.Test("Peek: only visible, non-topmost windows anchor a restore", Peek_Anchor)
+Peek_Anchor() {
+    hidden := Gui("-Caption +ToolWindow")
+    topmost := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x08000000")
+    plain := Gui("-Caption +ToolWindow +E0x08000000")
+    topmost.Show("NA x-3000 y-3000 w20 h20")
+    plain.Show("NA x-3000 y-2900 w20 h20")
+    try {
+        T.True(!LegendPeek.IsAnchor(hidden.Hwnd), "hidden")
+        T.True(!LegendPeek.IsAnchor(topmost.Hwnd), "topmost")
+        T.True(LegendPeek.IsAnchor(plain.Hwnd), "visible, not topmost")
+    } finally
+        hidden.Destroy(), topmost.Destroy(), plain.Destroy()
+}
