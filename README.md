@@ -114,7 +114,8 @@ for the active window; only a match given in code makes hotkeys app-specific.
 `Legend.Start({Themes: [folder], Theme: "name"})` loads `name.ini` from your
 folders or Legend's `themes/`; `"auto"` (default) follows Windows light/dark
 with Catppuccin Latte/Mocha. Settings: `[colors]` background, border, title,
-category, group, keyBound, keyDoc, description, footer, pinned, warning;
+category, group, keyBound, keyDoc, description, footer, pinned, warning,
+selection, selectionText, outline (pickers; default border, description, category);
 `[fonts]` uiFont, keyFont, titleSize, headingSize, bodySize; `[layout]`
 density (comfortable/compact), padding, rowSpacing, maxColumns,
 maxHeightPercent, maxWidthPercent, opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),

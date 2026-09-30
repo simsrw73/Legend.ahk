@@ -19,6 +19,9 @@ class LegendTheme {
         ["colors", "warning", "color", "FAB387"],
         ["colors", "indicatorOn", "color", "A6E3A1"],
         ["colors", "indicatorOff", "color", "45475A"],
+        ["colors", "selection", "color", ""],       ; "" = border
+        ["colors", "selectionText", "color", ""],   ; "" = description
+        ["colors", "outline", "color", ""],         ; "" = category
         ["fonts", "uiFont", "font", "Segoe UI"],
         ["fonts", "keyFont", "font", "Consolas"],
         ["fonts", "titleSize", "int:6:48", 9],
@@ -57,6 +60,9 @@ class LegendTheme {
         resolved["columnGap"] := preset.columnGap
         if resolved["legend"] = "auto"
             resolved["legend"] := resolved["keyStyle"] = "text" ? "off" : "bottom"
+        for name, fallback in Map("selection", "border", "selectionText", "description", "outline", "category")
+            if resolved[name] = ""
+                resolved[name] := resolved[fallback]
         return resolved
     }
 
