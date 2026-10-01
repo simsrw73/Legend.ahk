@@ -37,3 +37,23 @@ Tray_MatchNone() {
     T.Eq(LegendTray.Match("Sign in to Blip", entries), "")
     T.Eq(LegendTray.Match("", entries), "")
 }
+
+T.Test("Tray: UI Automation reads a window's elements", Tray_UIA)
+Tray_UIA() {
+    g := Gui("-Caption +ToolWindow +E0x08000000", "LegendUIATest")
+    g.AddButton("vProbe w80", "Probe button")
+    g.Show("NA x-3000 y-3000")
+    try {
+        root := LegendUIA.FromHandle(g.Hwnd)
+        T.True(IsObject(root), "element from handle")
+        buttons := root.FindAll(LegendUIA.Descendants, LegendUIA.NameProperty, "Probe button")
+        T.Eq(buttons.Length, 1)
+        T.Eq(buttons[1].Name, "Probe button")
+        T.True(buttons[1].Rect.W > 0)
+        T.Eq(root.FindFirst(LegendUIA.Descendants, LegendUIA.NameProperty, "missing"), "")
+        T.Eq(root.Hwnd, g.Hwnd, "native window handle")
+        top := LegendUIA.Root().FindFirst(LegendUIA.Children, LegendUIA.NameProperty, "LegendUIATest")
+        T.True(IsObject(top) && top.Hwnd = g.Hwnd, "found from the desktop root")
+    } finally
+        g.Destroy()
+}
