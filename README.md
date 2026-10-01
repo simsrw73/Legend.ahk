@@ -182,6 +182,28 @@ Ctrl+Alt+Shift+/ for the overlay) so they run alongside your own script.
 | `04-chords.ahk` | a chord menu with a submenu, a running dot, a condition, sent keys and a key range |
 | `05-picker.ahk` | `Legend.Picker` with two scopes, details, a fixed letter and callbacks |
 | `06-window-switcher.ahk` | `Legend.WindowSwitcher` on two scopes with a Detail hook, and `LegendWindows.Focus` for directional focus |
+| `07-tray-picker.ahk` | the tray picker extra: every notification-area icon, Enter to click, Shift+Enter for its menu |
+
+## Extras (may break with Windows updates)
+
+Opt-in features that depend on how Windows builds its own UI. `Legend.ahk` does
+not load them; include them yourself after it.
+
+**Tray picker** (`extras/Tray.ahk`): `LegendTray.Picker("!t")` lists every
+notification-area icon (visible, hidden in the "Show hidden icons" flyout, and
+system icons) in a picker. Enter or a letter left-clicks the icon, Shift+Enter
+opens its context menu, `/` filters. It reads Windows 11's taskbar through UI
+Automation (tested on build 26220). Hidden icons are read by opening the flyout
+invisibly for a moment; at most a frame of it may show. Icons are matched to apps
+through Windows' NotifyIconSettings list only when the match is certain. If
+Windows changes the taskbar, the picker shows "Tray not available on this
+Windows version" instead of failing.
+
+```ahk
+#Include Lib\Legend\Legend.ahk
+#Include Lib\Legend\extras\Tray.ahk
+LegendTray.Picker("!t")
+```
 
 ## Development
 
