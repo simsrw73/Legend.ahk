@@ -167,14 +167,14 @@ class LegendTray {
     static ExeName(path) => RegExReplace(RegExReplace(path, ".*\\"), "i)\.exe$")
 
     ; The entry ({Exe, Tip}) confidently behind tray name, or "": the entry's
-    ; tooltip equals or starts the name's first line, or the exe's name is the
-    ; name's first word(s) followed by a non-word character or the end.
+    ; tooltip, or the exe's name, starts the name's first line and ends where a word
+    ; ends there (the tooltip "Ever" doesn't match "Everything").
     static Match(name, entries) {
         first := this.Clean(name)
         if first = ""
             return ""
         for entry in entries
-            if entry.Tip != "" && (first = entry.Tip || SubStr(first, 1, StrLen(entry.Tip)) = entry.Tip)
+            if entry.Tip != "" && RegExMatch(first, "i)^\Q" entry.Tip "\E(?![A-Za-z0-9])")
                 return entry
         for entry in entries {
             exe := this.ExeName(entry.Exe)
@@ -229,49 +229,72 @@ class LegendTray {
         return ""
     }
 
-    ; Sets the flyout fully transparent (layered, alpha 0); returns its old ex-style.
+    ; Makes hwnd fully transparent; returns what Unhide needs to put it back,
+    ; including its own transparency if it was already a layered window.
     static Hide(hwnd) {
         static GWL_EXSTYLE := -20, WS_EX_LAYERED := 0x80000, LWA_ALPHA := 0x2
-        exStyle := DllCall("GetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr")
-        DllCall("SetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr", exStyle | WS_EX_LAYERED)
+        state := {ExStyle: DllCall("GetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr"), Layered: false}
+        if state.ExStyle & WS_EX_LAYERED {
+            key := 0, alpha := 0, flags := 0
+            if DllCall("GetLayeredWindowAttributes", "Ptr", hwnd, "UInt*", &key, "UChar*", &alpha, "UInt*", &flags)
+                state.Layered := true, state.Key := key, state.Alpha := alpha, state.Flags := flags
+        }
+        DllCall("SetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr", state.ExStyle | WS_EX_LAYERED)
         DllCall("SetLayeredWindowAttributes", "Ptr", hwnd, "UInt", 0, "UChar", 0, "UInt", LWA_ALPHA)
-        return exStyle
+        return state
     }
 
-    static Unhide(hwnd, exStyle) {
+    static Unhide(hwnd, state) {
         static GWL_EXSTYLE := -20
-        DllCall("SetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr", exStyle)
+        if state.Layered
+            DllCall("SetLayeredWindowAttributes", "Ptr", hwnd, "UInt", state.Key, "UChar", state.Alpha, "UInt", state.Flags)
+        DllCall("SetWindowLongPtrW", "Ptr", hwnd, "Int", GWL_EXSTYLE, "Ptr", state.ExStyle)
     }
 
     ; Runs fn(flyout) with the flyout open (and invisible when Legend opened it),
-    ; then closes it again unless it was already open. fn gets "" when it can't open.
+    ; then closes it again unless it was already open: first the close, then (once it
+    ; is gone) its transparency is undone, so it never shows while it animates away.
+    ; fn gets "" when the flyout can't be opened.
     static WithFlyout(root, fn) {
         if flyout := this.Flyout()
             return fn(flyout)
         if !(chevron := this.Chevron(root)) || !(flyout := this.OpenFlyout(chevron))
             return fn("")
-        hwnd := flyout.Hwnd, exStyle := this.Hide(hwnd)
-        try
+        hwnd := 0, state := ""
+        try {
+            hwnd := flyout.Hwnd, state := this.Hide(hwnd)
             return fn(flyout)
-        finally {
-            this.Unhide(hwnd, exStyle)
-            if this.FlyoutOpen()
+        } finally {
+            if this.FlyoutOpen() {
                 chevron.Invoke()
+                deadline := A_TickCount + 1000
+                while this.FlyoutOpen() && A_TickCount < deadline
+                    Sleep(10)
+            }
+            if IsObject(state)
+                this.Unhide(hwnd, state)
         }
     }
 
+    ; Every tray icon: [{Name, Text, Kind, Hidden, Ordinal, Index}]. Index is the icon's
+    ; place among the elements Nth searches, for icons whose tooltip changes. Any UI
+    ; Automation failure (the taskbar recreated, Explorer restarting, an icon gone
+    ; mid-read) gives [] and Available false instead of an error.
     static List() {
         this.Available := false
-        if !(root := this.Root())
+        try {
+            if !(root := this.Root())
+                return []
+            items := []
+            for element in root.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, this.AppIconId)
+                items.Push({Name: element.Name, Kind: "app", Hidden: false, Index: A_Index})
+            this.WithFlyout(root, flyout => this.AddHidden(items, flyout))
+            firstAppX := this.FirstAppX(root)
+            for element in root.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, this.SystemIconId)
+                if !this.IsChevron(element, firstAppX)
+                    items.Push({Name: element.Name, Kind: "system", Hidden: false, Index: A_Index})
+        } catch
             return []
-        items := []
-        for element in root.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, this.AppIconId)
-            items.Push({Name: element.Name, Kind: "app", Hidden: false})
-        this.WithFlyout(root, flyout => this.AddHidden(items, flyout))
-        firstAppX := this.FirstAppX(root)
-        for element in root.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, this.SystemIconId)
-            if !this.IsChevron(element, firstAppX)
-                items.Push({Name: element.Name, Kind: "system", Hidden: false})
         if !items.Length
             return []
         for item in items
@@ -284,18 +307,28 @@ class LegendTray {
         if !flyout
             return
         for element in flyout.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, this.AppIconId)
-            items.Push({Name: element.Name, Kind: "app", Hidden: true})
+            items.Push({Name: element.Name, Kind: "app", Hidden: true, Index: A_Index})
     }
 
-    ; The live element for item inside scopeRoot: same Name, the Ordinal-th one.
+    ; The live element for item inside scopeRoot: the Ordinal-th one with the same
+    ; Name; failing that (tooltips like the clock's change), the element in item's
+    ; place if its name still starts with the same word. "" when neither.
     static Nth(scopeRoot, item) {
         kindId := item.Kind = "system" ? this.SystemIconId : this.AppIconId
+        elements := scopeRoot.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, kindId)
         seen := 0
-        for element in scopeRoot.FindAll(LegendUIA.Descendants, LegendUIA.AutomationIdProperty, kindId)
+        for element in elements
             if element.Name == item.Name && ++seen = item.Ordinal
                 return element
+        if item.HasOwnProp("Index") && item.Index <= elements.Length {
+            element := elements[item.Index]
+            if this.FirstWord(element.Name) != "" && this.FirstWord(element.Name) = this.FirstWord(item.Name)
+                return element
+        }
         return ""
     }
+
+    static FirstWord(name) => RegExMatch(this.Clean(name), "^[^\s:]+", &found) ? found[0] : ""
 
     static Missing() {
         ToolTip("Tray icon not found")
@@ -305,11 +338,14 @@ class LegendTray {
     ; Left-click: Invoke. A hidden icon is clicked inside the invisible flyout, which
     ; closes again afterwards.
     static Click(item) {
-        if !(root := this.Root())
-            return this.Missing()
-        if !item.Hidden
-            return (element := this.Nth(root, item)) ? element.Invoke() : this.Missing()
-        this.WithFlyout(root, flyout => this.InvokeIn(flyout, item))
+        try {
+            if !(root := this.Root())
+                return this.Missing()
+            if !item.Hidden
+                return (element := this.Nth(root, item)) ? element.Invoke() : this.Missing()
+            this.WithFlyout(root, flyout => this.InvokeIn(flyout, item))
+        } catch
+            this.Missing()
     }
 
     static InvokeIn(flyout, item) {
@@ -323,18 +359,21 @@ class LegendTray {
     ; icon's flyout opens visibly and stays open under the menu. (Focus + Shift+F10
     ; from a background script was unreliable: no menu, or one far from the icon.)
     static Menu(item) {
-        if !(root := this.Root())
-            return this.Missing()
-        scopeRoot := root
-        if item.Hidden {
-            if !(scopeRoot := this.Flyout()) {
-                chevron := this.Chevron(root)
-                scopeRoot := chevron ? this.OpenFlyout(chevron) : ""
+        try {
+            if !(root := this.Root())
+                return this.Missing()
+            scopeRoot := root
+            if item.Hidden {
+                if !(scopeRoot := this.Flyout()) {
+                    chevron := this.Chevron(root)
+                    scopeRoot := chevron ? this.OpenFlyout(chevron) : ""
+                }
             }
-        }
-        if !scopeRoot || !(element := this.Nth(scopeRoot, item))
-            return this.Missing()
-        this.RightClick(element.Rect)
+            if !scopeRoot || !(element := this.Nth(scopeRoot, item))
+                return this.Missing()
+            this.RightClick(element.Rect)
+        } catch
+            this.Missing()
     }
 
     ; Right-clicks the middle of rect (physical pixels) and restores the pointer. The

@@ -78,10 +78,102 @@ Tray_FlyoutRestored() {
         return T.Out("skip Tray_FlyoutRestored: tray layout not recognized")
     T.True(items.Length > 0, "at least one tray icon")
     for item in items
-        T.True(item.HasOwnProp("Ordinal") && (item.Kind = "app" || item.Kind = "system"), item.Text)
+        T.True(item.HasOwnProp("Ordinal") && item.HasOwnProp("Index") && (item.Kind = "app" || item.Kind = "system"), item.Text)
     T.True(!LegendTray.FlyoutOpen(), "flyout closed again")
     chevron := LegendTray.Chevron(LegendTray.Root())
     if chevron
         for item in items
             T.True(item.Kind = "app" || item.Name != chevron.Name, "the Show Hidden Icons button is not an icon")
+}
+
+; Stand-ins for UI Automation elements and scopes.
+class Tray_FakeElement {
+    __New(name, x := 0) {
+        this.Name := name
+        this.Rect := {X: x, Y: 0, W: 10, H: 10}
+    }
+    Invoke() => ""
+}
+class Tray_FakeScope {
+    __New(elements) => this.Elements := elements
+    FindAll(scope, property, value) => this.Elements
+}
+class Tray_ThrowingRoot {
+    FindAll(scope, property, value) {
+        throw OSError("element not available")
+    }
+}
+
+T.Test("Tray: a COM error while reading gives not available, not an error", Tray_ComError)
+Tray_ComError() {
+    saved := LegendTray.GetOwnPropDesc("Root")
+    LegendTray.DefineProp("Root", {Call: (*) => Tray_ThrowingRoot()})
+    try {
+        T.Eq(LegendTray.List().Length, 0)
+        T.True(!LegendTray.Available)
+        icon := {Name: "x", Kind: "app", Hidden: false, Ordinal: 1, Index: 1}
+        LegendTray.Click(icon)   ; must not throw
+        LegendTray.Menu(icon)
+    } finally {
+        LegendTray.DefineProp("Root", saved)
+        LegendTray.Available := true
+        ToolTip()
+    }
+}
+
+T.Test("Tray: an icon whose tooltip changed is still found by its place", Tray_NthChangedName)
+Tray_NthChangedName() {
+    scope := Tray_FakeScope([Tray_FakeElement("Privacy"), Tray_FakeElement("Clock 10:42"), Tray_FakeElement("Volume 10%")])
+    clock := {Name: "Clock 10:41", Kind: "system", Hidden: false, Ordinal: 1, Index: 2}
+    T.Eq(LegendTray.Nth(scope, clock).Name, "Clock 10:42")
+    other := {Name: "Battery 50%", Kind: "system", Hidden: false, Ordinal: 1, Index: 2}
+    T.Eq(LegendTray.Nth(scope, other), "", "a different icon in that place is not a match")
+    exact := {Name: "Volume 10%", Kind: "system", Hidden: false, Ordinal: 1, Index: 1}
+    T.Eq(LegendTray.Nth(scope, exact).Name, "Volume 10%", "an exact name wins over the place")
+}
+
+T.Test("Tray: the flyout closes before it is made visible again", Tray_CloseBeforeUnhide)
+Tray_CloseBeforeUnhide() {
+    calls := [], isOpen := false
+    chevron := {Invoke: (*) => (calls.Push(isOpen ? "close" : "open"), isOpen := !isOpen)}
+    flyout := {Hwnd: 123}
+    names := ["Flyout", "Chevron", "Hide", "Unhide"]
+    saved := Map()
+    for name in names
+        saved[name] := LegendTray.GetOwnPropDesc(name)
+    LegendTray.DefineProp("Flyout", {Call: (*) => isOpen ? flyout : ""})
+    LegendTray.DefineProp("Chevron", {Call: (*) => chevron})
+    LegendTray.DefineProp("Hide", {Call: (*) => (calls.Push("hide"), {})})
+    LegendTray.DefineProp("Unhide", {Call: (*) => calls.Push(isOpen ? "unhide while open" : "unhide")})
+    try {
+        LegendTray.WithFlyout({}, found => calls.Push("read"))
+        text := ""
+        for call in calls
+            text .= (A_Index > 1 ? ", " : "") call
+        T.Eq(text, "open, hide, read, close, unhide")
+    } finally {
+        for name in names
+            LegendTray.DefineProp(name, saved[name])
+    }
+}
+
+T.Test("Tray: hiding a window that was already layered restores its transparency", Tray_HideRestoresAlpha)
+Tray_HideRestoresAlpha() {
+    g := Gui("-Caption +ToolWindow +E0x08000000")
+    g.Show("NA x-3000 y-3000 w20 h20")
+    WinSetTransparent(200, g)
+    try {
+        LegendTray.Unhide(g.Hwnd, LegendTray.Hide(g.Hwnd))
+        key := 0, alpha := 0, flags := 0
+        DllCall("GetLayeredWindowAttributes", "Ptr", g.Hwnd, "UInt*", &key, "UChar*", &alpha, "UInt*", &flags)
+        T.Eq(alpha, 200)
+    } finally
+        g.Destroy()
+}
+
+T.Test("Tray: a tooltip prefix must end where a word ends", Tray_MatchTipWord)
+Tray_MatchTipWord() {
+    entries := [{Exe: "C:\x\Ever.exe", Tip: "Ever"}]
+    T.Eq(LegendTray.Match("Everything", entries), "")
+    T.Eq(LegendTray.Match("Ever 2.0", entries).Tip, "Ever")
 }
