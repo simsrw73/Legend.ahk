@@ -1,5 +1,14 @@
 # Legend tray picker (extra): design
 
+> **Shelved 2026-10-01.** Built and reviewed on the local branch
+> `shelved/tray-picker`, then backed out after hand testing: too flaky to ship.
+> On the author's machine the first hotkey press flashed the overflow flyout and
+> the picker, then closed it (the second press worked); Shift+Enter's real
+> right-click left the flyout and the app's menu open at the tray, as if a mouse
+> had done it. Reading the tray through UI Automation works; acting on it from a
+> background script is the weak part. A future attempt should start there (for
+> example, yasb-style callback messages; see "Alternatives considered").
+
 A picker over the notification area (system tray): every tray icon, visible or
 hidden, by name; Enter left-clicks the selected icon, Shift+Enter opens its
 context menu. It is an **extra**: walled off from Legend's core, opt-in, and
