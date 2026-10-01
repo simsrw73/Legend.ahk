@@ -31,6 +31,8 @@
 #Include %A_ScriptDir%\Picker.Tests.ahk
 #Include %A_ScriptDir%\..\src\Windows.ahk
 #Include %A_ScriptDir%\Windows.Tests.ahk
+#Include %A_ScriptDir%\..\extras\Tray.ahk
+#Include %A_ScriptDir%\Tray.Tests.ahk
 #Include %A_ScriptDir%\..\Legend.ahk
 #Include %A_ScriptDir%\Controller.Tests.ahk
 
