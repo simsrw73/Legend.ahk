@@ -84,7 +84,7 @@ density, Esc cancels. Items are
 `{Text, Detail?, Icon?, Letter?, Data?}`. Options: `OnPick` (required),
 `OnHighlight` (gets `""` when a filter leaves nothing selected), `OnCancel`, `Start` (row selected at open), `Scopes`, `Scope`,
 `Density`, `Match`, `Reference` (pickers are listed on a "Pickers" page in
-Alt+/). Letters are assigned home row first and never use h/j/k/l or the
+Alt+/). `OnAltPick` (with `AltPickLabel`) adds a second action on Shift+Enter. Letters are assigned home row first and never use h/j/k/l or the
 trigger's key.
 
 ## Window switcher

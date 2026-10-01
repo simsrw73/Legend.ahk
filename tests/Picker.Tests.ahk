@@ -364,3 +364,22 @@ Picker_FooterKeys() {
     T.Eq(q.Footer("compact"), "↵ pick   ·   ^n/^p move   ·   ^t scope   ·   esc clear   ·   ^f/^b 1/2")
     T.Eq(Picker_New(3).Footer("compact"), "↵ pick   ·   ^n/^p move   ·   / filter   ·   = compact   ·   esc close")
 }
+
+T.Test("Picker: Shift+Enter alt-picks only with OnAltPick", Picker_AltPick)
+Picker_AltPick() {
+    p := Picker_New(3, {OnAltPick: Noop, AltPickLabel: "menu"})
+    T.Eq(p.Key(Picker_Key("Shift+Enter")), "altpick")
+    p.Key(Picker_Key("/"))
+    T.Eq(p.Key(Picker_Key("Shift+Enter")), "altpick", "also while filtering")
+    T.Eq(p.KeyBatch([Picker_Key("Shift+Enter"), Picker_Key("j")]).Action, "altpick")
+    T.True(InStr(Picker_New(3, {OnAltPick: Noop, AltPickLabel: "menu"}).Footer("compact"), "↵ pick   ·   ⇧↵ menu   ·   ^n/^p move"))
+}
+
+T.Test("Picker: Shift+Enter does nothing without OnAltPick", Picker_AltPickOff)
+Picker_AltPickOff() {
+    p := Picker_New(3)
+    T.Eq(p.Key(Picker_Key("Shift+Enter")), "none")
+    T.True(!InStr(p.Footer("compact"), "⇧↵"))
+    empty := Picker_New(0, {OnAltPick: Noop})
+    T.Eq(empty.Key(Picker_Key("Shift+Enter")), "none", "nothing selected")
+}

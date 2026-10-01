@@ -637,6 +637,11 @@ class Legend {
                 this.ClosePickerNow(false)
                 onPick := picker.OnPick
                 this.Defer(() => onPick(item))
+            case "altpick":
+                item := picker.Selected
+                this.ClosePickerNow(false)
+                onAltPick := picker.OnAltPick
+                this.Defer(() => onAltPick(item))
             case "cancel":
                 this.ClosePickerNow(true)
         }

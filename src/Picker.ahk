@@ -16,6 +16,8 @@ class LegendPicker {
             throw ValueError("picker '" title "': OnPick is required", -2)
         this.OnHighlight := opt("OnHighlight", "")
         this.OnCancel := opt("OnCancel", "")
+        this.OnAltPick := opt("OnAltPick", "")
+        this.AltPickLabel := opt("AltPickLabel", "alt")
         this.Start := opt("Start", 1)
         this.Scopes := opt("Scopes", [])
         this.StartScope := opt("Scope", this.Scopes.Length ? this.Scopes[1] : "")
@@ -90,6 +92,7 @@ class LegendPicker {
             case "PgUp", "Ctrl+B": return this.Page(-1)
             case "Ctrl+T": return this.ChangeScope(1)
             case "Enter": return this.Cursor ? "pick" : "none"
+            case "Shift+Enter": return IsObject(this.OnAltPick) && this.Cursor ? "altpick" : "none"
             case "=": return "density"
             case "Esc", "Ctrl+G": return "cancel"
             case "/":
@@ -115,7 +118,7 @@ class LegendPicker {
         for key in keys {
             result := this.Key(key)
             switch result {
-                case "pick", "cancel":
+                case "pick", "altpick", "cancel":
                     return {Action: result, Density: density}
                 case "density":
                     density += 1, changed := true
@@ -131,6 +134,7 @@ class LegendPicker {
             return this.Move(step)
         switch key.Id {
             case "Enter": return this.Cursor ? "pick" : "none"
+            case "Shift+Enter": return IsObject(this.OnAltPick) && this.Cursor ? "altpick" : "none"
             case "Ctrl+G": return "cancel"
             case "PgDn", "Ctrl+F": return this.Page(1)
             case "PgUp", "Ctrl+B": return this.Page(-1)
@@ -246,7 +250,10 @@ class LegendPicker {
     }
 
     Footer(density) {
-        parts := ["↵ pick", "^n/^p move"]
+        parts := ["↵ pick"]
+        if IsObject(this.OnAltPick)
+            parts.Push("⇧↵ " this.AltPickLabel)
+        parts.Push("^n/^p move")
         if this.Mode = "filter" {
             if this.Scopes.Length > 1
                 parts.Push("^t scope")
