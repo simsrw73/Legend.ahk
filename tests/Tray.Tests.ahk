@@ -57,3 +57,31 @@ Tray_UIA() {
     } finally
         g.Destroy()
 }
+
+T.Test("Tray: an unknown tray layout reads as not available", Tray_Unavailable)
+Tray_Unavailable() {
+    saved := LegendTray.TrayClass
+    LegendTray.TrayClass := "NoSuchTrayClass"
+    try {
+        T.Eq(LegendTray.List().Length, 0)
+        T.True(!LegendTray.Available)
+    } finally
+        LegendTray.TrayClass := saved, LegendTray.Available := true
+}
+
+T.Test("Tray: listing leaves the flyout as it found it", Tray_FlyoutRestored)
+Tray_FlyoutRestored() {
+    if !WinExist("ahk_class " LegendTray.TrayClass)
+        return T.Out("skip Tray_FlyoutRestored: no Windows 11 tray")
+    items := LegendTray.List()
+    if !LegendTray.Available
+        return T.Out("skip Tray_FlyoutRestored: tray layout not recognized")
+    T.True(items.Length > 0, "at least one tray icon")
+    for item in items
+        T.True(item.HasOwnProp("Ordinal") && (item.Kind = "app" || item.Kind = "system"), item.Text)
+    T.True(!LegendTray.FlyoutOpen(), "flyout closed again")
+    chevron := LegendTray.Chevron(LegendTray.Root())
+    if chevron
+        for item in items
+            T.True(item.Kind = "app" || item.Name != chevron.Name, "the Show Hidden Icons button is not an icon")
+}
