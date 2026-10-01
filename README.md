@@ -192,7 +192,8 @@ not load them; include them yourself after it.
 **Tray picker** (`extras/Tray.ahk`): `LegendTray.Picker("!t")` lists every
 notification-area icon (visible, hidden in the "Show hidden icons" flyout, and
 system icons) in a picker. Enter or a letter left-clicks the icon, Shift+Enter
-opens its context menu, `/` filters. It reads Windows 11's taskbar through UI
+opens its context menu (a real right-click: the pointer jumps to the icon and back),
+`/` filters. It reads Windows 11's taskbar through UI
 Automation (tested on build 26220). Hidden icons are read by opening the flyout
 invisibly for a moment; at most a frame of it may show. Icons are matched to apps
 through Windows' NotifyIconSettings list only when the match is certain. If

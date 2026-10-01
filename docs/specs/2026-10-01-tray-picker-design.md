@@ -18,6 +18,10 @@ builds its taskbar.
 - Invoke on an icon left-clicks it (opened Everything from a hidden icon).
 - Focusing an icon (SetFocus) and sending Shift+F10 opens its context menu, for
   classic Win32 menus (Everything) and custom ones (TickTick). Esc closes it.
+  *Superseded in testing:* from a background AutoHotkey script this was
+  unreliable (no menu, or one at the far-away mouse pointer). Menus are opened by
+  a real right-click on the icon instead: the pointer moves there (a real move;
+  a jump is not seen by the tray), clicks, and returns; the menu opens at the icon.
 - The tray interface gives no images and no owning process. Windows' list of
   tray apps, `HKCU\Control Panel\NotifyIconSettings\*`, has each app's
   `ExecutablePath` and often an `InitialTooltip`.

@@ -318,8 +318,10 @@ class LegendTray {
         this.Missing()
     }
 
-    ; Context menu: focus the icon and press Shift+F10. A hidden icon's flyout opens
-    ; visibly and stays open under the menu (it closes when the menu does).
+    ; Context menu: a real right-click on the icon (pointer moved there, clicked, put
+    ; back). Apps open their menu at the pointer, so it appears at the icon. A hidden
+    ; icon's flyout opens visibly and stays open under the menu. (Focus + Shift+F10
+    ; from a background script was unreliable: no menu, or one far from the icon.)
     static Menu(item) {
         if !(root := this.Root())
             return this.Missing()
@@ -332,9 +334,20 @@ class LegendTray {
         }
         if !scopeRoot || !(element := this.Nth(scopeRoot, item))
             return this.Missing()
-        element.SetFocus()
+        this.RightClick(element.Rect)
+    }
+
+    ; Right-clicks the middle of rect (physical pixels) and restores the pointer. The
+    ; tray only sees the pointer after a real move, so it moves rather than jumps.
+    static RightClick(rect) {
+        centerX := rect.X + rect.W // 2, centerY := rect.Y + rect.H // 2
+        saved := Buffer(8)
+        DllCall("GetCursorPos", "Ptr", saved)
+        LegendWindows.InPhysicalPixels(() => (CoordMode("Mouse", "Screen"), MouseMove(centerX, centerY, 0)))
+        Sleep(80)
+        Click("Right")
         Sleep(50)
-        SendInput("+{F10}")
+        DllCall("SetCursorPos", "Int", NumGet(saved, 0, "Int"), "Int", NumGet(saved, 4, "Int"))
     }
 
     ; NotifyIconSettings entries: {Exe, Tip}; known-folder GUIDs in paths expanded.
