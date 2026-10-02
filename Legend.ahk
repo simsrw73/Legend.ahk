@@ -5,6 +5,7 @@
 #Include %A_LineFile%\..\src\Rows.ahk
 #Include %A_LineFile%\..\src\Layout.ahk
 #Include %A_LineFile%\..\src\Navigator.ahk
+#Include %A_LineFile%\..\src\Letters.ahk
 #Include %A_LineFile%\..\src\Theme.ahk
 #Include %A_LineFile%\..\src\Overlay.ahk
 #Include %A_LineFile%\..\src\Selection.ahk
@@ -26,7 +27,8 @@ class Legend {
     static BaseTheme := ""
     static StyleOverride := "", DensityOverride := ""   ; session-only display toggles
     static Styles := ["text", "symbols", "ahk"]
-    static DefaultOptions := {HelpKey: "!/", Pages: [], PageKeys: Map(), Themes: [], Theme: "auto",
+    static DefaultOptions := {HelpKey: "!/", Pages: [], PageKeys: Map(), LetterFile: A_AppData "\Legend\page-letters.txt",
+        Themes: [], Theme: "auto",
         ChordTimeout: 0, ChordOverlay: 400, ChordReference: true}
     static ChordState := ""
     ; Reference-mode keys (see docs/specs/2026-09-30-key-scheme-design.md).
@@ -82,6 +84,7 @@ class Legend {
         this.Registry.LoadPages(this.Options.Pages)
         this.Registry.EnableChordReference(this.Options.ChordReference)
 
+        OnMessage(0x200, (wParam, lParam, msg, hwnd) => Legend.OnMouseMove(hwnd))   ; WM_MOUSEMOVE
         this.HelpId := LegendKeyName.FromHotkey(this.Options.HelpKey).Id
         HotIf()
         Hotkey(this.Options.HelpKey, (*) => Legend.Toggle())
@@ -115,11 +118,15 @@ class Legend {
 
         this.Registry.CheckPageKeys()
         pages := this.Registry.SortedPages()
+        sticky := LegendLetterStore.Assign(pages, this.Opt("LetterFile"))
         matches := []
         for page in pages
             if page.Match != "" && WinActive(page.Match)
                 matches.Push(page)
+        if (warnings := this.AllWarnings()).Length
+            pages.Push(LegendRegistry.WarningsPage(warnings))   ; listed only while there are any
         this.Nav := LegendNavigator(pages, paginate, theme["keyStyle"])
+        this.Nav.LetterOf := page => sticky.Has(StrLower(page.Title)) ? sticky[StrLower(page.Title)] : ""
         this.Nav.Open(matches)
         this.ActiveHwnd := WinExist("A")
         try
@@ -194,13 +201,42 @@ class Legend {
                 mods.Push(row.Mods*)
         legendLine := this.Theme["legend"] = "off" ? "" : LegendKeyName.LegendLine(mods, this.Theme["keyStyle"])
         footer := this.Nav.Footer("tab " this.Theme["keyStyle"], "= " this.Theme["density"])
-        warnings := this.Registry.Warnings.Length + this.ThemeWarnings.Length
+        warnings := this.AllWarnings().Length
         this.Render("nav|" this.Nav.LayoutKey "|" footer "|" legendLine "|" warnings,
             () => LegendOverlay.Show(view, this.Theme, this.Measurer, footer, legendLine, this.Nav.Pinned, warnings),
             this.Nav.SelectedIndex)
     }
 
+    static AllWarnings() {
+        all := this.Registry.Warnings.Clone()
+        all.Push(this.ThemeWarnings*)
+        return all
+    }
+
+    ; The tooltip over the warning badge.
+    static WarningTip(messages) {
+        text := ""
+        for message in messages
+            text .= (A_Index > 1 ? "`n" : "") A_Index ". " message
+        return text
+    }
+
+    static TipShown := false
+
+    ; WM_MOUSEMOVE: the warning badge shows the warnings as a tooltip.
+    static OnMouseMove(hwnd) {
+        overlay := this.Gui
+        overlay := IsObject(overlay) && overlay.HasOwnProp("WarningBadge") ? overlay : ""
+        if overlay && hwnd = overlay.WarningBadge.Hwnd {
+            if !this.TipShown
+                ToolTip(this.WarningTip(this.AllWarnings())), this.TipShown := true
+        } else if this.TipShown
+            ToolTip(), this.TipShown := false
+    }
+
     static Close() {
+        if this.TipShown
+            ToolTip(), this.TipShown := false
         this.StopWatching()
         if this.Gui
             this.Gui.Destroy(), this.Gui := ""

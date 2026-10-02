@@ -57,7 +57,7 @@ class LegendPage {
         get {
             if this.CodeLetter != ""
                 return this.CodeLetter
-            configured := this.Registry.ConfiguredLetter(this.Title)
+            configured := IsObject(this.Registry) ? this.Registry.ConfiguredLetter(this.Title) : ""
             return configured != "" ? configured : this.FileLetter
         }
     }
@@ -340,6 +340,16 @@ class LegendRegistry {
                 existing.Text := incoming.Text
         }
         return existing
+    }
+
+    ; A page listing messages under 1, 2, …; not registered (Legend adds it to the
+    ; index only while there are warnings).
+    static WarningsPage(messages) {
+        page := LegendPage("", "Warnings")
+        group := page.Category("Warnings").Group("")
+        for message in messages
+            group.Entries.Push(LegendEntry(LegendKeyName.FromText(A_Index ""), message, false))
+        return page
     }
 
     SortedPages() {

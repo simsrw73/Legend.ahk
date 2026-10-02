@@ -158,6 +158,17 @@ A letter set in code (`Legend.Page(title, , {Key: "k"})`) wins, then `PageKeys` 
 an entry's `Key`, then the file's `key:`; pages without one get the next free
 letter. Legend warns about a `PageKeys` title no page has.
 
+Automatic letters stick: Legend saves them to `LetterFile` (default
+`%AppData%\Legend\page-letters.txt`), so a page keeps its letter across runs and
+adding, removing or renaming other pages never moves it. New pages take letters
+nobody holds. `LetterFile: ""` turns this off.
+
+When something is wrong (a page file that won't parse or can't be found, a bad or
+clashing key, a chord item that can never run, a `PageKeys` title with no page, a bad
+theme value) the overlay's footer shows `⚠ N warnings · see Warnings`. The index
+then lists a **Warnings** page with each message, and hovering over the badge shows
+them as a tooltip.
+
 ## Collections
 
 `collections/apps/` holds ready-made pages for about 40 apps: browsers, mail and

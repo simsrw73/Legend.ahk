@@ -66,10 +66,12 @@ class LegendOverlay {
         if pinned
             this.AddText(overlay, theme, "footer", theme["pinned"], "x+24 yp", "📌 pinned")
         if warningCount
-            this.AddText(overlay, theme, "footer", theme["warning"], "x+24 yp", "⚠ " warningCount " warning" (warningCount = 1 ? "" : "s"))
+            overlay.WarningBadge := this.AddText(overlay, theme, "footer", theme["warning"], "x+24 yp +0x100", this.WarningBadgeText(warningCount))   ; SS_NOTIFY: hover
         this.Place(overlay, theme)
         return overlay
     }
+
+    static WarningBadgeText(count) => "⚠ " count " warning" (count = 1 ? "" : "s") " · see Warnings"
 
     static Show(view, theme, measurer, footer, legendLine, pinned, warningCount) {
         frame := this.Frame(theme, StrUpper(view.Title))

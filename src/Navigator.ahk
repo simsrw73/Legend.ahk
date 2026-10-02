@@ -14,6 +14,7 @@ class LegendNavigator {
         this.Pinned := false
         this.Mode := "reference"
         this.RunItem := ""
+        this.LetterOf := page => page.Letter   ; Legend gives sticky letters (LegendLetterStore)
     }
 
     Level => this.Stack[this.Stack.Length]
@@ -169,7 +170,7 @@ class LegendNavigator {
     }
 
     IndexLevel(pages, title) {
-        letters := LegendNavigator.AssignLetters(pages, page => page.Title, page => page.Letter)
+        letters := LegendNavigator.AssignLetters(pages, page => page.Title, this.LetterOf)
         items := []
         for index, page in pages
             items.Push({Letter: letters[index], Label: page.Title, Target: page})
@@ -246,9 +247,10 @@ class LegendNavigator {
 
     ; One letter per item: its fixed letter if free, else the first free letter or
     ; digit of its name, else the first free one in a–z, 0–9, else "".
-    static AssignLetters(items, nameOf, fixedOf) {
+    ; used: letters already taken elsewhere (left as given, not added to).
+    static AssignLetters(items, nameOf, fixedOf, used := "") {
         static pool := "abcdefghijklmnopqrstuvwxyz0123456789"
-        used := Map(), letters := []
+        used := IsObject(used) ? used.Clone() : Map(), letters := []
         letters.Length := items.Length
         for index, item in items {
             fixed := StrLower(fixedOf(item))
