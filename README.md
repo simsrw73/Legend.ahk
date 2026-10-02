@@ -6,8 +6,8 @@ AutoHotkey bindings and hand-written Markdown pages of an app's native
 shortcuts are shown side by side; doc-only keys appear in a muted color.
 
 <p align="center">
-  <img src="docs/images/overlay-page.png" width="575"
-       alt="Legend showing a komorebi page: workspace, window and stack shortcuts in two columns">
+  <img src="docs/images/overlay-page.png" width="735"
+       alt="Legend showing a komorebi page: workspace, window and stack shortcuts in three balanced columns">
 </p>
 
 ## Install
@@ -206,9 +206,9 @@ where they exist; corrections are welcome.
 > closes); page with Ctrl+F/Ctrl+B, PgDn/PgUp or Space.
 
 <p align="center">
-  <img src="docs/images/overlay-index.png" width="414" alt="The index of pages, each with its letter">
+  <img src="docs/images/overlay-index.png" width="289" alt="The index of pages, each with its letter">
   &nbsp;
-  <img src="docs/images/overlay-symbols.png" width="362" alt="The komorebi page with keys shown as symbols (Tab)">
+  <img src="docs/images/overlay-symbols.png" width="691" alt="The komorebi page with keys shown as symbols (Tab)">
 </p>
 
 ## Themes
