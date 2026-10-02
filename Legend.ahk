@@ -26,7 +26,7 @@ class Legend {
     static BaseTheme := ""
     static StyleOverride := "", DensityOverride := ""   ; session-only display toggles
     static Styles := ["text", "symbols", "ahk"]
-    static DefaultOptions := {HelpKey: "!/", Pages: [], Themes: [], Theme: "auto",
+    static DefaultOptions := {HelpKey: "!/", Pages: [], PageKeys: Map(), Themes: [], Theme: "auto",
         ChordTimeout: 0, ChordOverlay: 400, ChordReference: true}
     static ChordState := ""
     ; Reference-mode keys (see docs/specs/2026-09-30-key-scheme-design.md).
@@ -78,14 +78,8 @@ class Legend {
         for name, fallback in this.DefaultOptions.OwnProps()
             this.Options.%name% := options.HasOwnProp(name) ? options.%name% : fallback
 
-        for dir in this.Options.Pages {
-            for result in LegendPageFile.LoadDir(dir) {
-                for warning in result.Warnings
-                    this.Registry.Warnings.Push(warning)
-                if result.Page
-                    this.Registry.AddFile(result.Page)
-            }
-        }
+        this.Registry.SetPageKeys(this.Options.PageKeys)
+        this.Registry.LoadPages(this.Options.Pages)
         this.Registry.EnableChordReference(this.Options.ChordReference)
 
         this.HelpId := LegendKeyName.FromHotkey(this.Options.HelpKey).Id
@@ -119,6 +113,7 @@ class Legend {
         paginate := this.ApplyDisplay()
         theme := this.Theme
 
+        this.Registry.CheckPageKeys()
         pages := this.Registry.SortedPages()
         matches := []
         for page in pages

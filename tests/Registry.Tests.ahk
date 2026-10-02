@@ -265,3 +265,81 @@ Registry_UnicodeMerge() {
     T.Eq(ObjPtr(c.Group("Éditer")), ObjPtr(c.Group("éditer")))
     T.Eq(r.Pages.Length, 1)
 }
+
+Registry_Fixture(name) => A_ScriptDir "\fixtures\pages\" name
+
+T.Test("Registry: LoadPages takes a folder, a single file, or {Path, Key}", Registry_LoadPagesEntries)
+Registry_LoadPagesEntries() {
+    r := Registry_New()
+    r.LoadPages([Registry_Fixture("zen.md")])
+    T.True(IsObject(r.Get("Zen")), "a single file loads its page")
+    T.True(!IsObject(r.Get("Broken")), "only the named file")
+    T.Eq(r.Get("Zen").Letter, "z", "the file's key: stands")
+
+    r2 := Registry_New()
+    r2.LoadPages([{Path: Registry_Fixture("zen.md"), Key: "Q"}])
+    T.Eq(r2.Get("Zen").Letter, "q", "Key overrides the file's key:")
+    T.Eq(r2.Warnings.Length, 0, "a configured key is not a conflict")
+
+    r3 := Registry_New()
+    r3.LoadPages([A_ScriptDir "\fixtures\pages"])
+    T.True(IsObject(r3.Get("Zen")) && IsObject(r3.Get("Broken")), "a folder loads every file")
+}
+
+T.Test("Registry: LoadPages warns on a missing path and on Key for a folder", Registry_LoadPagesWarnings)
+Registry_LoadPagesWarnings() {
+    r := Registry_New()
+    r.LoadPages([A_ScriptDir "\fixtures\nope.md"])
+    T.Eq(r.Warnings.Length, 1)
+    T.True(InStr(r.Warnings[1], "not found"), r.Warnings[1])
+
+    r2 := Registry_New()
+    r2.LoadPages([{Path: A_ScriptDir "\fixtures\other", Key: "x"}])
+    found := false
+    for warning in r2.Warnings
+        found := found || InStr(warning, "Key") && InStr(warning, "folder")
+    T.True(found, "Key on a folder warns")
+
+    r3 := Registry_New()
+    r3.LoadPages([{Key: "x"}])
+    T.Eq(r3.Warnings.Length, 1, "an entry without Path warns")
+    T.True(InStr(r3.Warnings[1], "Path"), r3.Warnings[1])
+}
+
+T.Test("Registry: PageKeys override a file's key: by title, case-insensitively", Registry_PageKeys)
+Registry_PageKeys() {
+    r := Registry_New()
+    r.SetPageKeys(Map("ZEN", "x"))
+    r.LoadPages([Registry_Fixture("zen.md")])
+    T.Eq(r.Get("Zen").Letter, "x")
+    T.Eq(r.Warnings.Length, 0)
+
+    r2 := Registry_New()
+    r2.SetPageKeys({Zen: "y"})
+    r2.LoadPages([Registry_Fixture("zen.md")])
+    T.Eq(r2.Get("Zen").Letter, "y", "an object works too")
+}
+
+T.Test("Registry: a code Key beats PageKeys", Registry_CodeBeatsPageKeys)
+Registry_CodeBeatsPageKeys() {
+    r := Registry_New()
+    r.SetPageKeys(Map("Zen", "x"))
+    r.Page("Zen", "", {Key: "c"})
+    T.Eq(r.Get("Zen").Letter, "c")
+}
+
+T.Test("Registry: PageKeys warn on a bad key and on a title with no page", Registry_PageKeysWarnings)
+Registry_PageKeysWarnings() {
+    r := Registry_New()
+    r.SetPageKeys(Map("Zen", "zz"))
+    T.Eq(r.Warnings.Length, 1)
+    T.True(InStr(r.Warnings[1], "zz"), r.Warnings[1])
+
+    r2 := Registry_New()
+    r2.SetPageKeys(Map("Gmial", "g"))
+    r2.Doc(["Gmail", "Mail"], "C", "Compose")
+    T.Eq(r2.Warnings.Length, 0, "no warning until pages are checked")
+    r2.CheckPageKeys()
+    T.Eq(r2.Warnings.Length, 1)
+    T.True(InStr(r2.Warnings[1], "Gmial"), r2.Warnings[1])
+}

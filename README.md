@@ -138,6 +138,24 @@ everything else is ignored. Write keys as `Ctrl+Shift+T`; ranges like
 `Ctrl+1–8` are shown as written. A `match:` in a file decides which page opens
 for the active window; only a match given in code makes hotkeys app-specific.
 
+`Pages` takes folders (every `.md` in them), single files, or `{Path, Key}` to load
+one file and give its page a letter. `PageKeys` sets letters by page title for
+pages loaded from a folder, without editing the files:
+
+```ahk
+apps := A_ScriptDir "\Lib\Legend\collections\apps\"
+Legend.Start({
+    Pages: [A_ScriptDir "\legend\pages",                 ; a folder
+            apps "zed.md",                                 ; one file
+            {Path: apps "google-gmail.md", Key: "g"}],     ; one file, letter g
+    PageKeys: Map("Google Chrome", "c", "Zen", "z")        ; letters by title
+})
+```
+
+A letter set in code (`Legend.Page(title, , {Key: "k"})`) wins, then `PageKeys` or
+an entry's `Key`, then the file's `key:`; pages without one get the next free
+letter. Legend warns about a `PageKeys` title no page has.
+
 ## Collections
 
 `collections/apps/` holds ready-made pages for about 40 apps: browsers, mail and

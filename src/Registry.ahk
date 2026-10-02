@@ -52,7 +52,15 @@ class LegendPage {
     }
 
     Match => this.CodeMatch != "" ? this.CodeMatch : this.FileMatch
-    Letter => this.CodeLetter != "" ? this.CodeLetter : this.FileLetter
+    ; Code's Key, then PageKeys / a Pages entry's Key, then the file's key:.
+    Letter {
+        get {
+            if this.CodeLetter != ""
+                return this.CodeLetter
+            configured := this.Registry.ConfiguredLetter(this.Title)
+            return configured != "" ? configured : this.FileLetter
+        }
+    }
 
     IsEmpty {
         get {
@@ -100,6 +108,70 @@ class LegendRegistry {
         this.Chords := []
         this.ChordReference := ""   ; set by EnableChordReference (Legend.Start)
         this.Pickers := []
+        this.PageKeys := []        ; [{Title, Letter}] from Start's PageKeys and Pages entries
+    }
+
+    ; Loads Start's Pages entries: a folder, a page file, or {Path, Key} (Key gives the
+    ; file's page that letter).
+    LoadPages(entries) {
+        for entry in entries {
+            if IsObject(entry) && !entry.HasOwnProp("Path") {
+                this.Warn("pages: an entry object needs a Path; ignored")
+                continue
+            }
+            path := IsObject(entry) ? entry.Path : entry
+            key := IsObject(entry) && entry.HasOwnProp("Key") ? entry.Key : ""
+            if DirExist(path) {
+                if key != ""
+                    this.Warn("pages: Key '" key "' applies to a file, not the folder " path "; ignored")
+                results := LegendPageFile.LoadDir(path)
+            } else if FileExist(path)
+                results := [LegendPageFile.Load(path)]
+            else {
+                this.Warn("page file or folder not found: " path)
+                continue
+            }
+            for result in results {
+                for warning in result.Warnings
+                    this.Warn(warning)
+                if !result.Page
+                    continue
+                this.AddFile(result.Page)
+                if key != ""
+                    this.SetPageKey(result.Page.Title, key, "pages")
+            }
+        }
+    }
+
+    ; titleKeys: a Map or object of page title → letter.
+    SetPageKeys(titleKeys) {
+        for title, key in titleKeys is Map ? titleKeys : titleKeys.OwnProps()
+            this.SetPageKey(title, key)
+    }
+
+    ; source names the option in warnings: "PageKeys" or "pages".
+    SetPageKey(title, key, source := "PageKeys") {
+        letter := StrLower(key)
+        if !RegExMatch(letter, "^[a-z0-9]$")
+            return this.Warn(source ": key '" key "' for '" title "' must be one letter or digit; ignored")
+        for known in this.PageKeys
+            if LegendRegistry.SameName(known.Title, title)
+                return known.Letter := letter
+        this.PageKeys.Push({Title: title, Letter: letter})
+    }
+
+    ConfiguredLetter(title) {
+        for known in this.PageKeys
+            if LegendRegistry.SameName(known.Title, title)
+                return known.Letter
+        return ""
+    }
+
+    ; Warns about PageKeys titles no page has (a typo, or a page that was never loaded).
+    CheckPageKeys() {
+        for known in this.PageKeys
+            if !this.Get(known.Title)
+                this.Warn("PageKeys: no page titled '" known.Title "'")
     }
 
     ; Registers fn for keyName, active only in windows matching match ("" = everywhere).
