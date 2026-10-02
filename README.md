@@ -60,7 +60,9 @@ Press the trigger, then keys. The menu appears after `ChordOverlay` ms (default
 PgDn/PgUp or Ctrl+F/Ctrl+B page. Options per item: `If` (condition; the first
 matching item whose `If` holds runs), `Status` (running dot), `Hint`. Keys may
 use modifiers (`^s`; Shift+; is `+;`, not `:`) and [KeyChord](#acknowledgments) wildcards (`?`, `F*`,
-`a-f`). `Start` options:
+`a-f`). An uppercase letter is Shift + that letter, so `z` and `Z` can be different
+items; the menu shows it as `Z`, and Caps Lock doesn't count. Legend warns about an
+item that can never run because an earlier one without `If` has its key. `Start` options:
 `ChordTimeout` (seconds, 0 = none), `ChordOverlay`, `ChordReference` (chords
 appear as pages in Alt+/ unless `false`).
 

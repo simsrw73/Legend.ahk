@@ -245,9 +245,25 @@ class LegendRegistry {
         binder := this.Binder
         binder(chord.Hotkey, open, chord.Match)
         this.Chords.Push(chord)
+        this.CheckShadowed(chord.Items, chord.Title)
         if this.ChordReference = true
             this.AddChordPage(chord)
         return chord
+    }
+
+    ; Warns about chord items that can never run: an earlier item on the same key has
+    ; no If, so it always wins. (Items after a conditional one are fallbacks, not shadowed.)
+    CheckShadowed(items, menuTitle) {
+        always := Map()
+        for item in items {
+            keyId := item.Pattern.Display("text")
+            if always.Has(keyId)
+                this.Warn("chord '" menuTitle "': '" item.Label "' on " keyId " can never run; '" always[keyId] "' has that key")
+            else if !IsObject(item.If)
+                always[keyId] := item.Label
+            if item.IsMenu
+                this.CheckShadowed(item.Items, menuTitle " › " item.Label)
+        }
     }
 
     ; Legend.Start calls this once with its ChordReference option.

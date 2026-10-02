@@ -389,6 +389,7 @@ class Legend {
             default:
                 shown := key.Verbatim != "" ? key.Verbatim
                     : !key.Mods.Length && StrLen(key.Name) = 1 ? StrLower(key.Name)
+                    : LegendChordMatch.IsShiftedLetter(key.Mods, key.Name) ? StrUpper(key.Name)
                     : LegendKeyName.Format(key, this.Theme["keyStyle"])
                 this.CloseChord()
                 ToolTip("Nothing on " shown)

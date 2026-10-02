@@ -59,3 +59,23 @@ ChordMatch_Display() {
     T.Eq(LegendChordMatch.Parse("F*").Display(), "F*")
     T.Eq(LegendChordMatch.Parse("?").Display(), "?")
 }
+
+T.Test("ChordMatch: an uppercase letter means Shift + that letter", ChordMatch_Uppercase)
+ChordMatch_Uppercase() {
+    T.True(ChordMatch_Hit("Z", "Shift+Z"))
+    T.True(!ChordMatch_Hit("Z", "z"), "Z is not plain z")
+    T.True(!ChordMatch_Hit("z", "Shift+Z"), "z is not Shift+Z")
+    T.True(ChordMatch_Hit("+z", "Shift+Z"))
+    T.True(ChordMatch_Hit("^Z", "Ctrl+Shift+Z"))
+}
+
+T.Test("ChordMatch: Shift + a letter shows as the capital", ChordMatch_ShiftDisplay)
+ChordMatch_ShiftDisplay() {
+    T.Eq(LegendChordMatch.Parse("Z").Display(), "Z")
+    T.Eq(LegendChordMatch.Parse("+z").Display(), "Z")
+    T.Eq(LegendChordMatch.Parse("Z").Display("symbols"), "Z")
+    T.Eq(LegendChordMatch.Parse("z").Display(), "z")
+    T.Eq(LegendChordMatch.Parse("+F5").Display(), "Shift+F5")
+    T.Eq(LegendChordMatch.Parse("+;").Display(), "Shift+;")
+    T.Eq(LegendChordMatch.Parse("^Z").Display(), "Ctrl+Shift+Z")
+}

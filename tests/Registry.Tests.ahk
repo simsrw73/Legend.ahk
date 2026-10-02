@@ -343,3 +343,17 @@ Registry_PageKeysWarnings() {
     T.Eq(r2.Warnings.Length, 1)
     T.True(InStr(r2.Warnings[1], "Gmial"), r2.Warnings[1])
 }
+
+T.Test("Registry: a chord item shadowed by an earlier one on the same key warns", Registry_ChordShadowed)
+Registry_ChordShadowed() {
+    r := Registry_New()
+    r.AddChord(LegendChord("#F12", "Launch", [Legend.Run("z", "Zed", Noop), Legend.Run("Z", "Zen", Noop),
+        Legend.Menu("w", "Web", [Legend.Run("c", "Chrome", Noop), Legend.Run("c", "Chromium", Noop)])]), Noop)
+    T.Eq(r.Warnings.Length, 1, "z and Z differ; the second c can never run")
+    T.True(InStr(r.Warnings[1], "Chromium"), r.Warnings[1])
+
+    r2 := Registry_New()
+    r2.AddChord(LegendChord("#F12", "Launch", [Legend.Run("z", "Zed", Noop, {If: () => false}),
+        Legend.Run("z", "Zen", Noop)]), Noop)
+    T.Eq(r2.Warnings.Length, 0, "a conditional first item leaves the key to the next")
+}

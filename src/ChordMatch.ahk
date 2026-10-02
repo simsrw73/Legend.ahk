@@ -1,13 +1,15 @@
 #Requires AutoHotkey v2.0
 
 ; One chord key pattern: an AHK key name or a wildcard, optionally prefixed
-; with modifier symbols (^ ! + #).
+; with modifier symbols (^ ! + #). An uppercase letter means Shift + that letter.
 class LegendChordPattern {
     Display(style := "text") {
         switch this.Kind {
             case "key":
                 if !this.Mods.Length && StrLen(this.Name) = 1
                     return StrLower(this.Name)
+                if LegendChordMatch.IsShiftedLetter(this.Mods, this.Name)
+                    return StrUpper(this.Name)
                 return LegendKeyName.Format(LegendKey(this.Mods, this.Name), style)
             case "any":
                 return LegendKeyName.FormatMods(this.Mods, style) "?"
@@ -45,6 +47,10 @@ class LegendChordMatch {
             name := LegendKeyName.NormalizeName(body)
             if name = ""
                 throw ValueError("unknown chord key '" text "'", -2)
+            if this.IsLetter(body) && body == StrUpper(body) && !modSet.Has("Shift") {
+                modSet["Shift"] := true   ; Z = Shift+Z; z stays plain
+                pattern.Mods := LegendKeyName.Ordered(modSet)
+            }
             pattern.Kind := "key", pattern.Name := name
         }
         return pattern
@@ -68,6 +74,11 @@ class LegendChordMatch {
                 return StrLen(key.Name) > 1 && RegExMatch(key.Name, p.Regex) > 0
         }
     }
+
+    static IsLetter(text) => StrLen(text) = 1 && StrUpper(text) !== StrLower(text)
+
+    ; Shift alone with a letter: shown as the capital ("Z", not "Shift+Z").
+    static IsShiftedLetter(mods, name) => mods.Length = 1 && mods[1] = "Shift" && this.IsLetter(name)
 
     static SameMods(a, b) {
         if a.Length != b.Length
