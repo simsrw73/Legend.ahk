@@ -39,7 +39,7 @@ Overlay_TwoColumnNav(theme, measurer) {
     r := Registry_New()
     loop 7
         r.Bind(["Page " A_Index, "c"], "^!F" A_Index, "x", Noop)
-    nav := LegendNavigator(r.SortedPages(), rows => LegendLayout.Paginate(rows, measurer, 100, 2, theme["padding"], 0, theme["columnGap"]))
+    nav := LegendNavigator(r.SortedPages(), (rows, *) => LegendLayout.Paginate(rows, measurer, 100, 2, theme["padding"], 0, theme["columnGap"]))
     nav.Open([])
     return nav
 }

@@ -2,7 +2,7 @@
 
 ; Overlay navigation: a stack of levels (index → page → category), the current
 ; screen of each level, and pin state. Pure: rows come from LegendRows and
-; paginate(rows) returns LegendLayout screens.
+; paginate(rows, kind) returns LegendLayout screens; kind is "page", "menu" or "chord".
 class LegendNavigator {
     static Builds := 0   ; levels built by any navigator; part of LayoutKey
 
@@ -179,7 +179,7 @@ class LegendNavigator {
 
     ; A page that fits one screen is shown whole; otherwise its categories are listed.
     PageLevel(page) {
-        screens := this.Paginate(LegendRows.ForPage(page, this.Style))
+        screens := this.Paginate(LegendRows.ForPage(page, this.Style), "page")
         if screens.Length = 1
             return this.WithBuild({Title: page.Title, Screens: screens, ScreenIndex: 1, Items: [], Cursor: 0},
                 () => this.PageLevel(page))
@@ -197,13 +197,13 @@ class LegendNavigator {
     }
 
     ChordLevel(items, title) {
-        return this.WithBuild({Title: title, Screens: this.Paginate(LegendRows.ForChord(LegendChords.Visible(items), this.Style)),
+        return this.WithBuild({Title: title, Screens: this.Paginate(LegendRows.ForChord(LegendChords.Visible(items), this.Style), "chord"),
             ScreenIndex: 1, Items: [], ChordItems: items, Cursor: 0}, () => this.ChordLevel(items, title))
     }
 
     CategoryLevel(page, cat) {
         name := cat.Name != "" ? cat.Name : "Other"
-        return this.WithBuild({Title: page.Title " › " name, Screens: this.Paginate(LegendRows.ForCategory(cat, this.Style)),
+        return this.WithBuild({Title: page.Title " › " name, Screens: this.Paginate(LegendRows.ForCategory(cat, this.Style), "page"),
             ScreenIndex: 1, Items: [], Cursor: 0}, () => this.CategoryLevel(page, cat))
     }
 
@@ -215,12 +215,12 @@ class LegendNavigator {
     }
 
     MenuLevel(title, items, open) =>
-        {Title: title, Screens: this.Paginate(LegendRows.ForMenu(items)), ScreenIndex: 1, Items: items, OpenItem: open,
+        {Title: title, Screens: this.Paginate(LegendRows.ForMenu(items), "menu"), ScreenIndex: 1, Items: items, OpenItem: open,
             Cursor: items.Length ? 1 : 0}
 
-    Paginate(rows) {
+    Paginate(rows, kind) {
         paginateFn := this.PaginateFn
-        return paginateFn(rows)
+        return paginateFn(rows, kind)
     }
 
     ; Screen holding menu row `index` (menu rows and items are 1:1).

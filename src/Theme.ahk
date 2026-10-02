@@ -4,7 +4,7 @@
 class LegendTheme {
     static BuiltinDir := RegExReplace(A_LineFile, "\\src\\[^\\]+$", "\themes")
 
-    ; [section, name, kind, default]. kind: color | font | int:min:max | bool | enum:a|b
+    ; [section, name, kind, default]. kind: color | font | int:min:max | bool | enum:a|b | aspect
     static Schema := [
         ["colors", "background", "color", "11111B"],
         ["colors", "border", "color", "313244"],
@@ -34,6 +34,12 @@ class LegendTheme {
         ["layout", "maxHeightPercent", "int:20:100", 80],
         ["layout", "maxWidthPercent", "int:20:100", 90],
         ["layout", "pickerWidthPercent", "int:20:100", 60],
+        ; How lists grow: proportional (balanced columns, keeping about the screen's
+        ; shape) or vertical (fill a column to maxHeightPercent, then the next).
+        ["layout", "pageGrowth", "enum:proportional|vertical", "proportional"],
+        ["layout", "menuGrowth", "enum:proportional|vertical", "proportional"],
+        ["layout", "chordGrowth", "enum:proportional|vertical", "proportional"],
+        ["layout", "aspect", "aspect", "monitor"],   ; width / height to aim for, or monitor
         ["layout", "opacity", "int:50:255", 245],
         ["layout", "rounded", "bool", true],
         ["keys", "keyStyle", "enum:text|symbols|ahk", "text"],
@@ -112,6 +118,9 @@ class LegendTheme {
             bounds := StrSplit(kind, ":")
             ok := IsInteger(raw) && Integer(raw) >= Integer(bounds[2]) && Integer(raw) <= Integer(bounds[3])
             value := ok ? Integer(raw) : 0
+        } else if kind = "aspect" {
+            ok := raw = "monitor" || IsNumber(raw) && raw >= 0.25 && raw <= 8
+            value := raw = "monitor" ? "monitor" : ok ? Number(raw) : 0
         } else if SubStr(kind, 1, 5) = "enum:" {
             value := StrLower(raw), ok := false
             for choice in StrSplit(SubStr(kind, 6), "|")

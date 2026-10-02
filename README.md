@@ -207,8 +207,18 @@ category, group, keyBound, keyDoc, description, footer, pinned, warning,
 selection, selectionText, outline (pickers; default border, description, category);
 `[fonts]` uiFont, keyFont, titleSize, headingSize, bodySize; `[layout]`
 density (comfortable/compact), padding, rowSpacing, maxColumns,
-maxHeightPercent, maxWidthPercent, pickerWidthPercent (60), opacity, rounded; `[keys]` keyStyle (text/symbols/ahk),
-legend (auto/off/top/bottom). Leave padding and rowSpacing out to get them from
+maxHeightPercent, maxWidthPercent, pickerWidthPercent (60), opacity, rounded,
+pageGrowth, menuGrowth, chordGrowth, aspect; `[keys]` keyStyle (text/symbols/ahk),
+legend (auto/off/top/bottom).
+
+Lists grow `proportional` by default: a list up to half of maxHeightPercent stays
+one column; a longer one gets balanced columns, as many as bring the overlay closest
+to your screen's shape (`aspect=monitor`, or a width ÷ height like `1.5`), instead of
+one tall column. A column may run up to 20% taller to end at a category. `vertical` fills each column
+to maxHeightPercent before starting the next. pageGrowth covers shortcut pages,
+menuGrowth the Alt+/ index and category menus, chordGrowth chord menus; pickers
+always grow vertically, keeping their order. maxHeightPercent, maxWidthPercent and
+maxColumns stay hard limits for both. Leave padding and rowSpacing out to get them from
 density. Tab and `=` change keyStyle and density until the script reloads.
 Save theme files as ASCII or UTF-16.
 

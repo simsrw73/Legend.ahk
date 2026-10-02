@@ -11,7 +11,7 @@ Navigator_New() {
             r.Bind(["komorebi", cat], "!" Chr(96 + (c - 1) * 3 + A_Index), cat " " A_Index, Noop)
     loop 8
         r.Bind(["komorebi", "Long"], "^!" A_Index, "long " A_Index, Noop)
-    nav := LegendNavigator(r.SortedPages(), rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    nav := LegendNavigator(r.SortedPages(), (rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
     nav.Registry := r
     return nav
 }
@@ -143,7 +143,7 @@ Navigator_Relayout() {
     nav.Press("k"), nav.Press("l"), nav.Press("Next")
     T.Eq(nav.View.ScreenIndex, 2)
     nav.Press("Pin")
-    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "symbols")
+    nav.Relayout((rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "symbols")
     T.Eq(nav.Stack.Length, 3)
     T.Eq(nav.View.Title, "komorebi › Long")
     T.Eq(nav.View.ScreenCount, 1)
@@ -171,7 +171,7 @@ Navigator_Chord() => LegendChord("#Space", "Launch", [
 ])
 
 Navigator_ChordNav() {
-    nav := LegendNavigator([], rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    nav := LegendNavigator([], (rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
     nav.OpenChord(Navigator_Chord())
     return nav
 }
@@ -209,7 +209,7 @@ Navigator_ChordFooter() {
     f := nav.Footer("tab text")
     T.True(InStr(f, "esc close") && InStr(f, "⌫ back") && InStr(f, "tab text"), f)
     T.True(!InStr(f, "pin"), f)
-    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 1000, 1), "ahk")
+    nav.Relayout((rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 1000, 1), "ahk")
     T.Eq(nav.View.Title, "Launch › Research")
     T.Eq(nav.Stack.Length, 2)
 }
@@ -229,7 +229,7 @@ Navigator_Many() {
     r := Registry_New()
     loop 7
         r.Bind(["Page " A_Index, "c"], "^!F" A_Index, "x", Noop)
-    nav := LegendNavigator(r.SortedPages(), rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    nav := LegendNavigator(r.SortedPages(), (rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
     nav.Open([])
     return nav
 }
@@ -299,7 +299,7 @@ Navigator_CursorRelayout() {
     nav := Navigator_Many()
     loop 5
         nav.Press("Down")
-    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "text")
+    nav.Relayout((rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 10000, 1), "text")
     T.Eq(nav.Level.Cursor, 6)
     T.Eq(nav.View.ScreenIndex, 1)
 }
@@ -313,7 +313,7 @@ Navigator_FooterKeys() {
     nav.Press("Enter")
     f := nav.Footer()
     T.True(!InStr(f, "↵ open") && !InStr(f, "^n/^p"), f)
-    chord := LegendNavigator([], rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    chord := LegendNavigator([], (rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
     items := []
     loop 7
         items.Push(LegendChordItem(Chr(96 + A_Index), "item " A_Index, Noop))
@@ -338,7 +338,7 @@ Navigator_LayoutKey() {
     nav.Press("Pin")
     T.True(nav.LayoutKey != key, "pin")
     key := nav.LayoutKey
-    nav.Relayout(rows => LegendLayout.Paginate(rows, FakeMeasure, 100, 1), "text")
+    nav.Relayout((rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 100, 1), "text")
     T.True(nav.LayoutKey != key, "relayout")
     key := nav.LayoutKey
     nav.Press("Enter")
@@ -355,7 +355,7 @@ Navigator_CursorColumns() {
     loop 7
         r.Bind(["Page " A_Index, "c"], "^!F" A_Index, "x", Noop)
     ; 3 rows per column, 2 columns per screen: screen 1 holds items 1–6, screen 2 item 7
-    nav := LegendNavigator(r.SortedPages(), rows => LegendLayout.Paginate(rows, FakeMeasure, 60, 2))
+    nav := LegendNavigator(r.SortedPages(), (rows, *) => LegendLayout.Paginate(rows, FakeMeasure, 60, 2))
     nav.Open([])
     T.Eq(nav.View.Columns.Length, 2)
     loop 3
@@ -383,4 +383,20 @@ Navigator_LayoutKeyUnique() {
     first := Navigator_Many()
     second := Navigator_Many()
     T.True(first.LayoutKey != second.LayoutKey, first.LayoutKey " = " second.LayoutKey)
+}
+
+T.Test("Navigator: paginate is told whether it lays out a page, a menu or a chord", Navigator_PaginateKinds)
+Navigator_PaginateKinds() {
+    kinds := []
+    record := (rows, kind) => (kinds.Push(kind), LegendLayout.Paginate(rows, FakeMeasure, 100, 1))
+    r := Registry_New()
+    r.Bind(["Zen", "Tabs"], "^t", "new tab", Noop)
+    nav := LegendNavigator(r.SortedPages(), record)
+    nav.Open([])
+    nav.Press("Enter")
+    T.Eq(kinds[1], "menu", "the index")
+    T.Eq(kinds[2], "page", "a page")
+    chord := LegendNavigator([], record)
+    chord.OpenChord(LegendChord("#F12", "Launch", [Legend.Run("z", "Zed", Noop)]))
+    T.Eq(kinds[3], "chord")
 }

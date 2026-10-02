@@ -106,3 +106,25 @@ Theme_PickerFallback() {
     latte := LegendTheme.Resolve(LegendTheme.Load("catppuccin-latte").Values)
     T.Eq(latte["outline"], "1E66F5")
 }
+
+T.Test("Theme: growth defaults to proportional with the monitor's aspect", Theme_GrowthDefaults)
+Theme_GrowthDefaults() {
+    v := LegendTheme.Read("")
+    for name in ["pageGrowth", "menuGrowth", "chordGrowth"]
+        T.Eq(v[name], "proportional", name)
+    T.Eq(v["aspect"], "monitor")
+}
+
+T.Test("Theme: growth settings parse; bad values warn and fall back", Theme_GrowthParse)
+Theme_GrowthParse() {
+    warnings := []
+    v := LegendTheme.Read(A_ScriptDir "\fixtures\themes\growth.ini", warnings)
+    T.Eq(v["pageGrowth"], "vertical")
+    T.Eq(v["chordGrowth"], "vertical")
+    T.Eq(v["menuGrowth"], "proportional", "sideways → default")
+    T.Eq(v["aspect"], 1.5)
+    T.Eq(warnings.Length, 1)
+    bad := []
+    T.Eq(LegendTheme.Read(A_ScriptDir "\fixtures\themes\growth-bad-aspect.ini", bad)["aspect"], "monitor")
+    T.Eq(bad.Length, 1)
+}

@@ -139,7 +139,8 @@ class Legend {
     }
 
     ; Resolves the theme with the session's display toggles, replaces the measurer, and
-    ; returns the matching paginate function.
+    ; returns the matching paginate function: (rows, kind) laid out by the theme's
+    ; <kind>Growth (kind: page, menu or chord).
     static ApplyDisplay() {
         theme := this.Theme := LegendTheme.Resolve(this.BaseTheme, this.DensityOverride, this.StyleOverride)
         if this.Measurer
@@ -148,8 +149,11 @@ class Legend {
         area := LegendOverlay.WorkArea()
         maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
         maxWidth := (area.Right - area.Left) * theme["maxWidthPercent"] // 100 - theme["padding"] * 2
-        return rows => LegendLayout.Paginate(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"],
-            maxWidth, theme["columnGap"])
+        aspect := theme["aspect"] = "monitor" ? (area.Right - area.Left) / Max(1, area.Bottom - area.Top) : theme["aspect"]
+        return (rows, kind) => theme[kind "Growth"] = "vertical"
+            ? LegendLayout.Paginate(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"], maxWidth, theme["columnGap"])
+            : LegendLayout.Proportional(rows, measurer, maxHeight, theme["maxColumns"], theme["padding"], maxWidth,
+                theme["columnGap"], aspect)
     }
 
     ; Tab cycles key notation, = flips density; both last until the script reloads.
