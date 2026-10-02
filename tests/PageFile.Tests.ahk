@@ -97,3 +97,16 @@ PageFile_LoadDir() {
     T.Eq(missing[1].Page, "")
     T.True(InStr(missing[1].Warnings[1], "not found"))
 }
+
+T.Test("PageFile: every page in collections/apps parses without warnings", PageFile_Collections)
+PageFile_Collections() {
+    results := LegendPageFile.LoadDir(A_ScriptDir "\..\collections\apps")
+    T.True(results.Length >= 40, "found " results.Length " pages")
+    for result in results {
+        warnings := ""
+        for warning in result.Warnings
+            warnings .= warning "; "
+        T.Eq(warnings, "", "warnings")
+        T.True(IsObject(result.Page) && result.Page.Entries.Length > 0, "a page with keys")
+    }
+}

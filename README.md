@@ -138,6 +138,22 @@ everything else is ignored. Write keys as `Ctrl+Shift+T`; ranges like
 `Ctrl+1–8` are shown as written. A `match:` in a file decides which page opens
 for the active window; only a match given in code makes hotkeys app-specific.
 
+## Collections
+
+`collections/apps/` holds ready-made pages for about 40 apps: browsers, mail and
+calendars, editors, chat, password managers, launchers, file managers and more.
+Each one covers what is worth knowing by keyboard (an app's palette, search,
+navigation and its own features), not the keys every Windows app shares. Copy
+the ones you use into your pages folder and edit them freely:
+
+```ahk
+Legend.Start({Pages: [A_ScriptDir "\legend\pages"]})   ; your copies live here
+```
+
+Pages for web apps (Gmail, Google Calendar, Fastmail) match the window title, so
+they open in any browser. Keys were checked against each vendor's Windows docs
+where they exist; corrections are welcome.
+
 ## Using the overlay
 
 | Key | Effect |
@@ -208,6 +224,10 @@ Legend had any. Nested chords, conditions where the first match wins, modifier
 steps and the wildcard syntax all come from it, and the wildcards keep KeyChord's
 syntax on purpose. Many thanks to tylerjcw for building KeyChord and sharing it:
 it showed how good chords can feel in AutoHotkey.
+
+Many of the collection pages started from
+[hotkys](https://github.com/solomkinmv/hotkys) by Maksym Solomkin (MIT), a
+searchable catalog of app shortcuts, translated to Windows keys.
 
 ## License
 

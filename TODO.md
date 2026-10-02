@@ -6,5 +6,3 @@
 - Decide whether the window switcher should send commands to the selected
   window without leaving the switcher: minimize, close, move to another
   monitor or virtual desktop, and so on. Later.
-- Find list of shortcuts to adapt so we can provide a few good collections:
-  https://github.com/solomkinmv/hotkys/tree/main
