@@ -8,7 +8,3 @@
   monitor or virtual desktop, and so on. Later.
 - Find list of shortcuts to adapt so we can provide a few good collections:
   https://github.com/solomkinmv/hotkys/tree/main
-- Refresh the README screenshots (docs/images, taken 2026-09-28): footers now use
-  the shared key scheme (↵ open · ^n/^p move · ^f/^b), menus show a selection
-  bar, and there is no picture of a picker or the window switcher yet. The
-  w11dwm-config README reuses the overlay and chord images.

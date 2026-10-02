@@ -87,6 +87,11 @@ density, Esc cancels. Items are
 Alt+/). Letters are assigned home row first and never use h/j/k/l or the
 trigger's key.
 
+<p align="center">
+  <img src="docs/images/picker-filter.png" width="380"
+       alt="A picker filtered by typing / re: three matching rows, the first selected">
+</p>
+
 ## Window switcher
 
 ```ahk
@@ -102,6 +107,11 @@ The highlighted window comes forward and gets an outline (theme color
 default restore-and-activate) and `Detail` (`win => text`, the row's detail;
 `win` has `Hwnd, Title, App, X, Y, W, H, Monitor, Minimized, Cloaked,
 OnCurrentDesktop`).
+
+<p align="center">
+  <img src="docs/images/window-switcher.png" width="423"
+       alt="The window switcher: windows with icons, letters and app · workspace details, the previous window selected">
+</p>
 
 `LegendWindows.Focus(direction)` (`"left"`, `"right"`, `"up"`, `"down"`) activates the
 nearest visible window that way by top-left corners, crossing to the next
@@ -149,7 +159,7 @@ for the active window; only a match given in code makes hotkeys app-specific.
 > closes); page with Ctrl+F/Ctrl+B, PgDn/PgUp or Space.
 
 <p align="center">
-  <img src="docs/images/overlay-index.png" width="341" alt="The index of pages, each with its letter">
+  <img src="docs/images/overlay-index.png" width="414" alt="The index of pages, each with its letter">
   &nbsp;
   <img src="docs/images/overlay-symbols.png" width="362" alt="The komorebi page with keys shown as symbols (Tab)">
 </p>
