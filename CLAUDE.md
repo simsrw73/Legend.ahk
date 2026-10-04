@@ -1,0 +1,62 @@
+# Legend: notes for Claude
+
+AutoHotkey v2 library: Alt+/ shortcut overlay, chord menus, pickers, window
+switcher. Public repo (simsrw73/Legend.ahk). Specs in `docs/specs/`, plans in
+`docs/plans/`, backlog in `TODO.md`.
+
+## Running things
+
+- Tests: `pwsh -NoProfile -File tests/Run-Tests.ps1`. Runs every suite
+  (`tests/Legend.Tests.ahk` includes them all), then validates `Legend.ahk`,
+  each `examples/*.ahk` and the WarnHost fixture. All must pass.
+- Run AutoHotkey only from PowerShell, never from Git Bash: MSYS rewrites
+  `/ErrorStdOut` into a path and AutoHotkey pops a modal dialog on the user's
+  desktop.
+- Don't send keystrokes, open menus or click on the user's screen without
+  asking. Drive the code directly instead (`Legend.HandleNow`,
+  `Legend.PickerKey`, `Legend.OpenChordNow`), as the tests do.
+
+## AutoHotkey v2 traps
+
+- Locals must not shadow built-ins (`log`, `menu`, `min`, `max`, `mod`,
+  `hotkey`, `file`) or any global in `tests/fixtures/warn-host/WarnHost.ahk`
+  (a–z, `out`, `id`, `fn`, `app`, `pad`, `ch`, `vk`, `sc`, `cx`, `cy`, `wx`,
+  `wy`, `ww`, `wh`, `lh`, `th`, `ty`, `bgr`, `rgb`, `ih`). Hosts run
+  `#Warn All`, so a clash warns in their script. The WarnHost validation
+  catches it.
+- `=` and `!=` ignore case. Use `==` / `!==` when case matters (shifted chord
+  keys depended on this).
+- `catch as err` makes `err` a local; fine in Legend, but host test harnesses
+  with a global `err` warn.
+
+## Win32 lessons
+
+- Never send `WM_SETREDRAW` to the overlay window: it clears `WS_VISIBLE` and
+  DWM drops the overlay for a frame (the user saw whole-window flashes).
+- Overlay moves the cursor in place (`Legend.Render`, `LegendSelection`);
+  only a new layout key rebuilds the window.
+- Screen coordinates: per-monitor DPI (`SetThreadDpiAwarenessContext(-4)`),
+  window bounds from `DwmGetWindowAttribute(9)` (extended frame bounds).
+- A static text control needs `SS_NOTIFY` (`+0x100`) to receive the mouse.
+
+## Structure
+
+`Legend.ahk` is the controller (Start, Open/Draw, chords, pickers).
+`src/`: `Registry` (pages, PageKeys, warnings), `Navigator` (pure level
+stack), `Layout` (vertical and proportional packing), `Rows`, `Overlay`
+(drawing pipeline: `Frame`/`Finish`, table and list bodies), `Theme`,
+`Chord*`, `Picker`, `Windows`/`WindowSwitcher`, `Letters` (sticky page
+letters), `PageFile` (Markdown pages). `collections/apps/` holds page files
+for ~40 apps; a test parses them all.
+
+## Workflow
+
+- Feature branch, TDD (watch the test fail first), full suite, then
+  fast-forward `main` and push. Commits are GPG-signed; never bypass.
+- Consumers: the dotfiles (`linked/AutoHotKey/Lib/Legend` submodule) and the
+  public mirror `~/projects/w11dwm.config` (`autohotkey/Lib/Legend`). Push
+  Legend before bumping either submodule.
+- README screenshots: render each overlay from a script that includes the
+  dotfiles config (hotkeys suspended, `LetterFile: ""`), put a solid
+  `11111B` window behind the translucent overlay, capture its DWM bounds in
+  physical pixels. README `width` = half the pixel width.
