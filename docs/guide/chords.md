@@ -1,9 +1,8 @@
 # Chords: which-key menus
 
-**Audience:** Legend users who want a keyboard launcher or menus of actions.
-**Topic:** chord menus: items, submenus, running-app dots, conditions, sent
-keys, key ranges and timing.
-**Goal:** build a Win+Space launcher that opens any app in two keystrokes.
+Use chords to build a keyboard launcher or menus of actions. This guide covers
+items, submenus, running-app dots, conditions, sent keys, key ranges, and
+timing, then builds a Win+Space launcher that opens an app in two keystrokes.
 
 ## What a chord is
 

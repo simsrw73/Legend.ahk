@@ -1,9 +1,9 @@
 # Troubleshooting
 
-**Audience:** anyone whose Legend setup isn't doing what they expect.
-**Topic:** common problems, every warning Legend shows, errors that stop a
-script, and what Legend can and can't do on your machine.
-**Goal:** find and fix the problem without reading Legend's source.
+Use this guide when a Legend setup is not doing what you expect. It covers
+common problems, every warning Legend shows, errors that stop a script, and
+what Legend can and cannot do on your machine, so you can find and fix the
+problem without reading the source.
 
 ## My script won't start
 

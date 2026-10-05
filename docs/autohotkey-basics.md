@@ -1,8 +1,8 @@
 # AutoHotkey basics for Legend
 
-**Audience:** people new to AutoHotkey v2, or coming from v1.
-**Topic:** the handful of AutoHotkey v2 features that Legend's examples use.
-**Goal:** read and change any example in these docs with confidence.
+This page covers the AutoHotkey v2 features used in Legend's examples. It is
+for people new to v2, including those coming from v1, and should give you
+enough context to read and change the examples with confidence.
 
 If you already write AutoHotkey v2 scripts, skip this page and go to
 [Getting started](getting-started.md).

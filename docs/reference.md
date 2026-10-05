@@ -1,8 +1,8 @@
 # Legend reference
 
-**Audience:** Legend users who know the basics and want exact details.
-**Topic:** every public function, option and data shape in Legend.
-**Goal:** look up any parameter, default or field without reading the source.
+This reference covers every public function, option, and data shape in Legend.
+It is for users who know the basics and need to look up a parameter, default,
+or field without reading the source.
 
 New to Legend? Start with [Getting started](getting-started.md). Each entry
 links to the guide that explains it with examples.

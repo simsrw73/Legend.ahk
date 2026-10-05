@@ -1,9 +1,8 @@
 # Themes and layout
 
-**Audience:** Legend users who want the overlay to match their desktop.
-**Topic:** theme files: colors, fonts, spacing, how lists grow into columns, and
-key notation.
-**Goal:** make your own theme, or tune the built-in one.
+Use theme files to make the overlay match your desktop or tune the built-in
+theme. This guide covers colors, fonts, spacing, how lists grow into columns,
+and key notation.
 
 ## The default
 

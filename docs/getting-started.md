@@ -1,9 +1,9 @@
 # Getting started with Legend
 
-**Audience:** anyone with AutoHotkey v2 installed, including first-time scripters.
-**Topic:** installing Legend and building one script, step by step.
-**Goal:** by the end you have hotkeys that show up in a Legend overlay, an
-app-specific page, a page of an app's own shortcuts, and a Win+Space launcher.
+This guide is for anyone with AutoHotkey v2 installed, including first-time
+scripters. It walks through installing Legend and building one script. By the
+end, you will have hotkeys in a Legend overlay, an app-specific page, a page of
+an app's own shortcuts, and a Win+Space launcher.
 
 Each step is a complete script: copy it over the previous one, reload, and try
 it. New to AutoHotkey's syntax? Read [AutoHotkey basics](autohotkey-basics.md)

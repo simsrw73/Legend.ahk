@@ -1,11 +1,9 @@
 # Pickers and the window switcher
 
-**Audience:** Legend users who want keyboard-driven lists: choose a file, a
-snippet, a window.
-**Topic:** `Legend.Picker`, the built-in window switcher, and directional window
-focus.
-**Goal:** add a list you open with a hotkey, filter by typing, and pick from
-with one key.
+Pickers are keyboard-driven lists for choosing a file, snippet, or window. This
+guide covers `Legend.Picker`, the built-in window switcher, and directional
+window focus. It shows how to open a list with a hotkey, filter it by typing,
+and choose an item with one key.
 
 ## What a picker is
 

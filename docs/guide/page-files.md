@@ -1,9 +1,8 @@
 # Page files, collections and page letters
 
-**Audience:** Legend users who want to list an app's own shortcuts.
-**Topic:** writing pages in Markdown, using the ready-made collections, and
-controlling the letters in the Alt+/ index.
-**Goal:** keep reference pages for every app you use, without writing code.
+Page files let you list an app's own shortcuts without writing code. This guide
+shows how to write pages in Markdown, use the ready-made collections, and
+control the letters in the Alt+/ index.
 
 ## Why page files
 

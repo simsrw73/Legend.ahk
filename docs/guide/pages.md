@@ -1,9 +1,9 @@
 # Pages and bindings
 
-**Audience:** Legend users who have done [Getting started](../getting-started.md).
-**Topic:** building pages from code: categories, groups, merged rows, one-line
-bindings, doc-only keys and app-specific pages.
-**Goal:** organize a growing set of hotkeys so the overlay stays easy to read.
+After [Getting started](../getting-started.md), use this guide to build pages
+from code. It covers categories, groups, merged rows, one-line bindings,
+doc-only keys, and app-specific pages so a growing set of hotkeys stays easy to
+read.
 
 ## How a page is organized
 
