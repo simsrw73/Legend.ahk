@@ -32,4 +32,13 @@ $warnHost = Join-Path $PSScriptRoot 'fixtures\warn-host\WarnHost.ahk'
 $check = & $AutoHotkey /ErrorStdOut /Validate $warnHost 2>&1 | Out-String
 if ($LASTEXITCODE -or $check -match 'Warning') { $failures += 1; Write-Host "validate WarnHost FAILED`n$check" }
 else { Write-Host 'validate fixtures\warn-host\WarnHost.ahk ok' }
+# Every ```ahk block in README.md and docs/
+& (Join-Path $PSScriptRoot 'Check-Docs.ps1') -AutoHotkey $AutoHotkey
+$failures += $LASTEXITCODE
+# Relative links and #anchors in README.md and docs/ (needs Python; skipped without it)
+$python = Get-Command python -ErrorAction SilentlyContinue
+if ($python) {
+    Push-Location $root
+    try { & $python.Source (Join-Path $PSScriptRoot 'check_links.py'); $failures += $LASTEXITCODE } finally { Pop-Location }
+} else { Write-Host 'links: skipped (no python)' }
 exit $failures

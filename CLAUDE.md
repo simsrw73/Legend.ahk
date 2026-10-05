@@ -8,7 +8,13 @@ switcher. Public repo (simsrw73/Legend.ahk). Specs in `docs/specs/`, plans in
 
 - Tests: `pwsh -NoProfile -File tests/Run-Tests.ps1`. Runs every suite
   (`tests/Legend.Tests.ahk` includes them all), then validates `Legend.ahk`,
-  each `examples/*.ahk` and the WarnHost fixture. All must pass.
+  each `examples/*.ahk` and the WarnHost fixture, then every ```` ```ahk ````
+  block in README.md and docs/ (`tests/Check-Docs.ps1`; `<!-- fragment -->`
+  skips one) and every relative link (`tests/check_links.py`). All must pass.
+- User docs: README (front door) → `docs/getting-started.md`,
+  `docs/autohotkey-basics.md`, `docs/guide/*.md`, `docs/reference.md`,
+  `docs/troubleshooting.md`. Keep examples complete and runnable; update the
+  reference tables when an option or signature changes.
 - Run AutoHotkey only from PowerShell, never from Git Bash: MSYS rewrites
   `/ErrorStdOut` into a path and AutoHotkey pops a modal dialog on the user's
   desktop.
