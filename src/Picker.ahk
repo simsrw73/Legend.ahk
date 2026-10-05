@@ -7,6 +7,7 @@ class LegendPicker {
     static Pool := "asdfg;qwertyuiopzxcvbnm1234567890"
 
     __New(hotkey, title, source, options := "") {
+        local index, name, opt, trigger
         opt := (name, fallback) => IsObject(options) && options.HasOwnProp(name) ? options.%name% : fallback
         this.Hotkey := hotkey
         this.Title := title
@@ -59,6 +60,7 @@ class LegendPicker {
     }
 
     Load() {
+        local source
         source := this.Source
         this.Items := source(this.Scope)
         this.Loads += 1
@@ -67,6 +69,7 @@ class LegendPicker {
 
     ; Recomputes the visible rows and letters, putting the cursor on row `cursor` (clamped).
     Refresh(cursor) {
+        local item
         this.Visible := []
         for item in this.Items
             if LegendPicker.Matches(item, this.Query)
@@ -77,6 +80,7 @@ class LegendPicker {
 
     ; key: a LegendKey. Returns "redraw", "pick", "cancel", "density" or "none".
     Key(key) {
+        local index, letter, step
         if this.Mode = "filter"
             return this.FilterKey(key)
         if step := this.Step(key, true)
@@ -111,6 +115,7 @@ class LegendPicker {
     ; Returns {Action: "pick" | "cancel" | "redraw" | "none", Density: number of "="
     ; presses}; keys after a pick or cancel are dropped.
     KeyBatch(keys) {
+        local changed, density, key, result
         changed := false, density := 0
         for key in keys {
             result := this.Key(key)
@@ -127,6 +132,7 @@ class LegendPicker {
     }
 
     FilterKey(key) {
+        local char, selected, step
         if step := this.Step(key, false)
             return this.Move(step)
         switch key.Id {
@@ -161,6 +167,7 @@ class LegendPicker {
 
     ; Refreshes and puts the cursor back on item (row 1 if it is gone).
     Reselect(item) {
+        local index
         this.Refresh(1)
         for index, candidate in this.Visible
             if IsObject(item) && candidate == item
@@ -184,6 +191,7 @@ class LegendPicker {
     ; +1 / -1 for keys that move in both modes (and, in normal mode, the bare
     ; trigger key), else 0.
     Step(key, bare) {
+        local keyId
         keyId := key.Id
         if keyId == this.TriggerId || keyId == "Down" || keyId == "Ctrl+N" || bare && this.Bare(key, "")
             return 1
@@ -200,6 +208,7 @@ class LegendPicker {
     }
 
     Move(delta) {
+        local count
         count := this.Visible.Length
         if count < 2
             return "none"
@@ -208,6 +217,7 @@ class LegendPicker {
     }
 
     Page(direction) {
+        local count, size, target
         size := this.PageSize, count := this.Visible.Length
         if !size || count <= size
             return "none"
@@ -219,6 +229,7 @@ class LegendPicker {
     }
 
     ChangeScope(delta) {
+        local count
         count := this.Scopes.Length
         if count < 2
             return "none"
@@ -229,6 +240,7 @@ class LegendPicker {
 
     ; Rows of the current screen for drawing.
     ScreenRows() {
+        local index, item, rows
         rows := []
         if !this.Cursor
             return rows
@@ -246,6 +258,7 @@ class LegendPicker {
     }
 
     Footer(density) {
+        local part, parts, text
         parts := ["↵ pick", "^n/^p move"]
         if this.Mode = "filter" {
             if this.Scopes.Length > 1
@@ -277,6 +290,7 @@ class LegendPicker {
     ; One letter per item, top to bottom: its fixed Letter if in the pool and free,
     ; else the next free pool letter, else "". triggerName's key is never used.
     static AssignLetters(items, triggerName := "") {
+        local char, fixed, index, item, letter, letters, next, pool, used
         pool := StrLen(triggerName) = 1 ? StrReplace(this.Pool, StrLower(triggerName)) : this.Pool
         used := Map(), letters := []
         letters.Length := items.Length

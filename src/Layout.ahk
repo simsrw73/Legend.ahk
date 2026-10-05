@@ -9,6 +9,7 @@
 class LegendLayout {
     ; Vertical growth: fill each column to maxHeight, then start the next.
     static Paginate(rows, measure, maxHeight, maxColumns, gap := 16, maxWidth := 0, columnGap := 0) {
+        local items, pages
         pages := {Screens: [], Columns: [], Width: 0}
         for items in this.Pack(this.Measured(rows, measure), maxHeight)
             this.AddColumn(pages, this.Finish(items, gap), maxColumns, maxWidth, columnGap)
@@ -23,6 +24,7 @@ class LegendLayout {
     ; maxWidth and maxColumns stay hard limits; content that can't fit one screen
     ; within them pages like Paginate.
     static Proportional(rows, measure, maxHeight, maxColumns, gap := 16, maxWidth := 0, columnGap := 0, aspect := 16 / 9) {
+        local best, bestDistance, col, columns, distance, height, item, items, least, packed, total, width
         items := this.Measured(rows, measure)
         least := this.Pack(items, maxHeight).Length   ; columns the height cap needs
         total := 0
@@ -48,6 +50,7 @@ class LegendLayout {
     }
 
     static Measured(rows, measure) {
+        local items, row
         items := []
         for row in rows
             items.Push({Row: row, Size: measure(row)})
@@ -58,6 +61,7 @@ class LegendLayout {
     ; the smallest column limit (up to maxHeight) that still needs no more columns.
     ; A limit up to 20% taller wins if more columns then start at a category heading.
     static Balanced(items, count, maxHeight) {
+        local best, bestScore, high, item, limit, low, mid, packed, score, step
         low := 0, step := ""
         for item in items
             low := Max(low, item.Size.H), step := step = "" ? item.Size.H : Min(step, item.Size.H)
@@ -81,6 +85,7 @@ class LegendLayout {
 
     ; Columns after the first that open with a category heading.
     static CategoryStarts(columns) {
+        local col, starts
         starts := 0
         for col in columns
             if A_Index > 1 && col[1].Row.Kind = "heading"
@@ -91,6 +96,7 @@ class LegendLayout {
     ; Packs items into columns no taller than limit. A heading or group row never ends
     ; a column: it moves to the next one with the rows it introduces.
     static Pack(items, limit) {
+        local carry, col, columns, height, item, moved
         columns := [], col := [], height := 0
         for item in items {
             if col.Length && height + item.Size.H > limit {
@@ -126,6 +132,7 @@ class LegendLayout {
 
     ; A column record from measured items: {Rows, KeyWidth, Width, Height}.
     static Finish(items, gap) {
+        local height, item, keyWidth, rows, width
         keyWidth := 0, height := 0
         for item in items
             keyWidth := Max(keyWidth, item.Size.KeyW), height += item.Size.H

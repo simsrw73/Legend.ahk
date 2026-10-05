@@ -6,6 +6,7 @@
 ; Empty categories and groups produce nothing.
 class LegendRows {
     static ForPage(page, style) {
+        local body, cat, rows
         rows := []
         for cat in page.Categories {
             body := this.ForCategory(cat, style)
@@ -19,6 +20,7 @@ class LegendRows {
     }
 
     static ForCategory(cat, style) {
+        local body, group, rows
         rows := []
         for group in cat.Groups {
             body := this.ForGroup(group, style)
@@ -34,6 +36,7 @@ class LegendRows {
     ; Entries sharing a Row label collapse into one row, shown as bound only if all
     ; of them are bound. Its text is the first Text set, else the first description.
     static ForGroup(group, style) {
+        local merged, row, rows, shortcut
         rows := [], merged := Map()
         for shortcut in group.Entries {
             if shortcut.Row = "" {
@@ -59,6 +62,7 @@ class LegendRows {
 
     ; items: [{Letter, Label}]
     static ForMenu(items) {
+        local item, rows
         rows := []
         for item in items
             rows.Push(this.Row("entry", item.Letter, item.Label " ›", "menu"))
@@ -67,6 +71,7 @@ class LegendRows {
 
     ; Chord menu items (already filtered by LegendChords.Visible).
     static ForChord(items, style) {
+        local item, rows
         rows := []
         for item in items
             rows.Push(this.Row("entry", item.Pattern.Display(style), item.Label (item.IsMenu ? " ›" : ""),

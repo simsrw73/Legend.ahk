@@ -7,6 +7,7 @@ class LegendPageFile {
     ; Returns {Page, Warnings}. Page is "" when the file is unusable, otherwise
     ; {Title, Match, Letter, Entries: [{Category, Group, Key, Description}]}.
     static Parse(text, source := "page") {
+        local closed, err, found, group, key, letter, line, lineNo, lines, page, rest, start, warnings
         lines := StrSplit(StrReplace(LTrim(text, Chr(0xFEFF)), "`r"), "`n")
         page := {Title: "", Match: "", Letter: "", Entries: []}
         warnings := []
@@ -90,6 +91,7 @@ class LegendPageFile {
     }
 
     static Load(path) {
+        local err, name, text
         SplitPath(path, &name)
         try
             text := FileRead(path, "UTF-8")
@@ -100,6 +102,7 @@ class LegendPageFile {
 
     ; Parses every *.md file in dir.
     static LoadDir(dir) {
+        local results
         if !DirExist(dir)
             return [{Page: "", Warnings: ["pages folder not found: " dir]}]
         results := []

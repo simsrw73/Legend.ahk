@@ -36,9 +36,7 @@ foreach ($file in $files) {
         if (-not $hasInclude) { $code = @("#Include `"$legend`"") + $code }
         if (-not ($code -match '^\s*#Requires')) { $code = @('#Requires AutoHotkey v2.0') + $code }
         # Warnings catch names a block uses but never defines (a function from nowhere).
-        # LocalSameAsGlobal is off: a doc's global named like one of Legend's locals
-        # (page, key, name) warns inside Legend; see docs/troubleshooting.md.
-        if (-not ($code -match '^\s*#Warn')) { $code = @('#Warn All, StdOut', '#Warn LocalSameAsGlobal, Off') + $code }
+        if (-not ($code -match '^\s*#Warn')) { $code = @('#Warn All, StdOut') + $code }
         $block = Join-Path $work ("{0}-{1}.ahk" -f ($rel -replace '[\\/.]', '_'), $start)
         Set-Content $block $code -Encoding UTF8
         $checked++

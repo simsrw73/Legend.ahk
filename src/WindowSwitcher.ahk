@@ -6,6 +6,7 @@ class LegendWindowSwitcher {
     static ScopeLabels := Map("all", "all windows", "desktop", "this desktop", "monitor", "this monitor")
 
     __New(hotkey, options := "") {
+        local labels, name, opt
         opt := (name, fallback) => IsObject(options) && options.HasOwnProp(name) ? options.%name% : fallback
         this.Include := opt("Include", ""), this.ActivateFn := opt("Activate", ""), this.DetailFn := opt("Detail", "")
         this.Icons := Map()     ; icons Legend extracted and must destroy
@@ -34,6 +35,7 @@ class LegendWindowSwitcher {
     static StartFor(start, activeListed) => activeListed ? start : Max(1, start - 1)
 
     static ScopeOf(label) {
+        local text
         for scope, text in this.ScopeLabels
             if text = label
                 return scope
@@ -41,6 +43,7 @@ class LegendWindowSwitcher {
     }
 
     Source(label) {
+        local active, item, items, win, windows
         this.FreeIcons()
         scope := LegendWindowSwitcher.ScopeOf(label)
         active := WinExist("A")
@@ -111,6 +114,7 @@ class LegendWindowSwitcher {
     }
 
     Pick(item) {
+        local win
         this.Peek.Clear(false)
         this.FreeIcons()
         win := item.Data
@@ -140,6 +144,7 @@ class LegendPeek {
     }
 
     Show(win) {
+        local overlay
         static GW_HWNDPREV := 3
         static SWP_QUIET := 0x13   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
         this.Clear(true)
@@ -183,6 +188,7 @@ class LegendPeek {
     ; A click-through, always-on-top frame `thickness` px outside bounds, placed just
     ; below the window `below` when given (a new topmost window would cover it).
     static Frame(bounds, color, thickness := 4, below := 0) {
+        local frame
         frame := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000020")   ; NOACTIVATE | TRANSPARENT
         frame.BackColor := color
         frameW := bounds.W + thickness * 2, frameH := bounds.H + thickness * 2

@@ -9,6 +9,7 @@ class LegendWindows {
     ; Runs fn with the thread per-monitor DPI aware (v2): DWM bounds are always physical
     ; pixels, and MonitorGet agrees with them only in that mode.
     static InPhysicalPixels(fn) {
+        local previous
         static PER_MONITOR_AWARE_V2 := -4
         previous := DllCall("SetThreadDpiAwarenessContext", "Ptr", PER_MONITOR_AWARE_V2, "Ptr")
         try return fn()
@@ -21,6 +22,7 @@ class LegendWindows {
     ; when they belong to a virtual desktop or Include lets them in. AutoHotkey reports
     ; cloaked windows as hidden, so hidden windows are searched and WS_VISIBLE checked.
     static ListNow(options) {
+        local appName, bounds, cloaked, coverage, desktopId, desktops, exclude, hwnd, include, minimized, monitors, opt, result, title, visibleOnly, wasDetecting, withMinimized
         static WS_VISIBLE := 0x10000000, WS_EX_TOOLWINDOW := 0x80
         opt := (name, fallback) => IsObject(options) && options.HasOwnProp(name) ? options.%name% : fallback
         withMinimized := opt("Minimized", true), visibleOnly := opt("VisibleOnly", false)
@@ -70,6 +72,7 @@ class LegendWindows {
 
     ; Visible bounds from DWM (WinGetPos includes invisible resize borders).
     static Bounds(hwnd) {
+        local left, rect, top, winH, winW, winX, winY
         static DWMWA_EXTENDED_FRAME_BOUNDS := 9
         rect := Buffer(16, 0)
         if DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_EXTENDED_FRAME_BOUNDS, "Ptr", rect, "UInt", 16) = 0 {
@@ -83,6 +86,7 @@ class LegendWindows {
     ; Where a minimized window will be restored, in screen coordinates.
     ; WINDOWPLACEMENT.rcNormalPosition is in workspace coordinates.
     static NormalBounds(hwnd) {
+        local bounds, left, monBottom, monLeft, monRight, monTop, placement, primaryIndex, top, workBottom, workLeft, workRight, workTop
         placement := Buffer(44, 0)
         NumPut("UInt", 44, placement)
         DllCall("GetWindowPlacement", "Ptr", hwnd, "Ptr", placement)
@@ -101,6 +105,7 @@ class LegendWindows {
         {X: bounds.X + primaryWork.Left - primary.Left, Y: bounds.Y + primaryWork.Top - primary.Top, W: bounds.W, H: bounds.H}
 
     static IsCloaked(hwnd) {
+        local cloaked
         static DWMWA_CLOAKED := 14
         cloaked := 0
         DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_CLOAKED, "UInt*", &cloaked, "UInt", 4)
@@ -108,6 +113,7 @@ class LegendWindows {
     }
 
     static Monitors() {
+        local bottom, left, monitors, right, top
         monitors := []
         loop MonitorGetCount() {
             MonitorGet(A_Index, &left, &top, &right, &bottom)
@@ -118,6 +124,7 @@ class LegendWindows {
 
     ; Index of the monitor containing the point, or the nearest one when it's off-screen.
     static MonitorAt(monitors, x, y) {
+        local best, bestDistance, dx, dy, mon
         best := 1, bestDistance := ""
         for mon in monitors {
             dx := x < mon.Left ? mon.Left - x : x >= mon.Right ? x - mon.Right + 1 : 0
@@ -137,6 +144,7 @@ class LegendWindows {
     static Focus(direction) => this.InPhysicalPixels(() => this.FocusNow(direction))
 
     static FocusNow(direction) {
+        local active, current, entry, from, monitors, next, target, windows
         if !(active := WinExist("A"))
             return
         from := this.Bounds(active)
@@ -155,6 +163,7 @@ class LegendWindows {
     }
 
     static OnMonitor(windows, index) {
+        local result, win
         result := []
         for win in windows
             if win.Monitor = index
@@ -164,6 +173,7 @@ class LegendWindows {
 
     ; The monitor wholly beyond current in that direction, nearest first, or "".
     static NextMonitor(monitors, current, direction) {
+        local best, beyond, mon, ok
         beyond := []
         for mon in monitors {
             switch direction {
@@ -194,6 +204,7 @@ class LegendWindows {
     ; distance along the direction plus twice the sideways offset. With strict, only
     ; items strictly beyond (x, y) count. "" when none does.
     static Nearest(items, direction, x, y, strict) {
+        local across, along, best, bestScore, dx, dy, item, score
         best := "", bestScore := ""
         for item in items {
             dx := item.X - x, dy := item.Y - y
@@ -216,6 +227,7 @@ class LegendWindows {
     ; when activation alone doesn't switch desktops (PullFromOtherDesktops). Windows on
     ; other desktops are cloaked, which AutoHotkey treats as hidden.
     static Activate(hwnd) {
+        local target, wasDetecting
         wasDetecting := DetectHiddenWindows(true)
         try {
             target := "ahk_id " hwnd
@@ -235,6 +247,7 @@ class LegendCoverage {
     static RGN_AND := 1, RGN_OR := 2, RGN_DIFF := 4
 
     __New(monitors) {
+        local mon, rgn
         this.Screen := DllCall("CreateRectRgn", "Int", 0, "Int", 0, "Int", 0, "Int", 0, "Ptr")
         this.Covered := DllCall("CreateRectRgn", "Int", 0, "Int", 0, "Int", 0, "Int", 0, "Ptr")
         for mon in monitors {
@@ -250,6 +263,7 @@ class LegendCoverage {
     }
 
     Add(bounds) {
+        local total, uncovered, window
         window := DllCall("CreateRectRgn", "Int", bounds.X, "Int", bounds.Y, "Int", bounds.X + bounds.W, "Int", bounds.Y + bounds.H, "Ptr")
         uncovered := DllCall("CreateRectRgn", "Int", 0, "Int", 0, "Int", 0, "Int", 0, "Ptr")
         try {
@@ -267,6 +281,7 @@ class LegendCoverage {
 
     ; Sum of the region's rectangles (RGNDATA: 32-byte header, then RECTs).
     static Area(rgn) {
+        local area, data, offset, size
         if !(size := DllCall("GetRegionData", "Ptr", rgn, "UInt", 0, "Ptr", 0, "UInt"))
             return 0
         data := Buffer(size)
@@ -297,6 +312,7 @@ class LegendDesktops {
 
     ; True when hwnd is on the current desktop (or when that can't be told).
     OnCurrent(hwnd) {
+        local onCurrent
         onCurrent := 1
         if this.Manager
             try ComCall(3, this.Manager, "Ptr", hwnd, "Int*", &onCurrent)
@@ -305,6 +321,7 @@ class LegendDesktops {
 
     ; hwnd's desktop GUID as "{…}" text, or "" for none (background UWP ghosts).
     DesktopOf(hwnd) {
+        local guid, text
         if !this.Manager
             return ""
         guid := Buffer(16, 0)
@@ -318,6 +335,7 @@ class LegendDesktops {
 
     ; Moves hwnd to the current desktop (the desktop of the active window).
     MoveHere(hwnd) {
+        local here
         if !this.Manager
             return
         here := Buffer(16, 0)
@@ -328,6 +346,7 @@ class LegendDesktops {
     }
 
     static GuidText(guid) {
+        local text
         text := Buffer(80, 0)
         DllCall("ole32\StringFromGUID2", "Ptr", guid, "Ptr", text, "Int", 40)
         return StrGet(text, "UTF-16")
@@ -336,6 +355,7 @@ class LegendDesktops {
     ; The desktop's name, else "desktop N" by its place in Explorer's list, else
     ; "another desktop".
     static Label(desktopId) {
+        local guid, hex, ids, name, position
         try {
             name := RegRead(this.RegKey "\Desktops\" desktopId, "Name")
             if name != ""

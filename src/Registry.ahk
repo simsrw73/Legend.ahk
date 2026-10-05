@@ -27,6 +27,7 @@ class LegendCategory {
     }
 
     Group(name) {
+        local grp
         for grp in this.Groups
             if LegendRegistry.SameName(grp.Name, name)
                 return grp
@@ -55,6 +56,7 @@ class LegendPage {
     ; Code's Key, then PageKeys / a Pages entry's Key, then the file's key:.
     Letter {
         get {
+            local configured
             if this.CodeLetter != ""
                 return this.CodeLetter
             configured := IsObject(this.Registry) ? this.Registry.ConfiguredLetter(this.Title) : ""
@@ -64,6 +66,7 @@ class LegendPage {
 
     IsEmpty {
         get {
+            local cat, grp
             for cat in this.Categories
                 for grp in cat.Groups
                     if grp.Entries.Length
@@ -75,6 +78,7 @@ class LegendPage {
     ; Returns the named category (case-insensitive, any script), creating it. Each row is
     ; [hotkey, description, fn, options?] and is bound into group.
     Category(name, rows := "", group := "") {
+        local cat, existing, row
         cat := ""
         for existing in this.Categories
             if LegendRegistry.SameName(existing.Name, name) {
@@ -90,6 +94,7 @@ class LegendPage {
     }
 
     FindEntry(id) {
+        local cat, entry, grp
         for cat in this.Categories
             for grp in cat.Groups
                 for entry in grp.Entries
@@ -114,6 +119,7 @@ class LegendRegistry {
     ; Loads Start's Pages entries: a folder, a page file, or {Path, Key} (Key gives the
     ; file's page that letter).
     LoadPages(entries) {
+        local entry, key, path, result, results, warning
         for entry in entries {
             if IsObject(entry) && !entry.HasOwnProp("Path") {
                 this.Warn("pages: an entry object needs a Path; ignored")
@@ -145,12 +151,14 @@ class LegendRegistry {
 
     ; titleKeys: a Map or object of page title → letter.
     SetPageKeys(titleKeys) {
+        local key, title
         for title, key in titleKeys is Map ? titleKeys : titleKeys.OwnProps()
             this.SetPageKey(title, key)
     }
 
     ; source names the option in warnings: "PageKeys" or "pages".
     SetPageKey(title, key, source := "PageKeys") {
+        local known, letter
         letter := StrLower(key)
         if !RegExMatch(letter, "^[a-z0-9]$")
             return this.Warn(source ": key '" key "' for '" title "' must be one letter or digit; ignored")
@@ -161,6 +169,7 @@ class LegendRegistry {
     }
 
     ConfiguredLetter(title) {
+        local known
         for known in this.PageKeys
             if LegendRegistry.SameName(known.Title, title)
                 return known.Letter
@@ -169,6 +178,7 @@ class LegendRegistry {
 
     ; Warns about PageKeys titles no page has (a typo, or a page that was never loaded).
     CheckPageKeys() {
+        local known
         for known in this.PageKeys
             if !this.Get(known.Title)
                 this.Warn("PageKeys: no page titled '" known.Title "'")
@@ -191,6 +201,7 @@ class LegendRegistry {
     static SameName(a, b) => StrCompare(a, b, "Locale") = 0
 
     Get(title) {
+        local page
         for page in this.Pages
             if LegendRegistry.SameName(page.Title, title)
                 return page
@@ -200,6 +211,7 @@ class LegendRegistry {
     ; Returns the page with this title (case-insensitive), creating it. match and
     ; options.Key given here win over a page file's.
     Page(title, match := "", options := "") {
+        local letter, page
         page := this.Get(title)
         if !page
             this.Pages.Push(page := LegendPage(this, title))
@@ -221,17 +233,20 @@ class LegendRegistry {
 
     ; path: [page, category] or [page, category, group]
     Bind(path, hotkey, description, fn, options := "") {
+        local page
         page := this.PathPage(path)
         return page.Category(path[2]).Bind(hotkey, description, fn, options, path.Length >= 3 ? path[3] : "")
     }
 
     Doc(path, keyText, description) {
+        local page
         page := this.PathPage(path)
         return this.AddEntry(page, path[2], path.Length >= 3 ? path[3] : "", LegendKeyName.FromText(keyText), description, false)
     }
 
     ; Adds a parsed page file ({Title, Match, Letter, Entries}).
     AddFile(doc) {
+        local entry, page
         page := this.Page(doc.Title)
         page.FileMatch := doc.Match, page.FileLetter := doc.Letter
         this.CheckConflict(page)
@@ -242,6 +257,7 @@ class LegendRegistry {
     ; Registers a chord: binds its trigger to open (under its Match) and, once the
     ; reference is enabled, adds its reference page.
     AddChord(chord, open) {
+        local binder
         binder := this.Binder
         binder(chord.Hotkey, open, chord.Match)
         this.Chords.Push(chord)
@@ -254,6 +270,7 @@ class LegendRegistry {
     ; Warns about chord items that can never run: an earlier item on the same key has
     ; no If, so it always wins. (Items after a conditional one are fallbacks, not shadowed.)
     CheckShadowed(items, menuTitle) {
+        local always, item, keyId
         always := Map()
         for item in items {
             keyId := item.Pattern.Display("text")
@@ -268,6 +285,7 @@ class LegendRegistry {
 
     ; Legend.Start calls this once with its ChordReference option.
     EnableChordReference(enabled) {
+        local chord
         this.ChordReference := enabled ? true : false
         if enabled
             for chord in this.Chords
@@ -275,6 +293,7 @@ class LegendRegistry {
     }
 
     AddChordPage(chord) {
+        local page
         if !chord.Reference
             return
         page := this.Page(chord.Title)
@@ -286,6 +305,7 @@ class LegendRegistry {
     ; Registers a picker: binds its trigger to open (under its Match) and lists it on
     ; the "Pickers" reference page unless its Reference is false.
     AddPicker(picker, open) {
+        local binder
         binder := this.Binder
         binder(picker.Hotkey, open, picker.Match)
         this.Pickers.Push(picker)
@@ -296,6 +316,7 @@ class LegendRegistry {
 
     ; One category per menu level: the level's items first, then each submenu.
     AddChordLevel(page, items, steps, category) {
+        local item, path
         for item in items {
             path := steps.Clone()
             path.Push(item.Pattern)
@@ -312,6 +333,7 @@ class LegendRegistry {
     }
 
     AddBinding(page, category, group, hotkey, description, fn, options) {
+        local binder
         binder := this.Binder
         binder(hotkey, fn, page.CodeMatch)
         page.HasBindings := true
@@ -321,6 +343,7 @@ class LegendRegistry {
     ; Adds an entry, merging with an existing entry for the same key on this page:
     ; a binding upgrades a doc entry in place; a doc entry for a bound key is dropped.
     AddEntry(page, category, group, key, description, bound, options := "") {
+        local entry, existing
         existing := key.Verbatim = "" ? page.FindEntry(key.Id) : ""
         if !existing {
             entry := LegendEntry(key, description, bound, options)
@@ -345,6 +368,7 @@ class LegendRegistry {
     ; A page listing messages under 1, 2, …; not registered (Legend adds it to the
     ; index only while there are warnings).
     static WarningsPage(messages) {
+        local group, message, page
         page := LegendPage("", "Warnings")
         group := page.Category("Warnings").Group("")
         for message in messages
@@ -353,6 +377,7 @@ class LegendRegistry {
     }
 
     SortedPages() {
+        local page, pos, sorted
         sorted := []
         for page in this.Pages {
             if page.IsEmpty
@@ -379,6 +404,7 @@ class LegendRegistry {
     }
 
     Warn(message) {
+        local known
         for known in this.Warnings
             if known == message
                 return

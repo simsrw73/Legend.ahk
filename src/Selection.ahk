@@ -26,6 +26,7 @@ class LegendSelection {
     ; room for it and moving the selection never resizes the window. It sits at the
     ; top of the window, where no bar reaches (it would cut a notch into one).
     Reserve() {
+        local right, row
         if !this.Rows.Length
             return
         right := 0
@@ -40,6 +41,7 @@ class LegendSelection {
     ; (No WM_SETREDRAW: on a top-level window it clears WS_VISIBLE, and DWM can drop
     ; the whole overlay for a frame.)
     Select(index) {
+        local area, changed, hwnd, recolor, rect, rowIndex, selected
         static RDW_REPAINT := 0x185   ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
         if !IsInteger(index) || index < 0 || index > this.Rows.Length
             throw ValueError("selection index " index " is not 0–" this.Rows.Length, -1)

@@ -55,6 +55,7 @@ class Legend {
     static Run(key, label, action, options := "") => LegendChordItem(key, label, action, "", options)
     static Menu(key, label, items) => LegendChordItem(key, label, "", items)
     static Chord(hotkey, title, items, options := "") {
+        local chord
         chord := LegendChord(hotkey, title, items, options)
         return this.Registry.AddChord(chord, (*) => Legend.OpenChord(chord))
     }
@@ -74,6 +75,7 @@ class Legend {
     ; ChordTimeout (seconds, 0 = none), ChordOverlay ("always", "never" or a delay in
     ; ms, default 400), ChordReference (false hides chords from the reference).
     static Start(options := {}) {
+        local action, char, fallback, key, name
         if this.Options
             throw Error("Legend.Start was already called", -1)
         this.Options := {}
@@ -108,6 +110,7 @@ class Legend {
     static Toggle() => this.Visible ? this.Close() : this.Open()
 
     static Open() {
+        local err, matches, page, pages, paginate, sticky, theme, warnings
         if this.PickerState
             this.ClosePickerNow(true)
         if this.ChordState
@@ -140,6 +143,7 @@ class Legend {
     }
 
     static LoadTheme() {
+        local loaded
         loaded := LegendTheme.Load(this.Opt("Theme"), this.Opt("Themes"))
         this.BaseTheme := loaded.Values
         this.ThemeWarnings := loaded.Warnings
@@ -149,6 +153,7 @@ class Legend {
     ; returns the matching paginate function: (rows, kind) laid out by the theme's
     ; <kind>Growth (kind: page, menu or chord).
     static ApplyDisplay() {
+        local area, aspect, maxHeight, maxWidth, measurer, theme
         theme := this.Theme := LegendTheme.Resolve(this.BaseTheme, this.DensityOverride, this.StyleOverride)
         if this.Measurer
             this.Measurer.Destroy()
@@ -165,6 +170,7 @@ class Legend {
 
     ; Tab cycles key notation, = flips density; both last until the script reloads.
     static ChangeDisplay(action) {
+        local index, paginate, style
         if action = "Style" {
             for index, style in this.Styles
                 if style = this.Theme["keyStyle"]
@@ -182,6 +188,7 @@ class Legend {
     ; with, only the cursor moved: move the selection in place. Otherwise build() a
     ; new window and swap it in.
     static Render(layoutKey, build, index) {
+        local old
         if this.Gui && this.DrawnLayout == layoutKey {
             this.Gui.Selection.Select(index)
             return
@@ -194,6 +201,7 @@ class Legend {
     }
 
     static Draw() {
+        local col, footer, legendLine, mods, row, view, warnings
         view := this.Nav.View
         mods := []
         for col in view.Columns
@@ -208,6 +216,7 @@ class Legend {
     }
 
     static AllWarnings() {
+        local all
         all := this.Registry.Warnings.Clone()
         all.Push(this.ThemeWarnings*)
         return all
@@ -215,6 +224,7 @@ class Legend {
 
     ; The tooltip over the warning badge.
     static WarningTip(messages) {
+        local message, text
         text := ""
         for message in messages
             text .= (A_Index > 1 ? "`n" : "") A_Index ". " message
@@ -225,6 +235,7 @@ class Legend {
 
     ; WM_MOUSEMOVE: the warning badge shows the warnings as a tooltip.
     static OnMouseMove(hwnd) {
+        local overlay
         overlay := this.Gui
         overlay := IsObject(overlay) && overlay.HasOwnProp("WarningBadge") ? overlay : ""
         if overlay && hwnd = overlay.WarningBadge.Hwnd {
@@ -262,6 +273,7 @@ class Legend {
     ; A visible-mode InputHook sees keys without blocking them, so Ctrl/Alt/Win combos
     ; still reach the app while the overlay closes. A timer notices focus changes.
     static StartWatching() {
+        local held, keyHook, modVk
         this.Keys := LegendKeyWatch(this.HelpId, this.WatchClaims)
         held := []
         for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
@@ -287,6 +299,7 @@ class Legend {
     ; A shortcut closes the overlay (unless pinned), and so does a plain letter on a
     ; screen that does not use letters; either way the key itself reaches the app.
     static OnKeyDown(vk) {
+        local kind
         kind := this.Keys.Down(vk, GetKeyName(Format("vk{:X}", vk)))
         if kind = "combo" || (kind = "letter" && this.Visible && !this.Nav.ClaimsLetters)
             SetTimer(() => Legend.Handle("Combo"), -1)
@@ -306,6 +319,7 @@ class Legend {
     static OpenChord(chord) => this.Serialized(() => this.OpenChordNow(chord))
 
     static OpenChordNow(chord) {
+        local delay, held, keyHook, modVk, paginate, state, trigger, triggerHeld
         ; serialized by OpenChord
         if this.PickerState
             this.ClosePickerNow(true)
@@ -342,6 +356,7 @@ class Legend {
     }
 
     static ChordTimer(name, fn, period) {
+        local timers
         timers := this.ChordState.Timers
         if timers.Has(name)
             SetTimer(timers[name], 0)
@@ -350,12 +365,14 @@ class Legend {
     }
 
     static RestartChordTimeout() {
+        local seconds
         seconds := this.Opt("ChordTimeout")
         if IsNumber(seconds) && seconds > 0
             this.ChordTimer("Timeout", () => Legend.CloseChord(), -Integer(seconds * 1000))
     }
 
     static ShowChord() {
+        local state
         Critical
         state := this.ChordState
         if !state || state.Shown
@@ -377,6 +394,7 @@ class Legend {
 
     ; Hook callback: track modifiers here, handle real keys on the script thread.
     static ChordKeyDown(vk, sc) {
+        local key, name, state
         state := this.ChordState
         if !state || LegendKeyWatch.IgnoredVks.Has(vk) || state.Keys.Down(vk)
             return
@@ -393,6 +411,7 @@ class Legend {
     ; Otherwise a fast second key can close the chord (destroying the measurer) while
     ; the first key is still building a submenu, or leave a half-built overlay behind.
     static ChordKey(key, name) {
+        local action, item, keyId, shown, state
         Critical
         state := this.ChordState
         if !state
@@ -442,6 +461,7 @@ class Legend {
     ; Runs fn without being interrupted by Legend's other key and timer handlers, then
     ; restores the caller's Critical setting (Critical applies to the whole thread).
     static Serialized(fn) {
+        local was
         was := A_IsCritical
         Critical
         try
@@ -453,6 +473,7 @@ class Legend {
     static CloseChord() => this.Serialized(() => this.CloseChordNow())
 
     static CloseChordNow() {
+        local name, state, timer
         ; serialized by CloseChord
         state := this.ChordState
         if !state
@@ -470,12 +491,14 @@ class Legend {
     ; ---- Picker mode ----
 
     static Picker(hotkey, title, source, options := "") {
+        local picker
         picker := LegendPicker(hotkey, title, source, options)
         return this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))
     }
 
     ; A picker over windows; see LegendWindowSwitcher for options.
     static WindowSwitcher(hotkey, options := "") {
+        local picker, switcher
         switcher := LegendWindowSwitcher(hotkey, options)
         picker := switcher.Picker
         this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))
@@ -485,6 +508,7 @@ class Legend {
     static OpenPicker(picker) => this.Serialized(() => this.OpenPickerNow(picker))
 
     static OpenPickerNow(picker) {
+        local err, keyHook, state, trigger, triggerHeld
         ; serialized by OpenPicker
         if this.PickerState
             return
@@ -538,6 +562,7 @@ class Legend {
     }
 
     static RunDeferred() {
+        local callback, was
         if !IsObject(callback := this.Deferred)
             return
         this.Deferred := ""
@@ -550,6 +575,7 @@ class Legend {
     }
 
     static HeldModifiers() {
+        local held, modVk
         held := []
         for modVk in [0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0x5B, 0x5C]
             if GetKeyState(Format("vk{:X}", modVk), "P")
@@ -559,6 +585,7 @@ class Legend {
 
     ; The session density toggle wins, then the picker's Density, then the theme's.
     static PickerTheme() {
+        local density, picker, theme
         picker := this.PickerState.Picker
         density := this.DensityOverride != "" ? this.DensityOverride : picker.Density
         theme := LegendTheme.Resolve(this.BaseTheme, density, "")
@@ -567,6 +594,7 @@ class Legend {
     }
 
     static DrawPicker() {
+        local area, index, maxHeight, maxWidth, measurer, picker, state, theme
         state := this.PickerState, picker := state.Picker
         theme := this.PickerTheme()
         if !this.Measurer || state.MeasuredDensity != theme["density"] {
@@ -590,6 +618,7 @@ class Legend {
     ; Calls OnHighlight when the selected item changed; with "" when nothing is
     ; selected any more (a filter with no match).
     static Highlight() {
+        local item, onHighlight, state
         state := this.PickerState
         item := state.Picker.Selected
         if IsObject(item) ? IsObject(state.Highlighted) && item == state.Highlighted : !IsObject(state.Highlighted)
@@ -603,6 +632,7 @@ class Legend {
     ; The character the active keyboard layout produces for vk/sc with the modifiers
     ; held now (Shift, AltGr, CapsLock), or "" (dead keys, non-printing keys).
     static TypedChar(vk, sc) {
+        local chars, count, keyState, layout, modVk, threadId
         static modVks := [0x10, 0x11, 0x12, 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5]
         keyState := Buffer(256, 0)
         for modVk in modVks
@@ -626,6 +656,7 @@ class Legend {
     ; Hook callback: track modifiers here, handle keys on the script thread. The trigger
     ; pressed again while its modifiers are still held keeps those modifiers.
     static PickerKeyDown(vk, sc) {
+        local full, key, name, state
         state := this.PickerState
         if !state || LegendKeyWatch.IgnoredVks.Has(vk) || state.Keys.Down(vk)
             return
@@ -655,6 +686,7 @@ class Legend {
     }
 
     static DrainPickerKeys() {
+        local batch, item, keys, onPick, picker, state
         Critical
         state := this.PickerState
         if !state || !state.Pending.Length
@@ -687,6 +719,7 @@ class Legend {
     static ClosePicker(cancelled := true) => this.Serialized(() => this.ClosePickerNow(cancelled))
 
     static ClosePickerNow(cancelled) {
+        local onCancel, state
         state := this.PickerState
         if !state
             return

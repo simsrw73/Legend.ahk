@@ -9,6 +9,7 @@ class LegendMeasurer {
     }
 
     Call(row) {
+        local key, size, spacing, text, textW
         spacing := this.Theme["rowSpacing"]
         if row.Kind = "entry" {
             key := this.Size(row.Key, "key"), text := this.Size(row.Text, "body")
@@ -20,6 +21,7 @@ class LegendMeasurer {
     }
 
     Size(text, kind) {
+        local cacheId, ctrl, font, height, width
         cacheId := kind "`n" text
         if !this.Cache.Has(cacheId) {
             font := LegendOverlay.Font(this.Theme, kind)
@@ -50,6 +52,7 @@ class LegendOverlay {
     ; A window with background, margins, a selection bar and the title. Returns
     ; {Gui, Top, Bottom}: bodies draw from Top and set Bottom.
     static Frame(theme, title) {
+        local overlay, titleCtrl, titleHeight, titleY
         overlay := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000000")   ; WS_EX_NOACTIVATE
         overlay.BackColor := theme["background"]
         overlay.MarginX := overlay.MarginY := theme["padding"]
@@ -61,6 +64,7 @@ class LegendOverlay {
 
     ; The footer (and Alt+/'s pinned and warning badges), then placement.
     static Finish(frame, theme, footer, pinned := false, warningCount := 0) {
+        local overlay
         overlay := frame.Gui
         this.AddText(overlay, theme, "footer", theme["footer"], "xm y" (frame.Bottom + theme["rowSpacing"]), footer)
         if pinned
@@ -74,6 +78,7 @@ class LegendOverlay {
     static WarningBadgeText(count) => "⚠ " count " warning" (count = 1 ? "" : "s") " · see Warnings"
 
     static Show(view, theme, measurer, footer, legendLine, pinned, warningCount) {
+        local frame
         frame := this.Frame(theme, StrUpper(view.Title))
         LegendTableBody.Draw(frame, view, theme, measurer, legendLine)
         return this.Finish(frame, theme, footer, pinned, warningCount)
@@ -81,6 +86,7 @@ class LegendOverlay {
 
     ; view: {Title, Rows: [{Text, Detail, Icon, Letter}], Empty, SelectedIndex}.
     static ShowPicker(view, theme, measurer, footer, maxWidth) {
+        local frame
         frame := this.Frame(theme, view.Title)
         LegendListBody.Draw(frame, view, theme, measurer, maxWidth)
         return this.Finish(frame, theme, footer)
@@ -88,6 +94,7 @@ class LegendOverlay {
 
     ; Rounds the overlay, centers it on the active monitor and shows it without focus.
     static Place(overlay, theme) {
+        local area, height, width
         this.Round(overlay.Hwnd, theme)
         overlay.Show("NA Hide AutoSize")
         WinSetTransparent(theme["opacity"], overlay)   ; before it's visible: no opaque flash
@@ -103,6 +110,7 @@ class LegendOverlay {
     ; Height Show adds around the columns: padding, title, legend line (when the
     ; theme shows one) and footer, measured with the theme's fonts.
     static Chrome(theme, measurer) {
+        local height, spacing
         spacing := theme["rowSpacing"]
         height := theme["padding"] * 2 + measurer.Size("X", "title").H + spacing * 2
             + spacing + measurer.Size("X", "footer").H
@@ -112,6 +120,7 @@ class LegendOverlay {
     }
 
     static AddText(g, theme, kind, color, options, text) {
+        local font
         font := this.Font(theme, kind)
         g.SetFont("norm " font[1] " c" color, font[2])
         return g.AddText(options " +0x80", text)
@@ -119,6 +128,7 @@ class LegendOverlay {
 
     ; Work area of the monitor containing the active window's center (primary if none).
     static WorkArea() {
+        local bottom, centerX, centerY, left, right, top, winH, winW, winX, winY
         try {
             WinGetPos(&winX, &winY, &winW, &winH, "A")
             centerX := winX + winW // 2, centerY := winY + winH // 2
@@ -133,6 +143,7 @@ class LegendOverlay {
     }
 
     static Round(hwnd, theme) {
+        local colorBgr, colorRgb, preference
         static DWMWA_WINDOW_CORNER_PREFERENCE := 33, DWMWA_BORDER_COLOR := 34
         preference := theme["rounded"] ? 2 : 1  ; DWMWCP_ROUND : DWMWCP_DONOTROUND
         DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", DWMWA_WINDOW_CORNER_PREFERENCE, "Int*", preference, "UInt", 4)
@@ -146,6 +157,7 @@ class LegendOverlay {
 ; Menu levels (view.SelectedIndex > 0) register their entries with the selection.
 class LegendTableBody {
     static Draw(frame, view, theme, measurer, legendLine) {
+        local bottom, col, colX, gutter, keyColor, keyY, line, lineHeight, overlay, row, rowY, selectable, selection, size, spacing, textCtrl, textX, top
         overlay := frame.Gui, gutter := theme["padding"], spacing := theme["rowSpacing"]
         top := frame.Top
         if legendLine != "" && theme["legend"] = "top" {
@@ -201,6 +213,7 @@ class LegendTableBody {
 ; Picker body: letter · icon · text · detail rows, every row selectable.
 class LegendListBody {
     static Draw(frame, view, theme, measurer, maxWidth) {
+        local cellX, detailCtrl, detailW, gap, gutter, iconW, letterW, overlay, row, rowH, rowW, rowX, rowY, selection, textCtrl, textW
         overlay := frame.Gui, gutter := theme["padding"], gap := theme["rowSpacing"]
         rowY := frame.Top
         rowH := LegendOverlay.PickerRowHeight(theme, measurer), iconW := LegendOverlay.IconSize(theme)

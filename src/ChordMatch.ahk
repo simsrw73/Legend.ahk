@@ -27,6 +27,7 @@ class LegendChordPattern {
 ;   a-f    single characters with code points in the range
 class LegendChordMatch {
     static Parse(text) {
+        local body, modChar, modSet, name, pattern, pos
         modSet := Map(), pos := 1
         while pos < StrLen(text) && LegendKeyName.AhkMods.Has(modChar := SubStr(text, pos, 1)) {
             modSet[LegendKeyName.AhkMods[modChar]] := true
@@ -58,6 +59,7 @@ class LegendChordMatch {
 
     ; key: a LegendKey for the pressed key and the modifiers that count.
     static Matches(p, key) {
+        local code
         if key.Verbatim != "" || !this.SameMods(p.Mods, key.Mods)
             return false
         switch p.Kind {
@@ -81,6 +83,7 @@ class LegendChordMatch {
     static IsShiftedLetter(mods, name) => mods.Length = 1 && mods[1] = "Shift" && this.IsLetter(name)
 
     static SameMods(a, b) {
+        local index, modName
         if a.Length != b.Length
             return false
         for index, modName in a

@@ -20,21 +20,6 @@ script, and what Legend can and can't do on your machine.
 | `unknown key '...'` | `Legend.Doc` got a key it can't read | write it like `Ctrl+Shift+T`; ranges like `Ctrl+1–8` are fine |
 | `picker '...': <message>` when the picker opens | your picker's source function failed | the message is from your source; fix it there |
 
-## "This local variable has the same name as a global variable"
-
-If your script uses `#Warn` (or `#Warn All`), AutoHotkey may warn about
-variables *inside Legend* such as `page`, `name` or `key`. It happens when your
-script has a global variable with the same name. The warning is harmless: Legend's
-variables stay separate from yours. Silence it by adding this line after your
-`#Warn`:
-
-<!-- fragment -->
-```ahk
-#Warn LocalSameAsGlobal, Off
-```
-
-Or rename your global variable.
-
 ## A hotkey doesn't work
 
 1. **Is the script running?** Look for its green **H** icon in the taskbar's

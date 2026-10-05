@@ -30,6 +30,7 @@ class LegendKeyName {
 
     ; lowercase alias → canonical key name
     static BuildNamed() {
+        local alias, aliases, canonical, names
         names := Map()
         for canonical, aliases in Map(
             "Space", ["space", "spc"], "Enter", ["enter", "return"], "Tab", ["tab"],
@@ -48,6 +49,7 @@ class LegendKeyName {
 
     ; Canonical name for one key, or "" if unknown.
     static NormalizeName(name) {
+        local found, lower
         lower := StrLower(name)
         if this.Named.Has(lower)
             return this.Named[lower]
@@ -61,6 +63,7 @@ class LegendKeyName {
     }
 
     static Ordered(modSet) {
+        local modName, sorted
         sorted := []
         for modName in this.ModOrder
             if modSet.Has(modName)
@@ -71,6 +74,7 @@ class LegendKeyName {
     ; AHK hotkey syntax ("!+h", "#Space"). Custom combos, "up" hotkeys and unknown key
     ; names come back verbatim.
     static FromHotkey(hotkey) {
+        local char, modSet, name, pos
         if InStr(hotkey, " & ") || RegExMatch(hotkey, "i) up$")
             return LegendKey([], "", hotkey)
         modSet := Map()
@@ -87,6 +91,7 @@ class LegendKeyName {
     ; Written notation ("Ctrl+Shift+T"). Ranges and sequences ("Ctrl+1–8", "Alt+H/J/K/L",
     ; "Ctrl+K Ctrl+S") come back verbatim; anything else unparseable throws ValueError.
     static FromText(text) {
+        local found, modSet, name, rest
         text := Trim(text)
         modSet := Map()
         rest := text
@@ -103,6 +108,7 @@ class LegendKeyName {
 
     ; Modifier names (any order) plus a key name as returned by GetKeyName.
     static FromParts(modList, keyName) {
+        local modName, modSet, name
         modSet := Map()
         for modName in modList
             modSet[modName] := true
@@ -111,6 +117,7 @@ class LegendKeyName {
     }
 
     static Format(key, style := "text") {
+        local joined, name, step
         if key.HasOwnProp("Steps") {
             joined := ""
             for step in key.Steps
@@ -129,6 +136,7 @@ class LegendKeyName {
 
     ; "Ctrl+Shift+" / "⌃⇧" / "^+" for mods in the given style.
     static FormatMods(mods, style := "text") {
+        local modName, prefix
         prefix := ""
         for modName in mods
             prefix .= style = "symbols" ? this.Symbols[modName] : style = "ahk" ? this.AhkSymbols[modName] : modName "+"
@@ -138,6 +146,7 @@ class LegendKeyName {
     ; A key sequence (e.g. a chord trigger plus steps). steps: objects with
     ; Display(style) and Mods. Never merged with other keys (verbatim Id).
     static Sequence(steps) {
+        local key, modName, modSet, step, text
         modSet := Map()
         for step in steps
             for modName in step.Mods
@@ -153,6 +162,7 @@ class LegendKeyName {
     ; "⊞ Win   ⌃ Ctrl" for the modifiers in mods (any order, duplicates fine);
     ; "" for the text style or when mods is empty.
     static LegendLine(mods, style) {
+        local line, modName, table, used
         if style != "symbols" && style != "ahk"
             return ""
         table := style = "symbols" ? this.Symbols : this.AhkSymbols

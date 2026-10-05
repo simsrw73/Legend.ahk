@@ -11,6 +11,7 @@ class LegendKeyWatch {
     ; claimed: keys the overlay handles itself while open — single characters ("=")
     ; or combo ids ("Ctrl+N").
     __New(helpId, claimed := ["``"]) {
+        local key
         this.HelpId := helpId
         this.Held := Map()
         this.Claimed := Map()
@@ -20,6 +21,7 @@ class LegendKeyWatch {
 
     ; vks: modifier keys already down when watching starts.
     Seed(vks) {
+        local heldVk
         for heldVk in vks
             if LegendKeyWatch.ModVks.Has(heldVk)
                 this.Held[heldVk] := LegendKeyWatch.ModVks[heldVk]
@@ -28,6 +30,7 @@ class LegendKeyWatch {
     ; Returns "combo" for a Ctrl/Alt/Win shortcut other than the help key, "letter" for a
     ; plain or shifted printable key the overlay never claims, otherwise "".
     Down(vk, keyName) {
+        local combo, comboId, held, mods
         if LegendKeyWatch.ModVks.Has(vk) {
             this.Held[vk] := LegendKeyWatch.ModVks[vk]
             return ""

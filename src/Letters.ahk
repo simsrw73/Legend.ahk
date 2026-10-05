@@ -8,6 +8,7 @@ class LegendLetterStore {
     ; live in ("" = don't remember: plain automatic letters). Returns a Map of
     ; lower-case title → letter for every page that got one.
     static Assign(pages, path) {
+        local fresh, index, letter, letters, page, rest, saved, title, used
         saved := path != "" ? this.Read(path) : Map()
         letters := Map(), used := Map()
         for page in pages {   ; explicit letters first
@@ -35,6 +36,7 @@ class LegendLetterStore {
 
     ; Lines of "<letter><Tab><lower-case title>".
     static Read(path) {
+        local parts, saved, text
         saved := Map()
         try
             text := FileRead(path, "UTF-8")
@@ -52,6 +54,7 @@ class LegendLetterStore {
     ; the host's script), only when they changed. A file that can't be written is
     ; skipped: letters then last for this run only.
     static Write(path, pages, letters, saved) {
+        local dir, keep, letter, page, stream, text, title
         keep := Map()
         for page in pages {
             title := StrLower(page.Title)
@@ -74,6 +77,7 @@ class LegendLetterStore {
     }
 
     static Same(a, b) {
+        local key, value
         if a.Count != b.Count
             return false
         for key, value in a

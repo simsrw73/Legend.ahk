@@ -28,6 +28,7 @@ class LegendNavigator {
 
     View {
         get {
+            local level
             level := this.Level
             return {Title: level.Title, Columns: level.Screens[level.ScreenIndex],
                 ScreenIndex: level.ScreenIndex, ScreenCount: level.Screens.Length, SelectedIndex: this.SelectedIndex}
@@ -52,6 +53,7 @@ class LegendNavigator {
 
     ; "redraw" (entered a submenu), "run" (RunItem is set) or "miss".
     PressChord(key) {
+        local item
         item := LegendChords.Find(this.Level.ChordItems, key)
         if !item
             return "miss"
@@ -65,6 +67,7 @@ class LegendNavigator {
 
     ; Returns "redraw", "close", "pass" (key is not the overlay's) or "none".
     Press(key) {
+        local back, count, item, level, open
         level := this.Level
         switch key {
             case "Backspace":
@@ -126,6 +129,7 @@ class LegendNavigator {
     ; (both change sizes), keeping the path, the pin, and each level's screen number
     ; where it still exists.
     Relayout(paginate, style) {
+        local build, fresh, level, stack
         this.PaginateFn := paginate
         this.Style := style
         stack := []
@@ -144,6 +148,7 @@ class LegendNavigator {
 
     ; extras: display hints (tab / =).
     Footer(extras*) {
+        local level, pages, part, parts, text
         level := this.Level
         parts := []
         pages := level.Screens.Length > 1 ? "^f/^b " level.ScreenIndex "/" level.Screens.Length : ""
@@ -170,6 +175,7 @@ class LegendNavigator {
     }
 
     IndexLevel(pages, title) {
+        local index, items, letters, page
         letters := LegendNavigator.AssignLetters(pages, page => page.Title, this.LetterOf)
         items := []
         for index, page in pages
@@ -180,6 +186,7 @@ class LegendNavigator {
 
     ; A page that fits one screen is shown whole; otherwise its categories are listed.
     PageLevel(page) {
+        local cat, cats, index, items, letters, nameOf, screens
         screens := this.Paginate(LegendRows.ForPage(page, this.Style), "page")
         if screens.Length = 1
             return this.WithBuild({Title: page.Title, Screens: screens, ScreenIndex: 1, Items: [], Cursor: 0},
@@ -203,6 +210,7 @@ class LegendNavigator {
     }
 
     CategoryLevel(page, cat) {
+        local name
         name := cat.Name != "" ? cat.Name : "Other"
         return this.WithBuild({Title: page.Title " › " name, Screens: this.Paginate(LegendRows.ForCategory(cat, this.Style), "page"),
             ScreenIndex: 1, Items: [], Cursor: 0}, () => this.CategoryLevel(page, cat))
@@ -220,12 +228,14 @@ class LegendNavigator {
             Cursor: items.Length ? 1 : 0}
 
     Paginate(rows, kind) {
+        local paginateFn
         paginateFn := this.PaginateFn
         return paginateFn(rows, kind)
     }
 
     ; Screen holding menu row `index` (menu rows and items are 1:1).
     ScreenOf(level, index) {
+        local col, count, screen, screenIndex
         count := 0
         for screenIndex, screen in level.Screens
             for col in screen {
@@ -238,6 +248,7 @@ class LegendNavigator {
 
     ; Index of the first menu row on screen screenIndex.
     FirstItemOf(level, screenIndex) {
+        local col, count
         count := 0
         loop screenIndex - 1
             for col in level.Screens[A_Index]
@@ -249,6 +260,7 @@ class LegendNavigator {
     ; digit of its name, else the first free one in a–z, 0–9, else "".
     ; used: letters already taken elsewhere (left as given, not added to).
     static AssignLetters(items, nameOf, fixedOf, used := "") {
+        local char, fixed, index, item, letter, letters
         static pool := "abcdefghijklmnopqrstuvwxyz0123456789"
         used := IsObject(used) ? used.Clone() : Map(), letters := []
         letters.Length := items.Length

@@ -54,6 +54,7 @@ class LegendTheme {
     ; optional session overrides for density and keyStyle, and legend "auto" turned
     ; into "bottom" for symbol styles or "off" for text.
     static Resolve(values, density := "", style := "") {
+        local fallback, name, preset, resolved
         resolved := values.Clone()
         if density != ""
             resolved["density"] := density
@@ -77,6 +78,7 @@ class LegendTheme {
     ; themes folder. "auto" picks catppuccin-latte or catppuccin-mocha from the
     ; Windows app theme. Returns {Values, Warnings}.
     static Load(name, dirs := []) {
+        local dir, path, search, warnings
         if name = "auto"
             name := this.WindowsIsLight() ? "catppuccin-latte" : "catppuccin-mocha"
         search := dirs.Clone()
@@ -96,6 +98,7 @@ class LegendTheme {
 
     ; Reads path over the defaults ("" = defaults only), adding a warning per bad value.
     static Read(path, warnings := []) {
+        local item
         values := Map()
         values.CaseSense := false
         for item in this.Schema {
@@ -106,6 +109,7 @@ class LegendTheme {
     }
 
     static Check(raw, kind, fallback, label, warnings) {
+        local bounds, found, ok, value
         raw := Trim(raw)
         value := raw, ok := true
         if kind = "color" {
