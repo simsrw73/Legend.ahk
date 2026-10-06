@@ -38,7 +38,7 @@ switcher. Public repo (simsrw73/Legend.ahk). Specs in `docs/specs/`, plans in
 
 - Never send `WM_SETREDRAW` to the overlay window: it clears `WS_VISIBLE` and
   DWM drops the overlay for a frame (the user saw whole-window flashes).
-- Overlay moves the cursor in place (`Legend.Render`, `LegendSelection`);
+- The renderer moves the overlay cursor in place through `LegendSelection`;
   only a new layout key rebuilds the window.
 - Screen coordinates: per-monitor DPI (`SetThreadDpiAwarenessContext(-4)`),
   window bounds from `DwmGetWindowAttribute(9)` (extended frame bounds).

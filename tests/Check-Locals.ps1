@@ -24,7 +24,37 @@ function Get-SourceFiles([string[]]$InputPath) {
 function Remove-AhkCommentsAndStrings([string]$Source) {
     # Keep line breaks so declarations and function headers remain line anchored.
     $pattern = '"(?:[^"`]|`.)*"|''(?:[^''`]|`.)*''|(?m)^[\t ]*/\*[\s\S]*?^[\t ]*\*/|;[^\r\n]*'
-    return [regex]::Replace($Source, $pattern, { param($match) $match.Value -replace '[^\r\n]', ' ' })
+    return [regex]::Replace($Source, $pattern, {
+        param($match)
+        $blank = $match.Value -replace '[^\r\n]', ' '
+        # Retain an expression token so a string-valued arrow ends on this line.
+        if ($match.Value[0] -in '"', "'") { return '0' + $blank.Substring(1) }
+        return $blank
+    })
+}
+
+function Get-ArrowBody([string[]]$Lines, [int]$Start, [string]$FirstLine) {
+    $body = $FirstLine
+    $line = $FirstLine
+    $end = $Start
+    $depth = 0
+    while ($true) {
+        $depth += ([regex]::Matches($line, '[({\[]').Count - [regex]::Matches($line, '[)}\]]').Count)
+        $next = $end + 1
+        while ($next -lt $Lines.Count -and $Lines[$next] -notmatch '\S') { $next++ }
+        if ($next -ge $Lines.Count) { break }
+
+        # AHK expressions continue inside delimiters or across operator lines.
+        # An arrow with no expression yet also consumes the next nonblank line.
+        $trailingOperator = $line -match '(?:[,?+*/.&|^=<>:-]|\b(?:and|or|is|in|not))\s*$'
+        $leadingOperator = $Lines[$next] -match '^\s*(?:(?!\+\+|--)[,?+*/.&|^=<>:-]|\b(?:and|or|is|in)\b)'
+        if ($depth -le 0 -and $body -match '\S' -and !$trailingOperator -and !$leadingOperator) { break }
+
+        $end = $next
+        $line = $Lines[$end]
+        $body += "`n$line"
+    }
+    return @{ Body = $body; End = $end }
 }
 
 function Get-DeclaredNames([string]$Declaration) {
@@ -56,7 +86,7 @@ function Get-IntroducedNames([string]$Body) {
         '(?:^|[(,\[?:=]|\breturn\b)\s*&\s*([a-z_]\w*)',
         # Parentheses are optional for statement calls. Here the initial name is
         # the callable, followed immediately by a unary first-argument VarRef.
-        '(?m)^\s*(?:(?:try|else)\s+)?[a-z_]\w*(?:\.[a-z_]\w*)*\s+&\s*([a-z_]\w*)'
+        '(?m)^[\t ]*(?:(?:try|else)[\t ]+)?[a-z_]\w*(?:\.[a-z_]\w*)*[\t ]+&[\t ]*([a-z_]\w*)'
     )
     foreach ($pattern in $patterns) {
         foreach ($match in [regex]::Matches($Body, $pattern, 'IgnoreCase')) {
@@ -73,7 +103,10 @@ foreach ($file in Get-SourceFiles $Path) {
     for ($start = 0; $start -lt $lines.Count; $start++) {
         $header = [regex]::Match($lines[$start], '^\s*(?:static\s+)?(?<name>[a-z_]\w*)\((?<params>.*?)\)\s*(?<body>\{|=>)', 'IgnoreCase')
         if (!$header.Success) {
-            $header = [regex]::Match($lines[$start], '^\s*(?<name>get|set)\s*(?<body>\{)', 'IgnoreCase')
+            $header = [regex]::Match($lines[$start], '^\s*(?<name>get|set)\s*(?<body>\{|=>)', 'IgnoreCase')
+        }
+        if (!$header.Success) {
+            $header = [regex]::Match($lines[$start], '^\s*(?:static\s+)?(?<name>[a-z_]\w*)\s*(?<body>=>)', 'IgnoreCase')
         }
         if (!$header.Success) { continue }
 
@@ -91,6 +124,10 @@ foreach ($file in Get-SourceFiles $Path) {
             }
             if ($depth -ne 0) { throw "$($file.Name):$($header.Groups['name'].Value): unclosed function body" }
             $start = $lineIndex
+        } else {
+            $arrow = Get-ArrowBody $lines $start $body
+            $body = $arrow.Body
+            $start = $arrow.End
         }
         foreach ($declaration in [regex]::Matches($body, '(?m)^\s*(?:local|static)\s+([^\r\n]+)', 'IgnoreCase')) {
             foreach ($name in Get-DeclaredNames $declaration.Groups[1].Value) { [void]$declared.Add($name) }
