@@ -53,10 +53,15 @@ $localCases = @(
     @{ File = 'arrow-missing.ahk'; Expected = @(
         'ContinuedArrow: undeclared local missing', 'DelimitedArrow: undeclared local missing',
         'OperatorArrow: undeclared local missing', 'TrailingOperatorArrow: undeclared local missing',
+        'TrailingMinusArrow: undeclared local missing',
+        'ContinuedBump: undeclared local missing', 'ContinuedLower: undeclared local missing',
         'Shorthand: undeclared local shorthandMissing', 'ContinuedShorthand: undeclared local continuedMissing',
         'get: undeclared local getterMissing', 'set: undeclared local setterMissing'
     ) },
-    @{ File = 'arrow-declared.ahk'; Expected = @() }
+    @{ File = 'arrow-declared.ahk'; Expected = @() },
+    @{ File = 'arrow-postfix-missing.ahk'; Expected = @(
+        'Next: undeclared local input', 'Following: undeclared local input'
+    ) }
 )
 foreach ($case in $localCases) {
     $check = @(& $pwsh -NoProfile -File $localChecker (Join-Path $PSScriptRoot "fixtures\locals\$($case.File)") 2>&1)

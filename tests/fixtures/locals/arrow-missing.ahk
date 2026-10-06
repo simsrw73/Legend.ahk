@@ -13,6 +13,15 @@ OperatorArrow(input) => input
 TrailingOperatorArrow(input) => input +
     (missing := 1)
 
+TrailingMinusArrow(input) => input -
+    (missing := 1)
+
+ContinuedBump(input) => input++
+    + (missing := 1)
+
+ContinuedLower(input) => input--
+    - (missing := 1)
+
 class ArrowAccessor {
     Shorthand => (shorthandMissing := 1)
 

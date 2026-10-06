@@ -46,7 +46,9 @@ function Get-ArrowBody([string[]]$Lines, [int]$Start, [string]$FirstLine) {
 
         # AHK expressions continue inside delimiters or across operator lines.
         # An arrow with no expression yet also consumes the next nonblank line.
-        $trailingOperator = $line -match '(?:[,?+*/.&|^=<>:-]|\b(?:and|or|is|in|not))\s*$'
+        # Postfix increments/decrements complete an operand, unlike binary + or -.
+        $trailingOperator = $line -notmatch '(?:\+\+|--)\s*$' -and
+            $line -match '(?:[,?+*/.&|^=<>:-]|\b(?:and|or|is|in|not))\s*$'
         $leadingOperator = $Lines[$next] -match '^\s*(?:(?!\+\+|--)[,?+*/.&|^=<>:-]|\b(?:and|or|is|in)\b)'
         if ($depth -le 0 -and $body -match '\S' -and !$trailingOperator -and !$leadingOperator) { break }
 
