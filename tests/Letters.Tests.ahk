@@ -81,6 +81,96 @@ Letters_NoFile() {
     T.Eq(Letters_Of(letters, "Avocado"), "a")
 }
 
+class Letters_ReplacementFailureStore extends LegendLetterStore {
+    static TempPath := ""
+    static TempText := ""
+
+    static Replace(temp, path) {
+        this.TempPath := temp
+        this.TempText := FileRead(temp, "UTF-8")
+        throw Error("forced replacement failure")
+    }
+}
+
+T.Test("Letters: failed replacement preserves the mapping and removes the temporary file", Letters_ReplacementFailure)
+Letters_ReplacementFailure() {
+    local dir, original, path, tempDir
+    path := Letters_Path(), original := "a`tapple`n"
+    Letters_ReplacementFailureStore.TempPath := ""
+    try {
+        FileAppend(original, path, "UTF-8-RAW")
+        Letters_ReplacementFailureStore.Write(path, Letters_Pages("Banana"), Map("banana", "b"), Map("apple", "a"))
+        T.Eq(FileRead(path, "UTF-8"), original, "original mapping")
+        T.True(Letters_ReplacementFailureStore.TempPath != "", "replacement attempted")
+        T.Eq(Letters_ReplacementFailureStore.TempText, "b`tbanana`n", "complete replacement")
+        SplitPath(path, , &dir)
+        SplitPath(Letters_ReplacementFailureStore.TempPath, , &tempDir)
+        T.Eq(tempDir, dir, "same directory")
+        T.True(!FileExist(Letters_ReplacementFailureStore.TempPath), "temporary file removed")
+    } finally {
+        try FileDelete(path)
+        if Letters_ReplacementFailureStore.TempPath != ""
+            try FileDelete(Letters_ReplacementFailureStore.TempPath)
+    }
+}
+
+class Letters_WriteFailureStore extends LegendLetterStore {
+    static TempPath := ""
+    static Closed := false
+
+    static OpenTemp(path) {
+        this.TempPath := path
+        return Letters_FailingStream(path)
+    }
+}
+
+class Letters_FailingStream {
+    __New(path, throwOnWrite := true) {
+        this.Stream := FileOpen(path, "w", "UTF-8-RAW")
+        this.ThrowOnWrite := throwOnWrite
+    }
+
+    Write(text) {
+        local written
+        written := this.Stream.Write(SubStr(text, 1, 2))
+        if this.ThrowOnWrite
+            throw Error("forced partial write failure")
+        return written
+    }
+
+    Close() {
+        this.Stream.Close()
+        Letters_WriteFailureStore.Closed := true
+    }
+}
+
+T.Test("Letters: failed write preserves the mapping, closes the stream and removes the temporary file", Letters_WriteFailure)
+T.Test("Letters: short write preserves the mapping and removes the temporary file", () => Letters_WriteFailure(Letters_ShortWriteStore))
+class Letters_ShortWriteStore extends Letters_WriteFailureStore {
+    static OpenTemp(path) {
+        this.TempPath := path
+        return Letters_FailingStream(path, false)
+    }
+}
+
+Letters_WriteFailure(store := Letters_WriteFailureStore) {
+    local original, path
+    path := Letters_Path(), original := "a`tapple`n"
+    store.TempPath := "", Letters_WriteFailureStore.Closed := false
+    try {
+        FileAppend(original, path, "UTF-8-RAW")
+        store.Write(path, Letters_Pages("Banana"), Map("banana", "b"), Map("apple", "a"))
+        T.Eq(FileRead(path, "UTF-8"), original, "original mapping")
+        T.True(store.TempPath != "", "temporary write attempted")
+        T.True(Letters_WriteFailureStore.Closed, "stream closed")
+        T.True(!FileExist(store.TempPath), "temporary file removed")
+    } finally {
+        try FileDelete(path)
+        if store.TempPath != ""
+            try FileDelete(store.TempPath)
+    }
+}
+
 T.Test("Letters: the warnings page lists each message under a number", Letters_WarningsPage)
 Letters_WarningsPage() {
     page := LegendRegistry.WarningsPage(["page file or folder not found: x", "theme bad"])
