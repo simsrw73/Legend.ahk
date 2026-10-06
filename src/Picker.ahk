@@ -7,7 +7,7 @@ class LegendPicker {
     static Pool := "asdfg;qwertyuiopzxcvbnm1234567890"
 
     __New(hotkey, title, source, options := "") {
-        local index, name, opt, trigger
+        local index, name, opt, shifted, trigger
         opt := (name, fallback) => IsObject(options) && options.HasOwnProp(name) ? options.%name% : fallback
         this.Hotkey := hotkey
         this.Title := title
@@ -167,7 +167,7 @@ class LegendPicker {
 
     ; Refreshes and puts the cursor back on item (row 1 if it is gone).
     Reselect(item) {
-        local index
+        local candidate, index
         this.Refresh(1)
         for index, candidate in this.Visible
             if IsObject(item) && candidate == item
@@ -240,7 +240,7 @@ class LegendPicker {
 
     ; Rows of the current screen for drawing.
     ScreenRows() {
-        local index, item, rows
+        local first, index, item, last, rows
         rows := []
         if !this.Cursor
             return rows
@@ -280,6 +280,7 @@ class LegendPicker {
 
     ; Every space-separated term is a case-insensitive substring of Text or Detail.
     static Matches(item, query) {
+        local haystack, term
         haystack := item.Text (item.HasOwnProp("Detail") ? " " item.Detail : "")
         for term in StrSplit(query, " ")
             if term != "" && !InStr(haystack, term)

@@ -35,7 +35,7 @@ class LegendWindowSwitcher {
     static StartFor(start, activeListed) => activeListed ? start : Max(1, start - 1)
 
     static ScopeOf(label) {
-        local text
+        local scope, text
         for scope, text in this.ScopeLabels
             if text = label
                 return scope
@@ -43,7 +43,7 @@ class LegendWindowSwitcher {
     }
 
     Source(label) {
-        local active, item, items, win, windows
+        local active, activeListed, activeMonitor, item, items, scope, win, windows
         this.FreeIcons()
         scope := LegendWindowSwitcher.ScopeOf(label)
         active := WinExist("A")
@@ -72,6 +72,7 @@ class LegendWindowSwitcher {
     }
 
     DetailOf(win) {
+        local detail, detailFn
         detail := win.App
         if IsObject(this.DetailFn) {
             detailFn := this.DetailFn
@@ -86,6 +87,7 @@ class LegendWindowSwitcher {
 
     ; The window's own icon, its class icon, or the first icon of its exe (owned).
     IconOf(hwnd) {
+        local classIndex, icon, iconType, imageType
         static WM_GETICON := 0x7F, SMTO_ABORTIFHUNG := 0x2
         for iconType in [2, 0, 1] {   ; ICON_SMALL2, ICON_SMALL, ICON_BIG
             icon := 0
@@ -108,13 +110,14 @@ class LegendWindowSwitcher {
     }
 
     FreeIcons() {
+        local icon
         for , icon in this.Icons
             DllCall("DestroyIcon", "Ptr", icon)
         this.Icons := Map()
     }
 
     Pick(item) {
-        local win
+        local activate, win
         this.Peek.Clear(false)
         this.FreeIcons()
         win := item.Data
@@ -144,7 +147,7 @@ class LegendPeek {
     }
 
     Show(win) {
-        local overlay
+        local above, color, overlay
         static GW_HWNDPREV := 3
         static SWP_QUIET := 0x13   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
         this.Clear(true)
@@ -188,7 +191,7 @@ class LegendPeek {
     ; A click-through, always-on-top frame `thickness` px outside bounds, placed just
     ; below the window `below` when given (a new topmost window would cover it).
     static Frame(bounds, color, thickness := 4, below := 0) {
-        local frame
+        local frame, frameH, frameW, inner, outer
         frame := Gui("+AlwaysOnTop -Caption +ToolWindow -DPIScale +E0x08000020")   ; NOACTIVATE | TRANSPARENT
         frame.BackColor := color
         frameW := bounds.W + thickness * 2, frameH := bounds.H + thickness * 2

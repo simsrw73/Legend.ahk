@@ -7,7 +7,7 @@ class LegendPageFile {
     ; Returns {Page, Warnings}. Page is "" when the file is unusable, otherwise
     ; {Title, Match, Letter, Entries: [{Category, Group, Key, Description}]}.
     static Parse(text, source := "page") {
-        local closed, err, found, group, key, letter, line, lineNo, lines, page, rest, start, warnings
+        local category, closed, closeAt, description, err, found, group, inFence, key, keyText, letter, line, lineNo, lines, page, rest, start, ticks, warnings
         lines := StrSplit(StrReplace(LTrim(text, Chr(0xFEFF)), "`r"), "`n")
         page := {Title: "", Match: "", Letter: "", Entries: []}
         warnings := []

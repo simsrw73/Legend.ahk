@@ -316,7 +316,7 @@ class LegendRegistry {
 
     ; One category per menu level: the level's items first, then each submenu.
     AddChordLevel(page, items, steps, category) {
-        local item, path
+        local item, label, path
         for item in items {
             path := steps.Clone()
             path.Push(item.Pattern)
@@ -343,7 +343,7 @@ class LegendRegistry {
     ; Adds an entry, merging with an existing entry for the same key on this page:
     ; a binding upgrades a doc entry in place; a doc entry for a bound key is dropped.
     AddEntry(page, category, group, key, description, bound, options := "") {
-        local entry, existing
+        local entry, existing, incoming
         existing := key.Verbatim = "" ? page.FindEntry(key.Id) : ""
         if !existing {
             entry := LegendEntry(key, description, bound, options)

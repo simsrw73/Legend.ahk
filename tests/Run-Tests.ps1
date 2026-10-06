@@ -32,6 +32,33 @@ $warnHost = Join-Path $PSScriptRoot 'fixtures\warn-host\WarnHost.ahk'
 $check = & $AutoHotkey /ErrorStdOut /Validate $warnHost 2>&1 | Out-String
 if ($LASTEXITCODE -or $check -match 'Warning') { $failures += 1; Write-Host "validate WarnHost FAILED`n$check" }
 else { Write-Host 'validate fixtures\warn-host\WarnHost.ahk ok' }
+# Check declarations directly: #Warn alone does not enforce explicit locals.
+$pwsh = (Get-Process -Id $PID).Path
+$localChecker = Join-Path $PSScriptRoot 'Check-Locals.ps1'
+$check = & $pwsh -NoProfile -File $localChecker (Join-Path $root 'Legend.ahk') (Join-Path $root 'src') 2>&1 | Out-String
+if ($LASTEXITCODE) { $failures += 1; Write-Host "explicit locals production FAILED`n$check" }
+else { Write-Host 'explicit locals production ok' }
+
+$localCases = @(
+    @{ File = 'missing-local.ahk'; Expected = @('MissingLocal: undeclared local missing') },
+    @{ File = 'syntax-missing.ahk'; Expected = @(
+        'Compound: undeclared local count', 'Compound: undeclared local mask', 'Compound: undeclared local shifted',
+        'LoopValue: undeclared local value', 'CatchValue: undeclared local err', 'OutputValue: undeclared local found',
+        'Initializer: undeclared local missing', 'Inline: undeclared local missing', 'Arrow: undeclared local missing',
+        'get: undeclared local missing'
+    ) },
+    @{ File = 'syntax-declared.ahk'; Expected = @() }
+)
+foreach ($case in $localCases) {
+    $check = @(& $pwsh -NoProfile -File $localChecker (Join-Path $PSScriptRoot "fixtures\locals\$($case.File)") 2>&1)
+    $expected = @($case.Expected | ForEach-Object { "$($case.File):$_" })
+    $expectedExit = if ($expected.Count) { 1 } else { 0 }
+    if ($LASTEXITCODE -ne $expectedExit -or $check.Count -ne $expected.Count -or
+        @($expected | Where-Object { $_ -notin $check }).Count) {
+        $failures += 1
+        Write-Host "explicit locals $($case.File) FAILED`n$($check -join "`n")"
+    } else { Write-Host "explicit locals $($case.File) ok" }
+}
 # A host with a global for every local name Legend assigns (collected from the source
 # now, so new code is covered): under #Warn All, Legend must not warn "local has the
 # same name as a global". Fix a failure by declaring the local (`local name`).
