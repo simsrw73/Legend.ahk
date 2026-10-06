@@ -499,6 +499,9 @@ class Legend {
     ; A picker over windows; see LegendWindowSwitcher for options.
     static WindowSwitcher(hotkey, options := "") {
         local picker, switcher
+        options := IsObject(options) ? options.Clone() : {}
+        options.RenderContext := () => {Outline: IsObject(Legend.Theme) ? Legend.Theme["outline"] : "89B4FA",
+            Below: IsObject(Legend.Gui) ? Legend.Gui.Hwnd : 0}
         switcher := LegendWindowSwitcher(hotkey, options)
         picker := switcher.Picker
         this.Registry.AddPicker(picker, (*) => Legend.OpenPicker(picker))

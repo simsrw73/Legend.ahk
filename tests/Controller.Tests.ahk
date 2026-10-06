@@ -2,6 +2,91 @@
 
 ; Uses the Legend facade and real (off-screen, non-activating) windows.
 
+T.Test("Switcher: highlights forward the current render context to peek", Switcher_RenderContext)
+Switcher_RenderContext() {
+    local clears, context, highlight, seen, switcher, win
+    context := {Outline: "123ABC", Below: 0xBEEF}
+    seen := [], clears := [], win := {Hwnd: 0xCAFE}
+    switcher := LegendWindowSwitcher("^!+F9", {RenderContext: () => context})
+    switcher.Peek := {Show: (self, candidate, outline := "", below := 0) => seen.Push({Win: candidate, Outline: outline, Below: below}),
+        Clear: (self, restore) => clears.Push(restore)}
+    highlight := switcher.Picker.OnHighlight
+    highlight({Data: win})
+    T.True(seen[1].Win == win, "candidate reaches the peek boundary")
+    T.Eq(seen[1].Outline, "123ABC")
+    T.Eq(seen[1].Below, 0xBEEF)
+    context := {Outline: "DEF456", Below: 0xFACE}
+    highlight({Data: win})
+    T.Eq(seen[2].Outline, "DEF456", "context is read on each highlight")
+    T.Eq(seen[2].Below, 0xFACE)
+    highlight("")
+    T.Eq(seen.Length, 2, "empty selection does not show a peek")
+    T.Eq(clears.Length, 1)
+    T.True(clears[1], "empty selection restores the previous peek")
+}
+
+T.Test("Switcher: standalone highlights use a default render context", Switcher_DefaultRenderContext)
+Switcher_DefaultRenderContext() {
+    local highlight, seen, switcher
+    seen := []
+    switcher := LegendWindowSwitcher("^!+F9")
+    switcher.Peek := {Show: (self, candidate, outline := "", below := -1) => seen.Push({Outline: outline, Below: below})}
+    highlight := switcher.Picker.OnHighlight
+    highlight({Data: {Hwnd: 0xCAFE}})
+    T.Eq(seen[1].Outline, "89B4FA")
+    T.Eq(seen[1].Below, 0)
+}
+
+T.Test("Peek: Show renders passed color and placement without controller state", Peek_ExplicitRenderContext)
+Peek_ExplicitRenderContext() {
+    local overlay, peek, savedGui, savedTheme, target
+    static GW_HWNDNEXT := 2
+    overlay := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x08000000")
+    target := Gui("-Caption +ToolWindow +E0x08000000")
+    peek := LegendPeek()
+    savedTheme := Legend.Theme, savedGui := Legend.Gui
+    try {
+        overlay.Show("NA x-3000 y-3000 w50 h50")
+        target.Show("NA x-2900 y-2900 w40 h40")
+        Legend.Theme := Map(), Legend.Gui := {}   ; no outline key or HWND to read
+        peek.Show({Hwnd: target.Hwnd, Minimized: false, Cloaked: false}, "123ABC", overlay.Hwnd)
+        T.Eq(peek.Outline.BackColor, "123ABC")
+        T.Eq(DllCall("GetWindow", "Ptr", overlay.Hwnd, "UInt", GW_HWNDNEXT, "Ptr"), peek.Outline.Hwnd)
+        T.Eq(peek.Raised, target.Hwnd)
+        peek.Clear(true)
+        T.Eq(peek.Raised, 0)
+        T.Eq(peek.Outline, "")
+    } finally {
+        peek.Clear(false)
+        Legend.Theme := savedTheme, Legend.Gui := savedGui
+        target.Destroy(), overlay.Destroy()
+    }
+}
+
+T.Test("Controller: switchers obtain facade render state when highlighted", Controller_SwitcherRenderContext)
+Controller_SwitcherRenderContext() {
+    local highlight, options, savedGui, savedRegistry, savedTheme, seen, switcher
+    savedTheme := Legend.Theme, savedGui := Legend.Gui, savedRegistry := Legend.Registry
+    options := {Scope: "monitor"}, seen := []
+    Legend.Registry := LegendRegistry()
+    try {
+        switcher := Legend.WindowSwitcher("^!+F9", options)
+        switcher.Peek := {Show: (self, candidate, outline := "", below := -1) => seen.Push({Outline: outline, Below: below})}
+        highlight := switcher.Picker.OnHighlight
+        Legend.Theme := Map("outline", "456DEF"), Legend.Gui := {Hwnd: 0xABCD}
+        highlight({Data: {Hwnd: 0xCAFE}})
+        T.Eq(seen[1].Outline, "456DEF")
+        T.Eq(seen[1].Below, 0xABCD)
+        Legend.Theme := "", Legend.Gui := ""
+        highlight({Data: {Hwnd: 0xCAFE}})
+        T.Eq(seen[2].Outline, "89B4FA", "facade fallback before an overlay exists")
+        T.Eq(seen[2].Below, 0)
+        T.True(!options.HasOwnProp("RenderContext"), "facade does not modify caller options")
+        T.Eq(switcher.Picker.StartScope, "this monitor", "caller options survive context wiring")
+    } finally
+        Legend.Theme := savedTheme, Legend.Gui := savedGui, Legend.Registry := savedRegistry
+}
+
 T.Test("Controller: keys that arrive while the source runs are applied after open", Controller_EarlyKeys)
 Controller_EarlyKeys() {
     items := [{Text: "one"}, {Text: "two"}, {Text: "three"}]

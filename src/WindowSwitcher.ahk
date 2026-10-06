@@ -9,6 +9,7 @@ class LegendWindowSwitcher {
         local labels, name, opt
         opt := (name, fallback) => IsObject(options) && options.HasOwnProp(name) ? options.%name% : fallback
         this.Include := opt("Include", ""), this.ActivateFn := opt("Activate", ""), this.DetailFn := opt("Detail", "")
+        this.RenderContext := opt("RenderContext", () => {Outline: "89B4FA", Below: 0})
         this.Icons := Map()     ; icons Legend extracted and must destroy
         this.Peek := LegendPeek()
         labels := []
@@ -17,7 +18,7 @@ class LegendWindowSwitcher {
         this.StartOption := opt("Start", 2)
         this.Picker := LegendPicker(hotkey, "Windows", label => this.Source(label), {
             OnPick: item => this.Pick(item),
-            OnHighlight: item => IsObject(item) ? this.Peek.Show(item.Data) : this.Peek.Clear(true),
+            OnHighlight: item => this.Highlight(item),
             OnCancel: () => this.Cancel(),
             Start: this.StartOption, Scopes: labels, Scope: LegendWindowSwitcher.LabelOf(opt("Scope", "all")),
             Density: opt("Density", ""), Match: opt("Match", ""), Reference: opt("Reference", true),
@@ -137,6 +138,15 @@ class LegendWindowSwitcher {
         this.Peek.Clear(true)
         this.FreeIcons()
     }
+
+    Highlight(item) {
+        local context, renderContext
+        if !IsObject(item)
+            return this.Peek.Clear(true)
+        renderContext := this.RenderContext
+        context := renderContext()
+        this.Peek.Show(item.Data, context.Outline, context.Below)
+    }
 }
 
 ; Shows the highlighted window: raised without activation and outlined. Clear(true)
@@ -146,8 +156,8 @@ class LegendPeek {
         this.Raised := 0, this.Above := 0, this.Outline := ""
     }
 
-    Show(win) {
-        local above, color, overlay
+    Show(win, outline, below) {
+        local above
         static GW_HWNDPREV := 3
         static SWP_QUIET := 0x13   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
         this.Clear(true)
@@ -163,9 +173,7 @@ class LegendPeek {
         }
         this.Raised := win.Hwnd, this.Above := above
         DllCall("SetWindowPos", "Ptr", win.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", SWP_QUIET)
-        color := IsObject(Legend.Theme) ? Legend.Theme["outline"] : "89B4FA"
-        overlay := IsObject(Legend.Gui) ? Legend.Gui.Hwnd : 0
-        this.Outline := LegendWindows.InPhysicalPixels(() => LegendPeek.Frame(LegendWindows.Bounds(win.Hwnd), color, 4, overlay))
+        this.Outline := LegendWindows.InPhysicalPixels(() => LegendPeek.Frame(LegendWindows.Bounds(win.Hwnd), outline, 4, below))
     }
 
     Clear(restore := true) {
