@@ -114,6 +114,53 @@ Letters_ReplacementFailure() {
     }
 }
 
+class Letters_LockedReplacementStore extends LegendLetterStore {
+    static TempPath := ""
+    static Locked := false
+    static ReplaceFailed := false
+    static ReplaceMessage := ""
+
+    static Replace(temp, path) {
+        local err, handle
+        this.TempPath := temp
+        ; Allow reads/writes, but deny deletion/renaming of the temporary source.
+        handle := DllCall("CreateFileW", "Str", temp, "UInt", 0x80000000,
+            "UInt", 3, "Ptr", 0, "UInt", 3, "UInt", 0x80, "Ptr", 0, "Ptr")
+        if handle = -1
+            throw OSError(A_LastError)
+        this.Locked := true
+        try {
+            super.Replace(temp, path)
+        } catch Error as err {
+            this.ReplaceFailed := true
+            this.ReplaceMessage := err.Message
+            throw err
+        } finally
+            DllCall("CloseHandle", "Ptr", handle)
+    }
+}
+
+T.Test("Letters: real replacement failure preserves the mapping and cleans up the locked source", Letters_LockedReplacement)
+Letters_LockedReplacement() {
+    local original, path
+    path := Letters_Path(), original := "a`tapple`n"
+    Letters_LockedReplacementStore.TempPath := ""
+    Letters_LockedReplacementStore.Locked := false, Letters_LockedReplacementStore.ReplaceFailed := false
+    try {
+        FileAppend(original, path, "UTF-8-RAW")
+        Letters_LockedReplacementStore.Write(path, Letters_Pages("Banana"), Map("banana", "b"), Map("apple", "a"))
+        T.True(Letters_LockedReplacementStore.Locked, "temporary source locked")
+        T.True(Letters_LockedReplacementStore.ReplaceFailed, "real replacement failed")
+        T.True(FileExist(path), "original mapping still exists: " Letters_LockedReplacementStore.ReplaceMessage)
+        T.Eq(FileRead(path, "UTF-8"), original, "original mapping")
+        T.True(!FileExist(Letters_LockedReplacementStore.TempPath), "temporary file removed after unlocking")
+    } finally {
+        try FileDelete(path)
+        if Letters_LockedReplacementStore.TempPath != ""
+            try FileDelete(Letters_LockedReplacementStore.TempPath)
+    }
+}
+
 class Letters_WriteFailureStore extends LegendLetterStore {
     static TempPath := ""
     static Closed := false

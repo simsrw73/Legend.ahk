@@ -94,7 +94,11 @@ class LegendLetterStore {
 
     static OpenTemp(path) => FileOpen(path, "w", "UTF-8-RAW")
 
-    static Replace(temp, path) => FileMove(temp, path, 1)
+    static Replace(temp, path) {
+        ; One same-volume replacement; never delete the destination as a fallback.
+        if !DllCall("MoveFileExW", "Str", temp, "Str", path, "UInt", 1, "Int") ; MOVEFILE_REPLACE_EXISTING
+            throw OSError(A_LastError)
+    }
 
     static Same(a, b) {
         local key, value
