@@ -54,7 +54,7 @@ class LegendLetterStore {
     ; the host's script), only when they changed. A file that can't be written is
     ; skipped: letters then last for this run only.
     static Write(path, pages, letters, saved) {
-        local dir, keep, letter, page, stream, text, title
+        local dir, keep, letter, page, stream, temp, text, title
         keep := Map()
         for page in pages {
             title := StrLower(page.Title)
@@ -66,14 +66,38 @@ class LegendLetterStore {
         text := ""
         for title, letter in keep
             text .= letter "`t" title "`n"
+        stream := 0, temp := ""
         try {
             SplitPath(path, , &dir)
             if dir != "" && !DirExist(dir)
                 DirCreate(dir)
-            stream := FileOpen(path, "w", "UTF-8-RAW")
-            stream.Write(text)
+            loop {
+                temp := path ".tmp-" DllCall("GetCurrentProcessId", "UInt") "-" A_TickCount "-" Random(1, 2147483647)
+                if !FileExist(temp)
+                    break
+            }
+            stream := this.OpenTemp(temp)
+            if stream.Write(text) != StrPut(text, "UTF-8") - 1
+                throw Error("Incomplete letter mapping write")
             stream.Close()
+            stream := 0
+            this.Replace(temp, path)
+        } catch {
+            ; Persistence is optional; keep the previous mapping on failure.
+        } finally {
+            if IsObject(stream)
+                try stream.Close()
+            if temp != "" && FileExist(temp)
+                try FileDelete(temp)
         }
+    }
+
+    static OpenTemp(path) => FileOpen(path, "w", "UTF-8-RAW")
+
+    static Replace(temp, path) {
+        ; One same-volume replacement; never delete the destination as a fallback.
+        if !DllCall("MoveFileExW", "Str", temp, "Str", path, "UInt", 1, "Int") ; MOVEFILE_REPLACE_EXISTING
+            throw OSError(A_LastError)
     }
 
     static Same(a, b) {

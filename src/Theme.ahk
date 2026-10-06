@@ -98,7 +98,7 @@ class LegendTheme {
 
     ; Reads path over the defaults ("" = defaults only), adding a warning per bad value.
     static Read(path, warnings := []) {
-        local item
+        local item, raw, values
         values := Map()
         values.CaseSense := false
         for item in this.Schema {
@@ -109,7 +109,7 @@ class LegendTheme {
     }
 
     static Check(raw, kind, fallback, label, warnings) {
-        local bounds, found, ok, value
+        local bounds, choice, found, ok, value
         raw := Trim(raw)
         value := raw, ok := true
         if kind = "color" {

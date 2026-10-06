@@ -19,8 +19,7 @@ switcher. Public repo (simsrw73/Legend.ahk). Specs in `docs/specs/`, plans in
   `/ErrorStdOut` into a path and AutoHotkey pops a modal dialog on the user's
   desktop.
 - Don't send keystrokes, open menus or click on the user's screen without
-  asking. Drive the code directly instead (`Legend.HandleNow`,
-  `Legend.PickerKey`, `Legend.OpenChordNow`), as the tests do.
+  asking. Drive the code directly, as `tests/Controller.Tests.ahk` does.
 
 ## AutoHotkey v2 traps
 
@@ -39,7 +38,7 @@ switcher. Public repo (simsrw73/Legend.ahk). Specs in `docs/specs/`, plans in
 
 - Never send `WM_SETREDRAW` to the overlay window: it clears `WS_VISIBLE` and
   DWM drops the overlay for a frame (the user saw whole-window flashes).
-- Overlay moves the cursor in place (`Legend.Render`, `LegendSelection`);
+- The renderer moves the overlay cursor in place through `LegendSelection`;
   only a new layout key rebuilds the window.
 - Screen coordinates: per-monitor DPI (`SetThreadDpiAwarenessContext(-4)`),
   window bounds from `DwmGetWindowAttribute(9)` (extended frame bounds).
@@ -47,7 +46,7 @@ switcher. Public repo (simsrw73/Legend.ahk). Specs in `docs/specs/`, plans in
 
 ## Structure
 
-`Legend.ahk` is the controller (Start, Open/Draw, chords, pickers).
+`Legend.ahk` is the facade for startup, registration, and opening interactions.
 `src/`: `Registry` (pages, PageKeys, warnings), `Navigator` (pure level
 stack), `Layout` (vertical and proportional packing), `Rows`, `Overlay`
 (drawing pipeline: `Frame`/`Finish`, table and list bodies), `Theme`,
