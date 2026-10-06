@@ -27,6 +27,14 @@ Declared(input, &output) {
 Inline() { local declared := 1 }
 Arrow(input) => input := 1
 
+Flags(flags) {
+    return flags & A_TickCount
+}
+
+CompactFlags(flags) {
+    return flags&A_TickCount
+}
+
 class Accessor {
     Value {
         get {

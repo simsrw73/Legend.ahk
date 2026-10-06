@@ -18,7 +18,10 @@ CatchValue() {
 }
 
 OutputValue() {
+    local reference
     RegExMatch("", "", &found)
+    Output(&first)
+    reference := &target
 }
 
 Initializer() {
