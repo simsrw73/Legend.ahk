@@ -31,6 +31,10 @@
 #Include %A_ScriptDir%\Picker.Tests.ahk
 #Include %A_ScriptDir%\..\src\Windows.ahk
 #Include %A_ScriptDir%\Windows.Tests.ahk
+#Include %A_ScriptDir%\..\src\Session.ahk
+#Include %A_ScriptDir%\..\src\ReferenceSession.ahk
+#Include %A_ScriptDir%\..\src\ChordSession.ahk
+#Include %A_ScriptDir%\..\src\PickerSession.ahk
 #Include %A_ScriptDir%\..\Legend.ahk
 #Include %A_ScriptDir%\Controller.Tests.ahk
 #Include %A_ScriptDir%\Letters.Tests.ahk
