@@ -65,6 +65,21 @@ class LegendChordSession {
             this.Renderer.DrawNavigator(this.Nav, Legend.AllWarnings(this.Renderer).Length)
     }
 
+    ; Warning hover belongs to the capturing chord. Once capture ends, mouse
+    ; movement must leave the session's unmatched-key notification alone.
+    OnMouseMove(hwnd) {
+        local overlay
+        if !this.Active || !this.Capturing
+            return
+        overlay := this.Renderer.Gui
+        overlay := IsObject(overlay) && overlay.HasOwnProp("WarningBadge") ? overlay : ""
+        if overlay && hwnd = overlay.WarningBadge.Hwnd {
+            if !this.TipShown
+                ToolTip(Legend.WarningTip(Legend.AllWarnings(this.Renderer))), this.TipShown := true
+        } else if this.TipShown
+            ToolTip(), this.TipShown := false
+    }
+
     ChangeDisplay(action) {
         local paginate
         Legend.ChangeDisplay(action, this.Renderer.Theme)

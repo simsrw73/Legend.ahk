@@ -169,7 +169,7 @@ class Legend {
     }
 
     static OnMouseMove(hwnd) {
-        if this.ReferenceActive()
+        if this.ReferenceActive() || this.Session is LegendChordSession
             this.Session.OnMouseMove(hwnd)
     }
 

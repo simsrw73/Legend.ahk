@@ -153,6 +153,47 @@ Sessions_ReferenceLifecycle() {
     }
 }
 
+T.Test("Controller: reference warning hover shows and closes its tooltip", () => Controller_WarningHover(() => Legend.Open()))
+T.Test("Controller: chord warning hover shows and closes its tooltip", () => Controller_WarningHover(
+    () => Legend.OpenChord(LegendChord("^!+F9", "Hover", [Legend.Run("a", "A", Noop)]))))
+Controller_WarningHover(open) {
+    local badge, options, registry, replacement, session, tooltipWindow
+    options := Legend.Options, registry := Legend.Registry
+    Legend.Options := Legend.DefaultOptions.Clone(), Legend.Options.LetterFile := ""
+    Legend.Options.ChordOverlay := "always"
+    Legend.Registry := LegendRegistry()
+    Legend.Registry.Warnings.Push("warning hover regression")
+    tooltipWindow := "ahk_class tooltips_class32 ahk_pid " DllCall("GetCurrentProcessId", "UInt")
+    try {
+        open()
+        session := Legend.Session
+        T.True(session.Renderer.Gui.HasOwnProp("WarningBadge"), "warning badge rendered")
+        badge := session.Renderer.Gui.WarningBadge.Hwnd
+        Legend.OnMouseMove(badge)
+        T.True(session.TipShown, "active session owns the warning tooltip")
+        T.True(WinExist(tooltipWindow), "warning tooltip is visible")
+        Legend.OnMouseMove(session.Renderer.Gui.Hwnd)
+        T.True(!session.TipShown && !WinExist(tooltipWindow), "leaving the badge dismisses the tooltip")
+        Legend.OnMouseMove(badge)
+        Legend.Open()
+        replacement := Legend.Session
+        T.True(session.Closed && !session.TipShown)
+        T.True(!WinExist(tooltipWindow), "replacement dismisses the old warning tooltip")
+        Legend.OnMouseMove(replacement.Renderer.Gui.WarningBadge.Hwnd)
+        session.OnMouseMove(0)
+        session.OnMouseMove(badge)
+        session.Close()
+        T.True(Legend.Session == replacement && replacement.TipShown)
+        T.True(WinExist(tooltipWindow), "stale hover/close cannot dismiss the replacement's tooltip")
+        Legend.OnMouseMove(0)
+        T.True(!replacement.TipShown && !WinExist(tooltipWindow))
+    } finally {
+        Legend.Close()
+        ToolTip()
+        Legend.Options := options, Legend.Registry := registry
+    }
+}
+
 T.Test("Sessions: replacement closes before constructing the next session", Sessions_FactoryOrder)
 Sessions_FactoryOrder() {
     local order, old, replacement
@@ -232,6 +273,8 @@ Sessions_ChordNotification() {
         T.Eq(old.Renderer.Gui, "")
         T.Eq(old.Renderer.Measurer, "")
         dismiss := old.Timers["Dismiss"]
+        Legend.OnMouseMove(0)
+        T.True(old.TipShown, "mouse movement preserves the unmatched-key notification")
         Legend.OpenPicker(picker)
         replacement := Legend.Session
         T.True(old.Closed && !old.TipShown)
