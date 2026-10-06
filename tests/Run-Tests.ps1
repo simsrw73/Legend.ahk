@@ -45,6 +45,7 @@ $localCases = @(
         'Compound: undeclared local count', 'Compound: undeclared local mask', 'Compound: undeclared local shifted',
         'LoopValue: undeclared local value', 'CatchValue: undeclared local err',
         'OutputValue: undeclared local first', 'OutputValue: undeclared local found', 'OutputValue: undeclared local target',
+        'CommandOutputs: undeclared local x', 'CommandOutputs: undeclared local y',
         'Initializer: undeclared local missing', 'Inline: undeclared local missing', 'Arrow: undeclared local missing',
         'get: undeclared local missing'
     ) },

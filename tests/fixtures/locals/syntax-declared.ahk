@@ -35,6 +35,17 @@ CompactFlags(flags) {
     return flags&A_TickCount
 }
 
+AssignedFlags(flags) {
+    local masked
+    masked := flags & A_TickCount
+    return masked
+}
+
+CommandOutputs() {
+    local x, y
+    MouseGetPos &x, &y
+}
+
 class Accessor {
     Value {
         get {

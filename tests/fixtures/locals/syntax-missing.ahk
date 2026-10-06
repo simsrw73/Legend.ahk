@@ -24,6 +24,10 @@ OutputValue() {
     reference := &target
 }
 
+CommandOutputs() {
+    MouseGetPos &x, &y
+}
+
 Initializer() {
     local declared := (missing := 1)
 }

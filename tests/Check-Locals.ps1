@@ -53,7 +53,10 @@ function Get-IntroducedNames([string]$Body) {
         '\bcatch\s+(?:[a-z_]\w*\s+)?as\s+([a-z_]\w*)',
         # A VarRef starts an expression (e.g. a call argument or assignment RHS).
         # Binary AND follows a completed operand and must not introduce its RHS.
-        '(?:^|[(,\[?:=]|\breturn\b)\s*&\s*([a-z_]\w*)'
+        '(?:^|[(,\[?:=]|\breturn\b)\s*&\s*([a-z_]\w*)',
+        # Parentheses are optional for statement calls. Here the initial name is
+        # the callable, followed immediately by a unary first-argument VarRef.
+        '(?m)^\s*(?:(?:try|else)\s+)?[a-z_]\w*(?:\.[a-z_]\w*)*\s+&\s*([a-z_]\w*)'
     )
     foreach ($pattern in $patterns) {
         foreach ($match in [regex]::Matches($Body, $pattern, 'IgnoreCase')) {
