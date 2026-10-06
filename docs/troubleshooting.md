@@ -95,8 +95,9 @@ script has.
   the active window, so be careful with strings that include `{Enter}` or
   shortcuts, and with any item that builds a `Run` command from picker data: run
   only programs and paths you trust.
-- **Files Legend writes:** only `%AppData%\Legend\page-letters.txt` (page
-  letters, see [`LetterFile`](reference.md#legendstartoptions)).
+- **Files Legend writes:** `%AppData%\Legend\page-letters.txt` (page letters,
+  see [`LetterFile`](reference.md#legendstartoptions)) and a temporary file
+  beside it while saving. A failed save leaves the previous mapping intact.
 - **Network:** none. Legend never connects to anything.
 - **Keyboard:** while the overlay, a chord or a picker is open, Legend watches
   keys to drive it, and lets Ctrl/Alt/Win shortcuts through to your apps. It
