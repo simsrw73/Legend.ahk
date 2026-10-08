@@ -37,6 +37,7 @@
 #Include %A_ScriptDir%\..\src\PickerSession.ahk
 #Include %A_ScriptDir%\..\Legend.ahk
 #Include %A_ScriptDir%\Controller.Tests.ahk
+#Include %A_ScriptDir%\Switcher.Tests.ahk
 #Include %A_ScriptDir%\Letters.Tests.ahk
 
 T.Finish()
