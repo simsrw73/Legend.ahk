@@ -211,13 +211,13 @@ class Legend {
 
     ; Critical belongs to the calling AHK thread; always restore its original value.
     static Serialized(fn) {
-        local was
-        was := A_IsCritical
+        local previousCritical
+        previousCritical := A_IsCritical
         Critical
         try
             return fn()
         finally
-            Critical(was ? was : "Off")
+            Critical(previousCritical ? previousCritical : "Off")
     }
 
     ; OnPick / OnCancel run after teardown, outside Critical. This sole facade-owned
@@ -231,16 +231,16 @@ class Legend {
     }
 
     static RunDeferred() {
-        local callback, was
+        local callback, previousCritical
         if !IsObject(callback := this.Deferred)
             return
         this.Deferred := ""
         SetTimer(this.DeferredTimer, 0)
-        was := A_IsCritical
+        previousCritical := A_IsCritical
         Critical("Off")
         try
             callback()
         finally
-            Critical(was ? was : "Off")
+            Critical(previousCritical ? previousCritical : "Off")
     }
 }

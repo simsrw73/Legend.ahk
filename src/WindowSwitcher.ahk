@@ -44,27 +44,27 @@ class LegendWindowSwitcher {
     }
 
     Source(label) {
-        local active, activeListed, activeMonitor, item, items, scope, win, windows
+        local activeHwnd, activeListed, activeMonitor, item, items, scope, window, windows
         this.FreeIcons()
         try {
             scope := LegendWindowSwitcher.ScopeOf(label)
-            active := WinExist("A")
+            activeHwnd := WinExist("A")
             windows := LegendWindows.List({Include: this.Include})
             activeMonitor := 0
-            for win in windows
-                if win.Hwnd = active
-                    activeMonitor := win.Monitor
-            if !activeMonitor && active
+            for window in windows
+                if window.Hwnd = activeHwnd
+                    activeMonitor := window.Monitor
+            if !activeMonitor && activeHwnd
                 activeMonitor := LegendWindows.InPhysicalPixels(() => LegendWindows.MonitorAt(LegendWindows.Monitors(),
-                    LegendWindows.Bounds(active).X, LegendWindows.Bounds(active).Y))
+                    LegendWindows.Bounds(activeHwnd).X, LegendWindows.Bounds(activeHwnd).Y))
             items := [], activeListed := false
-            for win in windows {
-                if scope != "all" && !win.OnCurrentDesktop
+            for window in windows {
+                if scope != "all" && !window.OnCurrentDesktop
                     continue
-                if scope = "monitor" && win.Monitor != activeMonitor
+                if scope = "monitor" && window.Monitor != activeMonitor
                     continue
-                item := {Text: win.Title, Detail: this.DetailOf(win), Icon: this.IconOf(win.Hwnd), Data: win}
-                if win.Hwnd = active
+                item := {Text: window.Title, Detail: this.DetailOf(window), Icon: this.IconOf(window.Hwnd), Data: window}
+                if window.Hwnd = activeHwnd
                     items.InsertAt(1, item), activeListed := true
                 else
                     items.Push(item)
@@ -95,19 +95,22 @@ class LegendWindowSwitcher {
     IconOf(hwnd) {
         local classIndex, icon, iconType, imageType
         static WM_GETICON := 0x7F, SMTO_ABORTIFHUNG := 0x2
-        for iconType in [2, 0, 1] {   ; ICON_SMALL2, ICON_SMALL, ICON_BIG
+        static ICON_SMALL2 := 2, ICON_SMALL := 0, ICON_BIG := 1
+        static GCLP_HICONSM := -34, GCLP_HICON := -14
+        static IMAGE_ICON := 1, ICON_QUERY_TIMEOUT_MS := 50
+        for iconType in [ICON_SMALL2, ICON_SMALL, ICON_BIG] {
             icon := 0
             if DllCall("SendMessageTimeoutW", "Ptr", hwnd, "UInt", WM_GETICON, "Ptr", iconType, "Ptr", 0,
-                    "UInt", SMTO_ABORTIFHUNG, "UInt", 50, "Ptr*", &icon) && icon
+                    "UInt", SMTO_ABORTIFHUNG, "UInt", ICON_QUERY_TIMEOUT_MS, "Ptr*", &icon) && icon
                 return icon
         }
-        for classIndex in [-34, -14] {   ; GCLP_HICONSM, GCLP_HICON
+        for classIndex in [GCLP_HICONSM, GCLP_HICON] {
             if icon := DllCall("GetClassLongPtrW", "Ptr", hwnd, "Int", classIndex, "Ptr")
                 return icon
         }
         try {
             icon := LoadPicture(WinGetProcessPath(hwnd), "Icon1 w32 h32", &imageType)
-            if icon && imageType = 1 {
+            if icon && imageType = IMAGE_ICON {
                 this.Icons[hwnd] := icon
                 return icon
             }

@@ -56,7 +56,7 @@ class LegendPickerSession {
     }
 
     Draw() {
-        local area, index, maxHeight, maxWidth, measurer, picker, theme
+        local area, maxHeight, maxWidth, measurer, picker, selectedRowIndex, theme
         if !this.Active
             return
         picker := this.Picker, theme := this.PickerTheme()
@@ -69,10 +69,10 @@ class LegendPickerSession {
         maxHeight := (area.Bottom - area.Top) * theme["maxHeightPercent"] // 100 - LegendOverlay.Chrome(theme, measurer)
         maxWidth := (area.Right - area.Left) * Min(theme["pickerWidthPercent"], theme["maxWidthPercent"]) // 100 - theme["padding"] * 2
         picker.PageSize := Max(1, maxHeight // LegendOverlay.PickerRowHeight(theme, measurer))
-        index := picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0
+        selectedRowIndex := picker.Cursor ? picker.Cursor - (picker.ScreenIndex - 1) * picker.PageSize : 0
         this.Renderer.Render("picker|" picker.LayoutKey "|" theme["density"],
-            () => LegendOverlay.ShowPicker({Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText, SelectedIndex: index},
-                theme, measurer, picker.Footer(theme["density"]), maxWidth), index)
+            () => LegendOverlay.ShowPicker({Title: picker.TitleLine, Rows: picker.ScreenRows(), Empty: picker.EmptyText, SelectedIndex: selectedRowIndex},
+                theme, measurer, picker.Footer(theme["density"]), maxWidth), selectedRowIndex)
     }
 
     Highlight() {
@@ -145,17 +145,17 @@ class LegendPickerSession {
     DrainKeys() => Legend.Serialized(() => this.DrainKeysNow())
 
     DrainKeysNow() {
-        local batch, item, keys, onPick, picker
+        local item, onPick, outcome, picker, queuedKeys
         if !this.Active || !this.Ready || !this.Pending.Length
             return
-        keys := this.Pending, this.Pending := []
-        picker := this.Picker, batch := picker.KeyBatch(keys)
+        queuedKeys := this.Pending, this.Pending := []
+        picker := this.Picker, outcome := picker.KeyBatch(queuedKeys)
         if !this.Active
             return
-        loop batch.Density
+        loop outcome.Density
             Legend.DensityOverride := (Legend.DensityOverride != "" ? Legend.DensityOverride : this.Renderer.Theme["density"]) = "compact"
                 ? "comfortable" : "compact"
-        switch batch.Action {
+        switch outcome.Action {
             case "redraw":
                 this.Highlight()
                 this.Draw()

@@ -39,18 +39,18 @@ class LegendSessionRenderer {
 
     ; A cursor-only change moves the selection without rebuilding the window.
     Render(layoutKey, build, selectedIndex) {
-        local old
+        local previousOverlay
         if this.Closed
             return
         if this.Gui && this.DrawnLayout == layoutKey {
             this.Gui.Selection.Select(selectedIndex)
             return
         }
-        old := this.Gui
+        previousOverlay := this.Gui
         this.Gui := build()
         this.DrawnLayout := layoutKey
-        if old
-            old.Destroy()
+        if previousOverlay
+            previousOverlay.Destroy()
     }
 
     DrawNavigator(nav, warnings) {
