@@ -302,6 +302,81 @@ Sessions_PickerSourceFailure() {
     T.Eq(partial.Renderer.Gui, "")
 }
 
+T.Test("Switcher: cancelling releases source icons and clears the peek after teardown", Switcher_CancelReleasesResources)
+Switcher_CancelReleasesResources() {
+    local clears, session, switcher
+    clears := [], session := ""
+    switcher := LegendWindowSwitcher("^!+F9")
+    ; Model an owned icon without asking Win32 to extract or destroy a real one.
+    switcher.Picker.Source := (*) => (switcher.Icons[0xBEEF] := 0, [{Text: "one", Data: {Hwnd: 0}}])
+    switcher.Peek := {Show: (self, item, outline, below) => "",
+        Clear: (self, restore) => clears.Push({Restore: restore, Session: Legend.Session,
+            Closed: session.Closed, Hook: session.Hook, Gui: session.Renderer.Gui, Critical: A_IsCritical})}
+    try {
+        Legend.OpenPicker(switcher.Picker)
+        session := Legend.Session
+        Legend.Close(true)
+        Legend.RunDeferred()
+        T.Eq(switcher.Icons.Count, 0)
+        T.Eq(clears.Length, 1)
+        T.True(clears[1].Restore, "cancel restores the peek")
+        T.Eq(clears[1].Session, "", "cancel runs after detaching the session")
+        T.True(clears[1].Closed)
+        T.Eq(clears[1].Hook, "", "cancel runs after releasing capture")
+        T.Eq(clears[1].Gui, "", "cancel runs after renderer teardown")
+        T.Eq(clears[1].Critical, 0, "cancel runs outside Critical")
+    } finally {
+        Legend.Close(false)
+        Legend.RunDeferred()
+    }
+}
+
+T.Test("Switcher: picking releases icons and clears the peek before activating", Switcher_PickReleasesResources)
+Switcher_PickReleasesResources() {
+    local order, switcher, target
+    order := []
+    target := Gui("-Caption +ToolWindow +E0x08000000")
+    switcher := LegendWindowSwitcher("^!+F9", {Activate: hwnd => order.Push("activate")})
+    switcher.Picker.Source := (*) => (switcher.Icons[0xBEEF] := 0,
+        [{Text: "one", Data: {Hwnd: target.Hwnd}}])
+    switcher.Peek := {Show: (self, item, outline, below) => "",
+        Clear: (self, restore) => order.Push(restore ? "restore" : "clear")}
+    try {
+        target.Show("NA x-3000 y-3000 w30 h30")
+        Legend.OpenPicker(switcher.Picker)
+        Legend.Session.Key(LegendKeyName.FromText("Enter"))
+        Legend.RunDeferred()
+        T.Eq(switcher.Icons.Count, 0)
+        T.Eq(order.Length, 2)
+        T.Eq(order[1], "clear")
+        T.Eq(order[2], "activate")
+    } finally {
+        Legend.Close(false)
+        Legend.RunDeferred()
+        target.Destroy()
+    }
+}
+
+T.Test("Switcher: failed source leaves owned icons without a cancel callback", Switcher_FailedSourceRetainsIcons)
+Switcher_FailedSourceRetainsIcons() {
+    local clears, switcher
+    clears := []
+    switcher := LegendWindowSwitcher("^!+F9")
+    ; Characterize the current failed-open path, not the desired cleanup behavior.
+    switcher.Picker.Source := (*) => (switcher.Icons[0xBEEF] := 0, Sessions_FailOpen())
+    switcher.Peek := {Clear: (self, restore) => clears.Push(restore)}
+    try {
+        T.Throws(() => Legend.OpenPicker(switcher.Picker))
+        Legend.RunDeferred()
+        T.Eq(Legend.Session, "")
+        T.Eq(switcher.Icons.Count, 1, "current behavior: no callback releases the icon")
+        T.Eq(clears.Length, 0, "current behavior: no cancel callback clears the peek")
+    } finally {
+        Legend.Close(false)
+        switcher.Icons := Map()   ; fake icon handle: do not pass it to DestroyIcon
+    }
+}
+
 T.Test("Sessions: picker callbacks run after teardown outside Critical", Sessions_DeferredPick)
 Sessions_DeferredPick() {
     local picker, seen, session, was
