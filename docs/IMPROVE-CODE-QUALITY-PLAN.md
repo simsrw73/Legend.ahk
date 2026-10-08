@@ -30,6 +30,7 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 | 2026-10-08 | 1 | Pin failed-open resource retention as observed and log debt; do not change production behavior | A characterization test must describe the current code, even when it reveals a likely defect. |
 | 2026-10-08 | 1 | Approve the Safety Net Map and debt ledger; mark Phase 1 complete for the pinned paths | Three new switcher tests pass; unpinned paths are explicit and off-limits until covered. |
 | 2026-10-08 | 1 | Replace fake-icon tests with real native-handle characterization; leave production cleanup unchanged | Confirm partial-open retention and pin owned/borrowed icon lifetime plus scope-reload rendering before a separate cleanup fix. |
+| 2026-10-08 | 1 follow-up | Release owned icons when source construction fails, then rethrow; do not run normal cancellation | Fix the characterized defect separately; preserve borrowed-icon ownership and the picker's failed-open callback contract. |
 
 ## Next Actions
 
@@ -37,5 +38,5 @@ Statuses: pending · in-progress · awaiting-evidence · done · deferred: <reas
 - [x] Agree to pin observed incorrect behavior and log debt rather than fix it silently (maintainer; priority: high; Phase 1).
 - [x] Approve TESTING.md and TECH-DEBT.md before writing (maintainer; priority: high; Phase 1).
 - [x] Pin real icon extraction/destruction before changing resource ownership (agent; priority: high; see TESTING.md backlog).
-- [ ] Fix confirmed owned-icon retention on partial source failure as a separate behavior change (agent; priority: high; see TECH-DEBT.md).
+- [x] Fix confirmed owned-icon retention on partial source failure as a separate behavior change (agent; priority: high; see TECH-DEBT.md).
 - [ ] Choose whether and when to enter Phase 2 (maintainer; priority: low).

@@ -89,15 +89,16 @@ Switcher_BorrowedIconSurvives(kind) {
     }
 }
 
-T.Test("Switcher: failed source retains a real extracted icon without cancellation", Switcher_FailedSourceRetainsIcons)
-Switcher_FailedSourceRetainsIcons() {
-    local clears, first, harness, icon, partial, second, switcher
-    clears := [], partial := ""
+T.Test("Switcher: failed source destroys acquired icons without cancellation", Switcher_FailedSourceReleasesIcons)
+Switcher_FailedSourceReleasesIcons() {
+    local borrowed, clears, first, harness, icon, partial, second, switcher
+    clears := [], partial := "", icon := 0
     first := SwitcherIconWindow("Legend partial source first")
+    borrowed := SwitcherIconWindow("Legend partial source borrowed", "window")
     second := SwitcherIconWindow("Legend partial source failure")
-    harness := SwitcherIconHarness([first.Item(), second.Item()])
+    harness := SwitcherIconHarness([first.Item(), borrowed.Item(), second.Item()])
     switcher := LegendWindowSwitcher("^!+F9", {Detail: win => (partial := Legend.Session,
-        Switcher_FailedDetail(win, second.Hwnd))})
+        win.Hwnd = second.Hwnd ? (icon := switcher.Icons[first.Hwnd], Switcher_FailedDetail(win, second.Hwnd)) : win.App)})
     switcher.Peek := {Show: (*) => "", Clear: (self, restore) => clears.Push(restore)}
     try {
         T.Throws(() => Legend.OpenPicker(switcher.Picker))
@@ -107,16 +108,14 @@ Switcher_FailedSourceRetainsIcons() {
         T.Eq(partial.Hook, "")
         T.Eq(partial.FocusTimer, "")
         T.Eq(partial.Renderer.Gui, "")
-        ; Characterize the defect: partial source failure does not run cancellation.
-        T.Eq(switcher.Icons.Count, 1)
-        icon := switcher.Icons[first.Hwnd]
-        T.True(Switcher_IconAlive(icon), "the real extracted handle remains live after failed open")
-        T.Eq(clears.Length, 0)
-        switcher.FreeIcons() ; Test cleanup, not production failure recovery.
-        T.True(!Switcher_IconAlive(icon))
+        T.Eq(switcher.Icons.Count, 0)
+        T.True(icon != 0 && !Switcher_IconAlive(icon), "source failure destroys the acquired handle")
+        T.True(Switcher_IconAlive(borrowed.Icon), "failure cleanup leaves the borrowed handle intact")
+        T.Eq(clears.Length, 0, "failed open does not run normal cancellation")
     } finally {
         harness.Close(switcher)
         first.Close()
+        borrowed.Close()
         second.Close()
     }
 }
@@ -125,6 +124,29 @@ Switcher_FailedDetail(win, failedHwnd) {
     if win.Hwnd = failedHwnd
         throw Error("fixture detail failure after the first extracted icon")
     return win.App
+}
+
+T.Test("Switcher: source failure preserves the original exception", Switcher_SourceFailurePreservesError)
+Switcher_SourceFailurePreservesError() {
+    local caught, err, failure, fixture, harness, switcher
+    caught := "", failure := Error("fixture detail failure")
+    fixture := SwitcherIconWindow("Legend source exception fixture")
+    harness := SwitcherIconHarness([fixture.Item()])
+    switcher := LegendWindowSwitcher("^!+F9", {Detail: win => Switcher_ThrowFailure(failure)})
+    try {
+        try
+            switcher.Source("all windows")
+        catch as err
+            caught := err
+        T.True(caught == failure, "cleanup rethrows the same exception object")
+    } finally {
+        harness.Close(switcher)
+        fixture.Close()
+    }
+}
+
+Switcher_ThrowFailure(failure) {
+    throw failure
 }
 
 T.Test("Switcher: scope reload destroys old icons before rendering valid replacement rows", Switcher_ScopeReloadIcons)

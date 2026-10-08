@@ -46,30 +46,35 @@ class LegendWindowSwitcher {
     Source(label) {
         local active, activeListed, activeMonitor, item, items, scope, win, windows
         this.FreeIcons()
-        scope := LegendWindowSwitcher.ScopeOf(label)
-        active := WinExist("A")
-        windows := LegendWindows.List({Include: this.Include})
-        activeMonitor := 0
-        for win in windows
-            if win.Hwnd = active
-                activeMonitor := win.Monitor
-        if !activeMonitor && active
-            activeMonitor := LegendWindows.InPhysicalPixels(() => LegendWindows.MonitorAt(LegendWindows.Monitors(),
-                LegendWindows.Bounds(active).X, LegendWindows.Bounds(active).Y))
-        items := [], activeListed := false
-        for win in windows {
-            if scope != "all" && !win.OnCurrentDesktop
-                continue
-            if scope = "monitor" && win.Monitor != activeMonitor
-                continue
-            item := {Text: win.Title, Detail: this.DetailOf(win), Icon: this.IconOf(win.Hwnd), Data: win}
-            if win.Hwnd = active
-                items.InsertAt(1, item), activeListed := true
-            else
-                items.Push(item)
+        try {
+            scope := LegendWindowSwitcher.ScopeOf(label)
+            active := WinExist("A")
+            windows := LegendWindows.List({Include: this.Include})
+            activeMonitor := 0
+            for win in windows
+                if win.Hwnd = active
+                    activeMonitor := win.Monitor
+            if !activeMonitor && active
+                activeMonitor := LegendWindows.InPhysicalPixels(() => LegendWindows.MonitorAt(LegendWindows.Monitors(),
+                    LegendWindows.Bounds(active).X, LegendWindows.Bounds(active).Y))
+            items := [], activeListed := false
+            for win in windows {
+                if scope != "all" && !win.OnCurrentDesktop
+                    continue
+                if scope = "monitor" && win.Monitor != activeMonitor
+                    continue
+                item := {Text: win.Title, Detail: this.DetailOf(win), Icon: this.IconOf(win.Hwnd), Data: win}
+                if win.Hwnd = active
+                    items.InsertAt(1, item), activeListed := true
+                else
+                    items.Push(item)
+            }
+            this.Picker.Start := LegendWindowSwitcher.StartFor(this.StartOption, activeListed)
+            return items
+        } catch {
+            this.FreeIcons()
+            throw
         }
-        this.Picker.Start := LegendWindowSwitcher.StartFor(this.StartOption, activeListed)
-        return items
     }
 
     DetailOf(win) {
