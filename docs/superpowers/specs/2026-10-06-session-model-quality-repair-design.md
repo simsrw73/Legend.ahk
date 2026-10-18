@@ -7,7 +7,7 @@ objects, while also completing the outstanding quality-boundary, local-scope,
 and durable-write repairs. The public Legend API keeps its behavior; internal
 controller fields and tests may change freely.
 
-## Goals
+## Goals[]
 
 1. `Legend` owns at most one current interaction session.
 2. Each session owns and closes every resource it creates: input hook, focus

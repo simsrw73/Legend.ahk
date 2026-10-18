@@ -1,0 +1,513 @@
+diff --git a/README.md b/README.md
+index 29a21ce..cee5eb8 100644
+--- a/README.md
++++ b/README.md
+@@ -1,8 +1,8 @@
+ # Legend
+ 
+-**A shortcut overlay for AutoHotkey v2.** Press **Alt+/** to see the shortcuts
++Legend is a shortcut overlay for AutoHotkey v2. Press **Alt+/** to see the shortcuts
+ for the app you're in: the hotkeys your script binds and the app's own keys, side
+-by side. Legend also gives you which-key chord menus (press Win+Space, then a
++by side. It also has which-key chord menus (press Win+Space, then a
+ letter), pickers, and a keyboard-first window switcher.
+ 
+ It's for anyone who writes AutoHotkey scripts, from a first script with a
+@@ -34,18 +34,19 @@ Legend.Start()
+ ```
+ 
+ Press **Ctrl+Alt+D** to type today's date, and **Alt+/** to see it listed.
+-Legend binds the hotkey and documents it in one place, so the overlay is never
+-out of date.
++Legend binds the hotkey and uses the same definition to list it in the overlay.
+ 
+-**New to AutoHotkey?** [Getting started](docs/getting-started.md) walks through
++New to AutoHotkey? [Getting started](docs/getting-started.md) walks through
+ this script and builds it up step by step, and
+ [AutoHotkey basics](docs/autohotkey-basics.md) explains the syntax it uses.
+ 
+ ## What it does
+ 
+-**Pages from your hotkeys.** Group keys into pages and categories; make a page
++### Pages from your hotkeys
++
++Group keys into pages and categories; make a page
+ belong to one app so Alt+/ opens straight to it there.
+-[Pages and bindings →](docs/guide/pages.md)
++[Pages and bindings](docs/guide/pages.md)
+ 
+ ```ahk
+ #Requires AutoHotkey v2.0
+@@ -60,9 +61,11 @@ Legend.Doc(["Notepad", "Editing"], "Ctrl+H", "replace")      ; listed, not bound
+ Legend.Start()
+ ```
+ 
+-**Pages from Markdown files.** List an app's own shortcuts without code, or use
++### Pages from Markdown files
++
++List an app's own shortcuts without code, or use
+ the ready-made pages for about 40 apps in `collections/apps`.
+-[Page files →](docs/guide/page-files.md)
++[Page files](docs/guide/page-files.md)
+ 
+ ```markdown
+ ---
+@@ -75,27 +78,33 @@ match: ahk_exe zen.exe
+ - `Ctrl+Shift+T` Reopen closed tab
+ ```
+ 
+-**Chord menus.** Press a trigger, then keys; pause and a menu shows what's
++### Chord menus
++
++Press a trigger, then keys; pause and a menu shows what's
+ available, with dots for apps that are running.
+-[Chords →](docs/guide/chords.md)
++[Chords](docs/guide/chords.md)
+ 
+ <p align="center">
+   <img src="docs/images/chord-menu.png" width="293"
+        alt="A Win+Space chord menu: one key per app, with dots for apps that are running, and › for submenus">
+ </p>
+ 
+-**Pickers and a window switcher.** Lists you open with a hotkey, filter by
+-typing and pick from with one key; an Alt+Tab replacement over your windows.
+-[Pickers →](docs/guide/pickers.md)
++### Pickers and a window switcher
++
++Open a list with a hotkey, filter it by typing, and pick an item with one key.
++The window switcher works as a keyboard-first Alt+Tab replacement.
++[Pickers](docs/guide/pickers.md)
+ 
+ <p align="center">
+   <img src="docs/images/window-switcher.png" width="423"
+        alt="The window switcher: windows with icons, letters and app · workspace details, the previous window selected">
+ </p>
+ 
+-**Themes.** Follows Windows light/dark with Catppuccin by default; every color,
+-font and spacing is configurable, and big pages spread into balanced columns.
+-[Themes and layout →](docs/guide/themes.md)
++### Themes
++
++Legend follows Windows light or dark mode with Catppuccin by default. You can
++configure every color, font and spacing setting; big pages use balanced columns.
++[Themes and layout](docs/guide/themes.md)
+ 
+ <p align="center">
+   <img src="docs/images/overlay-index.png" width="289" alt="The index of pages, each with its letter">
+diff --git a/docs/autohotkey-basics.md b/docs/autohotkey-basics.md
+index e6c7d2e..f7fdcd9 100644
+--- a/docs/autohotkey-basics.md
++++ b/docs/autohotkey-basics.md
+@@ -1,8 +1,7 @@
+ # AutoHotkey basics for Legend
+ 
+-**Audience:** people new to AutoHotkey v2, or coming from v1.
+-**Topic:** the handful of AutoHotkey v2 features that Legend's examples use.
+-**Goal:** read and change any example in these docs with confidence.
++This page covers the AutoHotkey v2 features used in Legend's examples, for
++people new to AutoHotkey or coming from v1.
+ 
+ If you already write AutoHotkey v2 scripts, skip this page and go to
+ [Getting started](getting-started.md).
+@@ -34,7 +33,7 @@ the modifier keys as symbols in front of the key:
+ | `#` | Windows key | `#e` | Win+E |
+ 
+ Combine them freely: `^!+d` is Ctrl+Alt+Shift+D, and `#Space` is Win+Space.
+-Named keys such as `Space`, `Enter`, `Tab`, `F1`–`F24`, `Left` and `Up` are
++Named keys such as `Space`, `Enter`, `Tab`, `F1` through `F24`, `Left` and `Up` are
+ written out. The full list is in AutoHotkey's
+ [key list](https://www.autohotkey.com/docs/v2/KeyList.htm) and
+ [hotkey modifier](https://www.autohotkey.com/docs/v2/Hotkeys.htm#Symbols) pages.
+diff --git a/docs/getting-started.md b/docs/getting-started.md
+index 424a364..47a5143 100644
+--- a/docs/getting-started.md
++++ b/docs/getting-started.md
+@@ -1,13 +1,12 @@
+ # Getting started with Legend
+ 
+-**Audience:** anyone with AutoHotkey v2 installed, including first-time scripters.
+-**Topic:** installing Legend and building one script, step by step.
+-**Goal:** by the end you have hotkeys that show up in a Legend overlay, an
+-app-specific page, a page of an app's own shortcuts, and a Win+Space launcher.
++With AutoHotkey v2 installed, you can build a script with hotkeys in the
++Legend overlay, an app-specific page, a page of an app's own shortcuts, and a
++Win+Space launcher. No previous scripting experience is needed.
+ 
+ Each step is a complete script: copy it over the previous one, reload, and try
+ it. New to AutoHotkey's syntax? Read [AutoHotkey basics](autohotkey-basics.md)
+-first, it takes five minutes.
++first.
+ 
+ ## Step 1: Install Legend
+ 
+@@ -47,12 +46,10 @@ Legend.Page("My keys").Category("Text", [
+ Legend.Start()
+ ```
+ 
+-**Try it:** open Notepad and press **Ctrl+Alt+D**: today's date is typed. Now
++Open Notepad and press **Ctrl+Alt+D**: today's date is typed. Now
+ press **Alt+/**: the Legend overlay opens and lists your page. Press the page's
+ letter (or **Enter**) to open it, and **Esc** to close.
+ 
+-**What each part does:**
+-
+ 1. `#Requires` and `#SingleInstance Force` are the usual first lines: they demand
+    AutoHotkey v2 and let you rerun the script without a prompt.
+ 2. `#Include` loads Legend. `%A_ScriptDir%` is your script's folder, so the path
+@@ -67,9 +64,8 @@ letter (or **Enter**) to open it, and **Esc** to close.
+ 5. `Legend.Start()` comes **last**. It loads page files and themes and turns on
+    the overlay key, **Alt+/**.
+ 
+-Legend creates the hotkey for you: you don't write `^!d::` separately. That is
+-the point: the key and its description live in one place, so the overlay is
+-always right.
++Legend creates the hotkey for you, so you don't write `^!d::` separately.
++The overlay uses the same definition for the key and its description.
+ 
+ ## Step 3: More categories, and keys you only want to remember
+ 
+@@ -95,8 +91,6 @@ Legend.Doc(["My keys", "Windows"], "Win+D", "show the desktop")
+ Legend.Start()
+ ```
+ 
+-**What changed:**
+-
+ 1. Calling `Legend.Page("My keys")` again returns the same page, so the second
+    `.Category` adds a second heading to it.
+ 2. `Legend.Doc([page, category], key, description)` lists a shortcut you want to
+@@ -130,12 +124,10 @@ notepad.Category("Editing", [
+ Legend.Start()
+ ```
+ 
+-**Try it:** with Notepad in front, **Alt+/** opens the Notepad page directly, and
++With Notepad in front, **Alt+/** opens the Notepad page directly, and
+ **Ctrl+Alt+S** types the signature. In any other app, Ctrl+Alt+S does nothing
+ and Alt+/ opens the index.
+ 
+-**Explanation:**
+-
+ 1. `"ahk_exe notepad.exe"` matches windows of the program `notepad.exe`. Use
+    [Window Spy](autohotkey-basics.md#telling-windows-apart-ahk_exe) to find
+    another app's name.
+@@ -180,7 +172,7 @@ notepad.Category("Editing", [
+ Legend.Start({Pages: [A_ScriptDir "\legend\pages"]})
+ ```
+ 
+-**What happens:** the file's `# Notepad` page has the same title as the page in
++The file's `# Notepad` page has the same title as the page in
+ your code, so they merge: your bound Ctrl+Alt+S and Notepad's own keys appear on
+ one page. In the file:
+ 
+@@ -214,12 +206,10 @@ Legend.Chord("#Space", "Launch", [
+ Legend.Start({Pages: [A_ScriptDir "\legend\pages"]})
+ ```
+ 
+-**Try it:** press **Win+Space**, wait a moment and a menu appears; press **n**.
++Press **Win+Space**, wait a moment and a menu appears; press **n**.
+ Press **Win+Space**, **t**, **d** to type the date. Typed quickly, the chord
+ runs before the menu even shows.
+ 
+-**Explanation:**
+-
+ 1. `Legend.Chord(trigger, title, items)` makes the menu. `#Space` is Win+Space.
+ 2. `Legend.Run(key, label, action)` is one item.
+ 3. `Legend.Menu(key, label, items)` is a submenu, shown with a `›`.
+diff --git a/docs/guide/chords.md b/docs/guide/chords.md
+index 3f4b14b..332fb82 100644
+--- a/docs/guide/chords.md
++++ b/docs/guide/chords.md
+@@ -1,9 +1,8 @@
+ # Chords: which-key menus
+ 
+-**Audience:** Legend users who want a keyboard launcher or menus of actions.
+-**Topic:** chord menus: items, submenus, running-app dots, conditions, sent
+-keys, key ranges and timing.
+-**Goal:** build a Win+Space launcher that opens any app in two keystrokes.
++Build a Win+Space launcher that opens an app with a trigger and a letter.
++Chord menus also support submenus, running-app dots, conditions, sent keys and
++key ranges, with adjustable timing.
+ 
+ ## What a chord is
+ 
+@@ -28,7 +27,7 @@ Legend.Start()
+ Press **Win+Space**, then **n**. Typed quickly, the app opens and no menu shows.
+ Pause after Win+Space and the menu appears after 400 ms.
+ 
+-**In a chord:** **Backspace** goes up a level, **Esc** or **Ctrl+G** cancels,
++In a chord, **Backspace** goes up a level, **Esc** or **Ctrl+G** cancels,
+ **Ctrl+F / Ctrl+B** (or **PgDn / PgUp**) page through a long menu. A key with
+ nothing on it cancels and briefly says so.
+ 
+@@ -170,8 +169,8 @@ Legend.Start({ChordOverlay: "always", ChordTimeout: 5})
+ 
+ ## Recipe: a launcher that focuses or starts apps
+ 
+-Open an app if it isn't running, bring it forward if it is, with a dot for
+-running apps:
++This launcher starts an app if it isn't running and brings it forward if it
++is. A dot shows which apps are running:
+ 
+ ```ahk
+ #Requires AutoHotkey v2.0
+@@ -201,8 +200,6 @@ Legend.Chord("#Space", "Launch", [
+ Legend.Start()
+ ```
+ 
+-**Explanation:**
+-
+ 1. `FocusOrRun` checks for a window of that program and activates it, or runs the
+    command.
+ 2. `App(...)` builds a `Legend.Run` item with a `Status` dot, so each line of the
+diff --git a/docs/guide/page-files.md b/docs/guide/page-files.md
+index 52a4755..060e883 100644
+--- a/docs/guide/page-files.md
++++ b/docs/guide/page-files.md
+@@ -1,9 +1,8 @@
+ # Page files, collections and page letters
+ 
+-**Audience:** Legend users who want to list an app's own shortcuts.
+-**Topic:** writing pages in Markdown, using the ready-made collections, and
+-controlling the letters in the Alt+/ index.
+-**Goal:** keep reference pages for every app you use, without writing code.
++Use Markdown files to keep reference pages for your apps without writing
++code. You can write your own pages, use the ready-made collections, and choose
++the letters that open them in the Alt+/ index.
+ 
+ ## Why page files
+ 
+@@ -45,14 +44,14 @@ Anything that isn't a heading or a shortcut line is ignored, so notes are fine.
+ | `### Name` | a group inside the category |
+ | `` - `keys` description `` | one shortcut |
+ 
+-**Writing keys:** spell them as they read, `Ctrl+Shift+T`, not AutoHotkey
++Spell keys as they read, `Ctrl+Shift+T`, not AutoHotkey
+ symbols. Ranges and alternatives (`Ctrl+1–8`, `J / K`, `Alt+←/→`) are shown as
+ written. A key Legend can't read shows up as a [warning](../troubleshooting.md#warnings)
+ with the file and line.
+ 
+-**A file's `match:` only chooses the page.** It decides which page Alt+/ opens
+-for the active window. It never makes a hotkey app-specific: only a match in
+-code (`Legend.Page(title, match)`) does that.
++A file's `match:` decides which page Alt+/ opens for the active window.
++To make a hotkey app-specific, set the match in code
++(`Legend.Page(title, match)`).
+ 
+ ## Loading page files
+ 
+@@ -87,7 +86,7 @@ Legend.Start({
+ })
+ ```
+ 
+-**Pages from code and files merge** when they have the same title (ignoring
++Pages from code and files merge when they have the same title (ignoring
+ case). A typical app page has its few bound keys in code and the app's own keys
+ in a file.
+ 
+@@ -96,8 +95,8 @@ in a file.
+ `Lib\Legend\collections\apps\` has pages for about 40 apps: browsers (Chrome,
+ Edge, Firefox, Zen), mail and calendars, editors (VS Code, Zed, Cursor,
+ Notepad++), chat, password managers, launchers, terminals and file managers
+-(File Explorer, Everything, Yazi). Each one lists what's worth knowing by
+-keyboard, not keys every Windows app shares.
++(File Explorer, Everything, Yazi). Each one lists shortcuts specific to that
++app and omits keys shared by every Windows app.
+ 
+ To use them, copy the files you want into your own pages folder and edit them
+ freely. Your copies won't change when you update Legend.
+@@ -143,5 +142,5 @@ To keep the file elsewhere, or not at all:
+ Legend.Start({LetterFile: A_ScriptDir "\legend\letters.txt"})   ; or LetterFile: "" for no file
+ ```
+ 
+-**Tip:** match page letters with your [chord launcher](chords.md), so a letter
++Match page letters with your [chord launcher](chords.md), so a letter
+ means the same app in both. Legend's own setup does this with `PageKeys`.
+diff --git a/docs/guide/pages.md b/docs/guide/pages.md
+index d56b4bb..eebc5c2 100644
+--- a/docs/guide/pages.md
++++ b/docs/guide/pages.md
+@@ -1,9 +1,8 @@
+ # Pages and bindings
+ 
+-**Audience:** Legend users who have done [Getting started](../getting-started.md).
+-**Topic:** building pages from code: categories, groups, merged rows, one-line
++After [Getting started](../getting-started.md), use categories, groups and
++merged rows to organize a growing set of hotkeys. You can also add one-line
+ bindings, doc-only keys and app-specific pages.
+-**Goal:** organize a growing set of hotkeys so the overlay stays easy to read.
+ 
+ ## How a page is organized
+ 
+@@ -95,7 +94,7 @@ repeat the `Run` call. `focus("left")` gives back `(*) => Run("komorebic focus l
+ ## One-line bindings
+ 
+ `Legend.Bind([page, category, group?], hotkey, description, action)` binds a
+-single key without a table. Handy when the key is set up somewhere else in your
++single key without a table. Use it when the key is set up elsewhere in your
+ script:
+ 
+ ```ahk
+@@ -214,10 +213,8 @@ for key, dir in dirs {
+ Legend.Start()
+ ```
+ 
+-**Explanation:**
+-
+ 1. `komorebic(args)` returns an action that runs `komorebic` hidden.
+-2. The workspace loop binds Alt+1–3 and Alt+Shift+1–3 into two groups.
++2. The workspace loop binds Alt+1 through Alt+3 and Alt+Shift+1 through Alt+Shift+3 into two groups.
+ 3. The direction loop binds eight keys but shows two merged rows.
+ 
+ ## Recording or replacing how hotkeys are created
+diff --git a/docs/guide/pickers.md b/docs/guide/pickers.md
+index 60539d9..36d5cca 100644
+--- a/docs/guide/pickers.md
++++ b/docs/guide/pickers.md
+@@ -1,11 +1,8 @@
+ # Pickers and the window switcher
+ 
+-**Audience:** Legend users who want keyboard-driven lists: choose a file, a
+-snippet, a window.
+-**Topic:** `Legend.Picker`, the built-in window switcher, and directional window
+-focus.
+-**Goal:** add a list you open with a hotkey, filter by typing, and pick from
+-with one key.
++Use `Legend.Picker` to choose a file, snippet or window from a list you open with a
++hotkey. You can filter the list by typing and pick an item with one key.
++Legend also includes a window switcher and directional window focus.
+ 
+ ## What a picker is
+ 
+@@ -31,8 +28,6 @@ Legend.Start()
+ Press **Ctrl+Alt+O**, then **a** (each row has a letter) or move with
+ **Ctrl+N / Ctrl+P** and press **Enter**.
+ 
+-**What each part does:**
+-
+ 1. `"^!o"` is the hotkey that opens the picker.
+ 2. `"Open folder"` is the title.
+ 3. The third argument is the *source*: a function that returns the items. It runs
+@@ -63,7 +58,7 @@ h/j/k/l, which also move, or your trigger's key.
+ |---|---|---|
+ | `Text` | text | the row's label (required) |
+ | `Detail` | text | a dimmer second column on the right |
+-| `Icon` | icon handle | a 16–20 px icon on the left (an `HICON`, e.g. from `LoadPicture`) |
++| `Icon` | icon handle | a 16 to 20 px icon on the left (an `HICON`, e.g. from `LoadPicture`) |
+ | `Letter` | one character | a fixed letter for this row; others fill around it |
+ | `Data` | anything | your value, handed back in `OnPick` / `OnHighlight` |
+ 
+@@ -125,7 +120,7 @@ highlighted window forward.
+ ## The window switcher
+ 
+ `Legend.WindowSwitcher` is a ready-made picker over your open windows, a
+-keyboard-first Alt+Tab:
++keyboard-first alternative to Alt+Tab:
+ 
+ ```ahk
+ #Requires AutoHotkey v2.0
+diff --git a/docs/guide/themes.md b/docs/guide/themes.md
+index 1c64457..583530a 100644
+--- a/docs/guide/themes.md
++++ b/docs/guide/themes.md
+@@ -1,9 +1,8 @@
+ # Themes and layout
+ 
+-**Audience:** Legend users who want the overlay to match their desktop.
+-**Topic:** theme files: colors, fonts, spacing, how lists grow into columns, and
+-key notation.
+-**Goal:** make your own theme, or tune the built-in one.
++Use theme files to match the overlay to your desktop. You can make your own
++theme or tune the built-in one, including colors, fonts, spacing, column
++layout and key notation.
+ 
+ ## The default
+ 
+@@ -118,9 +117,8 @@ Colors are hex `RRGGBB`, with or without `#`.
+ 
+ With `proportional` (the default), a short list stays one column. A list taller
+ than half the allowed height gets balanced columns: as many as bring the overlay
+-closest to your screen's shape. So a big page grows wider and taller together
+-instead of becoming one tall strip. A column may run a little taller to end at
+-a category, rather than splitting it.
++closest to your screen's shape. A big page grows wider and taller together.
++A column may run a little taller to keep a category together.
+ 
+ With `vertical`, each column fills to `maxHeightPercent` before the next starts.
+ 
+diff --git a/docs/reference.md b/docs/reference.md
+index a7ed77d..f3ff6e3 100644
+--- a/docs/reference.md
++++ b/docs/reference.md
+@@ -1,8 +1,7 @@
+ # Legend reference
+ 
+-**Audience:** Legend users who know the basics and want exact details.
+-**Topic:** every public function, option and data shape in Legend.
+-**Goal:** look up any parameter, default or field without reading the source.
++Look up every public function, option and data shape, including parameters,
++defaults and fields, without reading Legend's source.
+ 
+ New to Legend? Start with [Getting started](getting-started.md). Each entry
+ links to the guide that explains it with examples.
+@@ -21,8 +20,6 @@ links to the guide that explains it with examples.
+ - [Other](#legendwarnings): `Legend.Warnings`, page files, theme files
+ - [Errors](#errors)
+ 
+----
+-
+ ## `Legend.Start(options?)`
+ 
+ Loads page files and the theme, binds the overlay key, and turns everything on.
+@@ -57,8 +54,6 @@ Legend.Start({
+ 
+ **Errors:** calling it twice throws `Legend.Start was already called`.
+ 
+----
+-
+ ## `Legend.Page(title, match?, options?)`
+ 
+ Returns the page with this title, creating it the first time. Titles match
+@@ -129,8 +124,6 @@ The default registers an AutoHotkey hotkey, active only in windows matching
+ `match` when it isn't `""`. Assign your own **before** binding anything, for
+ example to log or test bindings ([example](guide/pages.md#recording-or-replacing-how-hotkeys-are-created)).
+ 
+----
+-
+ ## `Legend.Chord(hotkey, title, items, options?)`
+ 
+ Makes a chord menu opened by `hotkey`. Guide: [Chords](guide/chords.md).
+@@ -157,8 +150,6 @@ One chord item.
+ 
+ A submenu: same `key` and `label` as `Legend.Run`, plus its own `items`.
+ 
+----
+-
+ ## `Legend.Picker(hotkey, title, source, options)`
+ 
+ A list opened by `hotkey`. Guide: [Pickers](guide/pickers.md).
+@@ -212,8 +203,6 @@ or `"down"`), comparing top-left corners, and crosses to the next monitor at the
+ edge. Does nothing when there's no window that way.
+ [Example](guide/pickers.md#directional-focus-without-a-window-manager).
+ 
+----
+-
+ ## `Legend.Warnings`
+ 
+ A list of the warning messages so far (text). The overlay shows them on its
+diff --git a/docs/troubleshooting.md b/docs/troubleshooting.md
+index c1a8a3e..ab31bb3 100644
+--- a/docs/troubleshooting.md
++++ b/docs/troubleshooting.md
+@@ -1,9 +1,9 @@
+ # Troubleshooting
+ 
+-**Audience:** anyone whose Legend setup isn't doing what they expect.
+-**Topic:** common problems, every warning Legend shows, errors that stop a
+-script, and what Legend can and can't do on your machine.
+-**Goal:** find and fix the problem without reading Legend's source.
++If Legend isn't doing what you expect, check the common problems below.
++This page explains every warning, errors that stop a script, and what Legend
++can and can't do on your machine so you can fix problems without reading the
++source.
+ 
+ ## My script won't start
+ 
