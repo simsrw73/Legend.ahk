@@ -17,7 +17,9 @@ class LegendGameRules {
         "mpv.exe", "vlc.exe", "mpc-hc64.exe", "mpc-hc.exe", "mpc-be64.exe", "PotPlayerMini64.exe",
         "Microsoft.Media.Player.exe", "Video.UI.exe",
         "POWERPNT.EXE",
-        "mstsc.exe", "msrdc.exe", "vmconnect.exe", "vmware.exe", "vmware-vmx.exe", "VirtualBoxVM.exe"]
+        "mstsc.exe", "msrdc.exe", "vmconnect.exe", "vmware.exe", "vmware-vmx.exe", "VirtualBoxVM.exe",
+        ; Task View, the lock screen, and the frame around Store apps (Movies & TV)
+        "explorer.exe", "LockApp.exe", "ApplicationFrameHost.exe"]
 
     __New(config) {
         local folder
@@ -79,8 +81,8 @@ class LegendGameMode {
         config := {}
         for name, item in this.Defaults.OwnProps()
             config.%name% := IsObject(item) ? item.Clone() : item
-        if !IsObject(value) {
-            if value != true
+        if Type(value) != "Object" {   ; a Map or Array has no properties to read
+            if IsObject(value) || value != true
                 warn("GameMode must be true or an object; using the defaults")
             return config
         }
@@ -124,18 +126,32 @@ class LegendGameMode {
         return mode
     }
 
-    ; A key Hotkey() rejects warns and falls back to the default key.
-    static RegisterToggle(key, fn, warn, binder := "") {
+    ; A key Hotkey() rejects warns and falls back to the default key. A key the script
+    ; already uses warns and stays the script's: Hotkey() would quietly replace it.
+    static RegisterToggle(key, fn, warn, binder := "", exists := "") {
         local fallback
         binder := binder || (k, f) => (HotIf(), Hotkey(k, f, "S"))
-        try
+        exists := exists || (k) => LegendGameMode.HotkeyExists(k)
+        try {
+            if exists(key)
+                return warn("GameMode: ToggleKey '" key "' is already a hotkey in this script; set ToggleKey to another key")
             return binder(key, fn)
-        catch {
+        } catch {
             fallback := this.Defaults.ToggleKey
             warn("GameMode: ToggleKey '" key "' is not a hotkey; using " fallback)
-            if key != fallback
+            if key != fallback && !exists(fallback)
                 try binder(fallback, fn)
         }
+    }
+
+    ; Hotkey(key) with nothing else changes nothing, and throws if there's no such hotkey.
+    static HotkeyExists(key) {
+        HotIf()
+        try {
+            Hotkey(key)
+            return true
+        } catch TargetError
+            return false
     }
 
     static Kind(name) => name = "ToggleKey" ? "a hotkey" : name = "Fullscreen" ? "true or false" : "a list of names"
@@ -152,8 +168,9 @@ class LegendGameMode {
 
     OnForeground(hwnd) {
         local proc
-        proc := this.System.Describe(hwnd)
-        if proc == "own" || hwnd == this.Manual
+        if hwnd == this.Manual
+            return
+        if (proc := this.System.Describe(hwnd)) == "own"
             return
         this.Manual := 0, this.Current := hwnd
         if this.IsGame(proc)
@@ -176,8 +193,10 @@ class LegendGameMode {
             this.ResumeNow()
         else
             this.SuspendNow()
+        ; From a Legend window, the override is for the window behind it.
         if this.System.Describe(hwnd) !== "own"
-            this.Manual := hwnd, this.Current := hwnd
+            this.Current := hwnd
+        this.Manual := this.Current
         this.Rewatch()
     }
 

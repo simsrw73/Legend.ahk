@@ -90,8 +90,9 @@ reload the script.
 | `theme <section.setting>: invalid value '...'` | a theme value out of range or misspelled; the default is used |
 | `GameMode: <option> must be ...; using the default` | a `GameMode` value of the wrong kind, like `Games: "x.exe"` instead of `["x.exe"]` ([options](reference.md#gamemode-options)) |
 | `GameMode: unknown option '...'; ignored` | a misspelled `GameMode` property |
+| `GameMode: ToggleKey '...' is already a hotkey in this script` | your script binds that key itself, so Legend leaves it alone and has no toggle key: set `ToggleKey` to a free key |
 | `GameMode: ToggleKey '...' is not a hotkey; using ^!g` | write it in AutoHotkey's notation, like `"^!g"` for Ctrl+Alt+G ([basics](autohotkey-basics.md)) |
-| `GameMode must be true or an object; using the defaults` | `GameMode` is set to something else, like `"yes"` |
+| `GameMode must be true or an object; using the defaults` | `GameMode` is set to something else, like `"yes"`, a `Map` or a list; write `{Games: [...]}` |
 
 ## The overlay looks wrong
 

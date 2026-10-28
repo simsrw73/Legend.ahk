@@ -65,7 +65,7 @@ value warns and keeps its default.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `ToggleKey` | Hotkey | `"^!g"` (Ctrl+Alt+G) | switches game mode on or off at once; works while suspended; `""` = none |
+| `ToggleKey` | Hotkey | `"^!g"` (Ctrl+Alt+G) | switches game mode on or off at once; works while suspended; `""` = none; a key your script already binds warns and isn't taken |
 | `Games` | list of program names | `[]` | always a game |
 | `NotGames` | list of program names | `[]` | never a game; wins over every other rule |
 | `Folders` | list of path fragments | `[]` | added to the built-in game library folders |

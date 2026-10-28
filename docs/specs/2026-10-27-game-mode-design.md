@@ -122,6 +122,9 @@ wins:
    - Slideshows: `POWERPNT.EXE`
    - Remote desktops and VMs: `mstsc.exe`, `msrdc.exe`, `vmconnect.exe`,
      `vmware.exe`, `vmware-vmx.exe`, `VirtualBoxVM.exe`
+   - *(Added after review:)* Task View and the lock screen: `explorer.exe`,
+     `LockApp.exe`; the frame around Store apps, which owns their fullscreen
+     window: `ApplicationFrameHost.exe`
 6. Otherwise: not a game.
 
 If the exe path can't be read (an elevated or protected process), rules 1–2

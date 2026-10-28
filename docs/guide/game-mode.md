@@ -37,7 +37,8 @@ one. Your choice holds until you switch to another window; then Legend decides
 again.
 
 The toggle key still works while everything else is off. Change it with
-`ToggleKey`, or turn it off with `ToggleKey: ""`. It doesn't appear in the
+`ToggleKey`, or turn it off with `ToggleKey: ""`. If your script already uses
+the key, yours wins: Legend warns and registers no toggle key, so pick another. It doesn't appear in the
 overlay by itself; to list it, add it to one of your pages:
 
 ```ahk
@@ -64,9 +65,10 @@ It's a game if, in order:
 
 The launchers' own windows (Steam's store and library, Big Picture, Playnite's
 fullscreen mode) never count, so browsing your library leaves your hotkeys on.
-Rules 4 and 5 skip browsers, video players, PowerPoint slideshows, Remote
-Desktop and virtual machines, so a fullscreen video, or a browser opened from a
-link in Steam, doesn't turn your hotkeys off either.
+Rules 4 and 5 skip browsers, video players (including Store apps like Movies &
+TV), PowerPoint slideshows, Remote Desktop, virtual machines, Task View and the
+lock screen, so a fullscreen video, or a browser opened from a link in Steam,
+doesn't turn your hotkeys off either.
 
 ## Adjusting it
 

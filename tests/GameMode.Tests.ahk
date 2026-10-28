@@ -151,10 +151,10 @@ GameSys_New(suspended := false) {
     local procs, sys
     procs := Map(1, GameProc("game.exe", "", ["steam.exe"]), 2, GameProc("notepad.exe"), 3, "", 4, "own",
         5, GameProc("indie.exe"))
-    sys := {Procs: procs, Suspended: suspended, Log: [], Watching: -1}
+    sys := {Procs: procs, Suspended: suspended, Log: [], Watching: -1, Described: 0}
     sys.WatchLocation := (self, hwnd) => self.Watching := hwnd
     sys.StopLocation := (self) => self.Watching := 0
-    sys.Describe := (self, hwnd) => self.Procs[hwnd]
+    sys.Describe := (self, hwnd) => (self.Described += 1, self.Procs[hwnd])
     sys.IsSuspended := (self) => self.Suspended
     sys.Suspend := (self, on) => (self.Suspended := on, self.Log.Push(on ? "suspend" : "resume"))
     sys.CloseSessions := (self) => self.Log.Push("close")
@@ -346,4 +346,80 @@ GameMode_WatchOnlyResumed() {
     T.Eq(sys.Watching, 0)
     mode.OnForeground(5)
     T.Eq(sys.Watching, 5)
+}
+
+T.Test("GameMode: toggling from a Legend window holds for the window behind it", GameMode_ToggleFromOwn)
+GameMode_ToggleFromOwn() {
+    local mode, sys
+    sys := GameSys_New(), mode := GameMode_New(sys)
+    mode.OnForeground(1)
+    mode.Toggle(4)
+    T.Eq(sys.Suspended, false)
+    T.Eq(mode.Manual, 1)
+    mode.OnForeground(1)
+    T.Eq(sys.Suspended, false)
+}
+
+T.Test("GameMode: a repeated foreground event under an override reads nothing", GameMode_RepeatIsFree)
+GameMode_RepeatIsFree() {
+    local mode, sys
+    sys := GameSys_New(), mode := GameMode_New(sys)
+    mode.OnForeground(1)
+    mode.Toggle(1)
+    sys.Described := 0
+    mode.OnForeground(1)
+    T.Eq(sys.Described, 0)
+}
+
+T.Test("GameMode: the default toggle key never takes over a script's own hotkey", GameMode_ToggleClash)
+GameMode_ToggleClash() {
+    local bound, warnings
+    bound := [], warnings := []
+    LegendGameMode.RegisterToggle("^!g", Noop, (message) => warnings.Push(message),
+        (key, fn) => bound.Push(key), (key) => key == "^!g")
+    T.Eq(bound.Length, 0)
+    T.Eq(warnings.Length, 1)
+    T.True(InStr(warnings[1], "ToggleKey") && InStr(warnings[1], "already"), warnings.Length ? warnings[1] : "")
+}
+
+T.Test("GameMode config: a Map or list warns and uses the defaults", GameConfig_NotObject)
+GameConfig_NotObject() {
+    local config, warnings
+    warnings := []
+    config := LegendGameMode.Config(Map("Games", ["a.exe"]), (message) => warnings.Push(message))
+    T.Eq(warnings.Length, 1)
+    T.Eq(config.Games.Length, 0)
+    LegendGameMode.Config(["a.exe"], (message) => warnings.Push(message))
+    T.Eq(warnings.Length, 2)
+}
+
+T.Test("GameMode rules: shell and UWP frames filling the screen aren't games", GameRules_ShellFullscreen)
+GameRules_ShellFullscreen() {
+    local rules
+    rules := GameRules_New()
+    T.Eq(rules.IsGame(GameProc("explorer.exe", "", [], true)), false)       ; Task View
+    T.Eq(rules.IsGame(GameProc("LockApp.exe", "", [], true)), false)        ; lock screen
+    T.Eq(rules.IsGame(GameProc("ApplicationFrameHost.exe", "", [], true)), false)   ; Movies & TV
+}
+
+T.Test("GameSystem: the desktop is not described", GameSystem_Desktop)
+GameSystem_Desktop() {
+    T.Eq(LegendGameSystem().Describe(WinExist("ahk_class Progman")), "")
+}
+
+T.Test("GameSystem: a captionless window filling its monitor is fullscreen", GameSystem_Fullscreen)
+GameSystem_Fullscreen() => LegendWindows.InPhysicalPixels(GameSystem_FullscreenNow)
+GameSystem_FullscreenNow() {
+    local bottom, g, left, right, top
+    MonitorGet(MonitorGetPrimary(), &left, &top, &right, &bottom)
+    ; Fully transparent and click-through, so nothing shows on screen.
+    g := Gui("-Caption +ToolWindow -DPIScale +E0x20 +E0x80000")
+    try {
+        WinSetTransparent(0, g)
+        g.Show("x" left " y" top " w" (right - left) " h" (bottom - top) " NoActivate")
+        T.Eq(LegendGameSystem().IsFullscreen(g.Hwnd), true)
+        g.Move(left, top, (right - left) // 2, (bottom - top) // 2)
+        T.Eq(LegendGameSystem().IsFullscreen(g.Hwnd), false)
+    } finally
+        g.Destroy()
 }
