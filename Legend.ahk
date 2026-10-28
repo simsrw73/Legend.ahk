@@ -15,6 +15,7 @@
 #Include %A_LineFile%\..\src\Picker.ahk
 #Include %A_LineFile%\..\src\Windows.ahk
 #Include %A_LineFile%\..\src\WindowSwitcher.ahk
+#Include %A_LineFile%\..\src\GameMode.ahk
 #Include %A_LineFile%\..\src\Session.ahk
 #Include %A_LineFile%\..\src\ReferenceSession.ahk
 #Include %A_LineFile%\..\src\ChordSession.ahk
@@ -23,11 +24,12 @@
 ; Registration and configuration live here. An interaction owns its transient state.
 class Legend {
     static Registry := LegendRegistry()
-    static Options := "", Session := "", HelpId := ""
+    static Options := "", Session := "", HelpId := "", GameMode := ""
     static StyleOverride := "", DensityOverride := ""   ; display toggles last until reload
     static Styles := ["text", "symbols", "ahk"]
     static DefaultOptions := {HelpKey: "!/", Pages: [], PageKeys: Map(), LetterFile: A_AppData "\Legend\page-letters.txt",
-        Themes: [], Theme: "auto", ChordTimeout: 0, ChordOverlay: 400, ChordReference: true}
+        Themes: [], Theme: "auto", ChordTimeout: 0, ChordOverlay: 400, ChordReference: true,
+        GameMode: false}
     static OverlayKeys := Map("Esc", "Close", "Backspace", "Backspace", "Space", "Next",
         "PgDn", "Next", "PgUp", "Prev", "``", "Pin", "Tab", "Style", "=", "Density")
     static CtrlKeys := Map("^n", "Down", "^p", "Up", "^f", "Next", "^b", "Prev", "^g", "Close")
@@ -83,7 +85,7 @@ class Legend {
     static MenuKeysActive() => this.ClaimsLetters && !this.Session.Nav.Pinned
 
     static Start(options := {}) {
-        local action, char, fallback, key, name
+        local action, char, config, fallback, key, name
         if this.Options
             throw Error("Legend.Start was already called", -1)
         this.Options := {}
@@ -109,6 +111,9 @@ class Legend {
         for key, action in this.MenuKeys
             Hotkey(key, this.Handler(action))
         HotIf()
+        config := LegendGameMode.Config(this.Options.GameMode, (message) => Legend.Registry.Warn(message))
+        if config
+            this.GameMode := LegendGameMode.Install(config, () => Legend.Close())
     }
 
     static Handler(action) => (*) => Legend.Handle(action)
