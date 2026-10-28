@@ -36,6 +36,20 @@ problem without reading the source.
 5. **Running as administrator?** A script that isn't elevated can't send keys to
    an elevated window (Task Manager, an admin terminal). Run the script as
    administrator, or accept that limit.
+6. **Game mode?** With `GameMode` on, every hotkey is off while Legend thinks a
+   game has focus, and the tray icon shows the script as suspended. See below.
+
+## Game mode turns hotkeys off in an app that isn't a game
+
+Press **Ctrl+Alt+G** to turn them back on now. To fix it for good, add the
+program to `NotGames` ([how](guide/game-mode.md#adjusting-it)). Its name is in
+Task Manager's **Details** tab.
+
+## Game mode doesn't notice a game
+
+Press **Ctrl+Alt+G** to turn hotkeys off now. To fix it for good, add the
+program to `Games`, or its install folder to `Folders`
+([how](guide/game-mode.md#adjusting-it)).
 
 ## Alt+/ does nothing, or opens the wrong page
 
@@ -74,6 +88,9 @@ reload the script.
 | `chord '...': '...' on <key> can never run` | an earlier item on the same key has no `If`, so it always wins ([conditions](guide/chords.md#conditions-different-items-for-different-apps)) |
 | `theme '...' not found; using defaults` | check `Theme` and `Themes` ([themes](guide/themes.md#using-a-theme-file)) |
 | `theme <section.setting>: invalid value '...'` | a theme value out of range or misspelled; the default is used |
+| `GameMode: <option> must be ...; using the default` | a `GameMode` value of the wrong kind, like `Games: "x.exe"` instead of `["x.exe"]` ([options](reference.md#gamemode-options)) |
+| `GameMode: unknown option '...'; ignored` | a misspelled `GameMode` property |
+| `GameMode must be true or an object; using the defaults` | `GameMode` is set to something else, like `"yes"` |
 
 ## The overlay looks wrong
 
@@ -102,3 +119,7 @@ script has.
 - **Keyboard:** while the overlay, a chord or a picker is open, Legend watches
   keys to drive it, and lets Ctrl/Alt/Win shortcuts through to your apps. It
   doesn't record or store keys.
+- **Game mode** (only if you turn it on) reads the name, install path and
+  parent program of the window in front, and whether it fills the screen. It
+  keeps that in memory only, and changes nothing but whether your script is
+  suspended.

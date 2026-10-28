@@ -40,6 +40,7 @@ Guide: [Getting started](getting-started.md).
 | `ChordOverlay` | number or text | `400` | ms before a chord's menu shows; `"always"` or `"never"` |
 | `ChordTimeout` | number | `0` | seconds of no key before a chord cancels; `0` = never |
 | `ChordReference` | true/false | `true` | list chords as pages in the overlay |
+| `GameMode` | true/false or object | `false` | suspend the whole script while a game has focus ([game mode](guide/game-mode.md); options below) |
 
 ```ahk
 #Requires AutoHotkey v2.0
@@ -56,6 +57,23 @@ Legend.Start({
 ```
 
 **Errors:** calling it twice throws `Legend.Start was already called`.
+
+### `GameMode` options
+
+`GameMode: true` uses every default. An object changes the ones it names; a bad
+value warns and keeps its default.
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `ToggleKey` | Hotkey | `"^!g"` (Ctrl+Alt+G) | switches game mode on or off at once; works while suspended; `""` = none |
+| `Games` | list of program names | `[]` | always a game |
+| `NotGames` | list of program names | `[]` | never a game; wins over every other rule |
+| `Folders` | list of path fragments | `[]` | added to the built-in game library folders |
+| `Launchers` | list of program names | `[]` | added to the built-in launchers and mod managers |
+| `Fullscreen` | true/false | `true` | a window filling its monitor with no title bar is a game |
+
+Program names are file names like `"eldenring.exe"`, compared without case.
+How the rules combine: [how Legend recognises a game](guide/game-mode.md#how-legend-recognises-a-game).
 
 ---
 

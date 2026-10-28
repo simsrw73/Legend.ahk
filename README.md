@@ -97,6 +97,11 @@ typing and pick from with one key; an Alt+Tab replacement over your windows.
 font and spacing is configurable, and big pages spread into balanced columns.
 [Themes and layout →](docs/guide/themes.md)
 
+**Game mode.** Optional: turns your script's hotkeys off while a game has focus,
+so Alt+letter keys don't fire mid-game. Recognises games by their Steam, GOG,
+EA, Epic or Xbox folder, by the launcher that started them, or by fullscreen.
+[Game mode →](docs/guide/game-mode.md)
+
 <p align="center">
   <img src="docs/images/overlay-index.png" width="289" alt="The index of pages, each with its letter">
   &nbsp;
@@ -126,6 +131,7 @@ font and spacing is configurable, and big pages spread into balanced columns.
 | [Chords](docs/guide/chords.md) | which-key menus, conditions, running-app dots |
 | [Pickers](docs/guide/pickers.md) | pickers, the window switcher, directional focus |
 | [Themes and layout](docs/guide/themes.md) | colors, fonts, spacing, columns |
+| [Game mode](docs/guide/game-mode.md) | hotkeys off while a game has focus |
 | [Reference](docs/reference.md) | every function and option |
 | [Troubleshooting](docs/troubleshooting.md) | when something doesn't work; every warning explained; safety |
 
