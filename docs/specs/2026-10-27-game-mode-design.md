@@ -86,6 +86,9 @@ wins:
 
 1. **`NotGames`**: never a game.
 2. **`Games`**: always a game.
+   *(Amended after review:)* a launcher or launcher helper (lists in rule 4) is
+   never a game past this point, by any rule, so Big Picture and Playnite's
+   fullscreen library don't suspend.
 3. **Install path**: the exe's full path contains a library folder. Built-ins:
    `\steamapps\common\`, `\GOG Games\`, `\GOG Galaxy\Games\`, `\EA Games\`,
    `\Epic Games\`, `\XboxGames\`. Battle.net games install wherever the user
@@ -107,9 +110,10 @@ wins:
    extended frame bounds (`DwmGetWindowAttribute(9)`) cover its whole monitor,
    in physical pixels. The desktop (`Progman`, `WorkerW`), the shell and
    Legend's own windows never count. Neither do these built-in **fullscreen
-   exclusions** (the author's decision; they apply to this rule only, so an
-   exe in a game library or under a launcher is unaffected). Users extend them
-   through `NotGames`.
+   exclusions** (the author's decision). *(Amended after review:)* they also
+   apply to rule 4, so a browser started from a link in Steam isn't a game; an
+   exe in a game library (rule 3) is unaffected. Users extend them through
+   `NotGames`.
    - Browsers: `chrome.exe`, `msedge.exe`, `firefox.exe`, `brave.exe`,
      `vivaldi.exe`, `opera.exe`, `arc.exe`, `zen.exe`
    - Video players: `mpv.exe`, `vlc.exe`, `mpc-hc64.exe`, `mpc-hc.exe`,

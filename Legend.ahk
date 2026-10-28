@@ -85,7 +85,7 @@ class Legend {
     static MenuKeysActive() => this.ClaimsLetters && !this.Session.Nav.Pinned
 
     static Start(options := {}) {
-        local action, char, config, fallback, key, name
+        local action, char, config, fallback, key, name, warn
         if this.Options
             throw Error("Legend.Start was already called", -1)
         this.Options := {}
@@ -111,9 +111,10 @@ class Legend {
         for key, action in this.MenuKeys
             Hotkey(key, this.Handler(action))
         HotIf()
-        config := LegendGameMode.Config(this.Options.GameMode, (message) => Legend.Registry.Warn(message))
+        warn := (message) => Legend.Registry.Warn(message)
+        config := LegendGameMode.Config(this.Options.GameMode, warn)
         if config
-            this.GameMode := LegendGameMode.Install(config, () => Legend.Close())
+            this.GameMode := LegendGameMode.Install(config, () => Legend.Close(), warn)
     }
 
     static Handler(action) => (*) => Legend.Handle(action)

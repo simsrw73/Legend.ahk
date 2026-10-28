@@ -106,9 +106,36 @@ GameRules_Fullscreen() {
     T.Eq(GameRules_New({Fullscreen: false}).IsGame(GameProc("indie.exe", "", [], true)), false)
 }
 
-T.Test("GameMode rules: an exclusion only affects the fullscreen rule", GameRules_ExclusionScope)
+T.Test("GameMode rules: a library folder wins over the exclusions", GameRules_ExclusionScope)
 GameRules_ExclusionScope() {
     T.Eq(GameRules_New().IsGame(GameProc("chrome.exe", "C:\steamapps\common\x\chrome.exe")), true)
+}
+
+T.Test("GameMode rules: an excluded app started by a launcher is not a game", GameRules_ExcludedChild)
+GameRules_ExcludedChild() {
+    T.Eq(GameRules_New().IsGame(GameProc("chrome.exe", "C:\Program Files\Google\Chrome\Application\chrome.exe",
+        ["steamwebhelper.exe", "steam.exe"])), false)
+}
+
+T.Test("GameMode rules: launchers' own windows are never games", GameRules_LauncherFullscreen)
+GameRules_LauncherFullscreen() {
+    local rules
+    rules := GameRules_New()
+    T.Eq(rules.IsGame(GameProc("steamwebhelper.exe", "", ["steam.exe"], true)), false)
+    T.Eq(rules.IsGame(GameProc("Playnite.FullscreenApp.exe", "", [], true)), false)
+    T.Eq(GameRules_New({Games: ["steam.exe"]}).IsGame(GameProc("steam.exe")), true)
+}
+
+T.Test("GameMode: a bad toggle key warns and uses the default", GameMode_BadToggleKey)
+GameMode_BadToggleKey() {
+    local bound, warnings
+    bound := [], warnings := []
+    LegendGameMode.RegisterToggle("Ctrl+Alt+G", Noop, (message) => warnings.Push(message),
+        (key, fn) => key == "Ctrl+Alt+G" ? Hotkey("bogus key", fn) : bound.Push(key))
+    T.Eq(warnings.Length, 1)
+    T.True(InStr(warnings[1], "GameMode") && InStr(warnings[1], "ToggleKey"), warnings.Length ? warnings[1] : "")
+    T.Eq(bound.Length, 1)
+    T.Eq(bound[1], "^!g")
 }
 
 T.Test("GameMode rules: an unreadable path still uses the other rules", GameRules_NoPath)
@@ -118,12 +145,15 @@ GameRules_NoPath() {
 }
 
 ; A fake system: windows 1 game, 2 not a game, 3 unreadable, 4 this script's, 5 a window
-; whose Fullscreen the test flips. Records suspend/resume/close calls.
+; whose Fullscreen the test flips. Records suspend/resume/close calls in Log, and the
+; window whose moves are watched (0 = none) in Watching.
 GameSys_New(suspended := false) {
     local procs, sys
     procs := Map(1, GameProc("game.exe", "", ["steam.exe"]), 2, GameProc("notepad.exe"), 3, "", 4, "own",
         5, GameProc("indie.exe"))
-    sys := {Procs: procs, Suspended: suspended, Log: []}
+    sys := {Procs: procs, Suspended: suspended, Log: [], Watching: -1}
+    sys.WatchLocation := (self, hwnd) => self.Watching := hwnd
+    sys.StopLocation := (self) => self.Watching := 0
     sys.Describe := (self, hwnd) => self.Procs[hwnd]
     sys.IsSuspended := (self) => self.Suspended
     sys.Suspend := (self, on) => (self.Suspended := on, self.Log.Push(on ? "suspend" : "resume"))
@@ -300,4 +330,20 @@ GameSystem_Captioned() {
         T.Eq(LegendGameSystem().IsFullscreen(g.Hwnd), false)
     } finally
         g.Destroy()
+}
+
+T.Test("GameMode: window moves are watched only while not suspended", GameMode_WatchOnlyResumed)
+GameMode_WatchOnlyResumed() {
+    local mode, sys
+    sys := GameSys_New(), mode := GameMode_New(sys)
+    mode.OnForeground(2)
+    T.Eq(sys.Watching, 2)
+    mode.OnForeground(1)
+    T.Eq(sys.Watching, 0)
+    mode.Toggle(1)
+    T.Eq(sys.Watching, 1)
+    mode.Toggle(1)
+    T.Eq(sys.Watching, 0)
+    mode.OnForeground(5)
+    T.Eq(sys.Watching, 5)
 }

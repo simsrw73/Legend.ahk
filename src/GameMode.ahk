@@ -40,16 +40,19 @@ class LegendGameRules {
             return false
         if this.Games.Has(proc.Exe)
             return true
-        if !this.Helpers.Has(proc.Exe) && !this.Launchers.Has(proc.Exe) {
-            if proc.Path != ""
-                for folder in this.Folders
-                    if InStr(proc.Path, folder, false)
-                        return true
-            for ancestor in proc.Ancestors
-                if this.Launchers.Has(ancestor)
+        if this.Helpers.Has(proc.Exe) || this.Launchers.Has(proc.Exe)   ; a launcher's own windows
+            return false
+        if proc.Path != ""
+            for folder in this.Folders
+                if InStr(proc.Path, folder, false)
                     return true
-        }
-        return this.Fullscreen && proc.Fullscreen && !this.Excluded.Has(proc.Exe)
+        ; A browser or player a launcher happened to start (a link in Steam chat) isn't a game.
+        if this.Excluded.Has(proc.Exe)
+            return false
+        for ancestor in proc.Ancestors
+            if this.Launchers.Has(ancestor)
+                return true
+        return this.Fullscreen && proc.Fullscreen
     }
 
     static NameSet(lists*) {
@@ -110,23 +113,36 @@ class LegendGameMode {
     }
 
     ; Turns game mode on: the Suspend-exempt toggle key, the hooks, and a first check.
-    static Install(config, closeSessions) {
+    static Install(config, closeSessions, warn) {
         local mode, system
         system := LegendGameSystem(closeSessions)
         mode := LegendGameMode(LegendGameRules(config), system)
-        if config.ToggleKey != "" {
-            HotIf()
-            Hotkey(config.ToggleKey, (*) => mode.Toggle(DllCall("GetForegroundWindow", "Ptr")), "S")
-        }
+        if config.ToggleKey != ""
+            this.RegisterToggle(config.ToggleKey, (*) => mode.Toggle(DllCall("GetForegroundWindow", "Ptr")), warn)
         system.Watch(mode)
         mode.OnForeground(DllCall("GetForegroundWindow", "Ptr"))
         return mode
     }
 
+    ; A key Hotkey() rejects warns and falls back to the default key.
+    static RegisterToggle(key, fn, warn, binder := "") {
+        local fallback
+        binder := binder || (k, f) => (HotIf(), Hotkey(k, f, "S"))
+        try
+            return binder(key, fn)
+        catch {
+            fallback := this.Defaults.ToggleKey
+            warn("GameMode: ToggleKey '" key "' is not a hotkey; using " fallback)
+            if key != fallback
+                try binder(fallback, fn)
+        }
+    }
+
     static Kind(name) => name = "ToggleKey" ? "a hotkey" : name = "Fullscreen" ? "true or false" : "a list of names"
 
     ; system: Describe(hwnd) → process, "" (unreadable) or "own" (this script's window);
-    ; IsSuspended(); Suspend(on); CloseSessions().
+    ; IsSuspended(); Suspend(on); CloseSessions(); WatchLocation(hwnd) / StopLocation(), so
+    ; window moves are only watched while not suspended (a game's moves cost nothing).
     __New(rules, system) {
         this.Rules := rules, this.System := system
         this.Owned := false   ; Legend caused the current suspension
@@ -144,6 +160,7 @@ class LegendGameMode {
             this.SuspendNow()
         else if this.Owned
             this.ResumeNow()
+        this.Rewatch()
     }
 
     ; A window that goes fullscreen without a focus change. Only ever suspends.
@@ -161,15 +178,19 @@ class LegendGameMode {
             this.SuspendNow()
         if this.System.Describe(hwnd) !== "own"
             this.Manual := hwnd, this.Current := hwnd
+        this.Rewatch()
     }
 
     IsGame(proc) => IsObject(proc) && this.Rules.IsGame(proc)
+
+    Rewatch() => this.System.IsSuspended() ? this.System.StopLocation() : this.System.WatchLocation(this.Current)
 
     SuspendNow() {
         if this.System.IsSuspended()
             return
         this.System.CloseSessions()
         this.System.Suspend(true)
+        this.System.StopLocation()
         this.Owned := true
     }
 
@@ -269,24 +290,36 @@ class LegendGameSystem {
         this.Callbacks := [foreground, location]
         this.ForegroundHook := DllCall("SetWinEventHook", "UInt", EVENT_SYSTEM_FOREGROUND, "UInt", EVENT_SYSTEM_FOREGROUND,
             "Ptr", 0, "Ptr", foreground, "UInt", 0, "UInt", 0, "UInt", 0, "Ptr")
-        this.WatchLocation(DllCall("GetForegroundWindow", "Ptr"))
+        this.ForegroundTimer := () => this.Mode.OnForeground(this.PendingForeground)
+        this.MoveTimer := () => this.Mode.OnLocationChange(this.PendingMove)
+        this.PendingForeground := 0, this.PendingMove := 0
     }
 
+    ; The hooks only note the window and hand off to a timer, so the work (closing a
+    ; session, Suspend) runs as an ordinary thread, never inside a Critical one.
+    ; Bursts collapse into one check of the latest window.
     OnForegroundEvent(hook, event, hwnd, idObject, idChild, thread, time) {
-        this.WatchLocation(hwnd)
-        this.Mode.OnForeground(hwnd)
+        this.PendingForeground := hwnd
+        SetTimer(this.ForegroundTimer, -1)
     }
 
     OnLocationEvent(hook, event, hwnd, idObject, idChild, thread, time) {
-        if idObject == 0 && idChild == 0   ; OBJID_WINDOW, the window itself
-            this.Mode.OnLocationChange(hwnd)
+        if idObject == 0 && idChild == 0 {   ; OBJID_WINDOW, the window itself
+            this.PendingMove := hwnd
+            SetTimer(this.MoveTimer, -1)
+        }
     }
 
+    StopLocation() {
+        if this.LocationHook
+            DllCall("UnhookWinEvent", "Ptr", this.LocationHook), this.LocationHook := 0
+    }
+
+    ; Watches moves of hwnd's process (a window going fullscreen without a focus change).
     WatchLocation(hwnd) {
         local pid
         static EVENT_OBJECT_LOCATIONCHANGE := 0x800B
-        if this.LocationHook
-            DllCall("UnhookWinEvent", "Ptr", this.LocationHook), this.LocationHook := 0
+        this.StopLocation()
         pid := 0
         DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &pid)
         if pid && pid != DllCall("GetCurrentProcessId")

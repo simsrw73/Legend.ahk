@@ -62,10 +62,11 @@ It's a game if, in order:
    Mod Organizer or Playnite, **or**
 5. its window fills the whole screen with no title bar.
 
-The launchers' own windows (Steam's store and library, for example) never
-count, so browsing Steam leaves your hotkeys on. Rule 5 skips browsers, video
-players, PowerPoint slideshows, Remote Desktop and virtual machines, so a
-fullscreen video doesn't turn your hotkeys off either.
+The launchers' own windows (Steam's store and library, Big Picture, Playnite's
+fullscreen mode) never count, so browsing your library leaves your hotkeys on.
+Rules 4 and 5 skip browsers, video players, PowerPoint slideshows, Remote
+Desktop and virtual machines, so a fullscreen video, or a browser opened from a
+link in Steam, doesn't turn your hotkeys off either.
 
 ## Adjusting it
 
