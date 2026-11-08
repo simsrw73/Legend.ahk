@@ -59,7 +59,7 @@ for ~40 apps; a test parses them all.
 - Feature branch, TDD (watch the test fail first), full suite, then
   fast-forward `main` and push. Commits are GPG-signed; never bypass.
 - Consumers: the dotfiles (`linked/AutoHotKey/Lib/Legend` submodule) and the
-  public mirror `~/projects/w11dwm.config` (`autohotkey/Lib/Legend`). Push
+  public mirror `~/projects/w11dwm-config` (`autohotkey/Lib/Legend`). Push
   Legend before bumping either submodule.
 - README screenshots: render each overlay from a script that includes the
   dotfiles config (hotkeys suspended, `LetterFile: ""`), put a solid
